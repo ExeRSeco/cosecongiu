@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /#view-admin
+Disallow: /#view-admin-login
+
+Sitemap: https://cosecongiu.com/sitemap.xml

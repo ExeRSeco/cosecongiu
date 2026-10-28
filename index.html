@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosé con Giu - Tienda de Moldes Digitales</title>
+  <meta name="description" content="Cosé con Giu: Catálogo online de moldes y patrones de costura descargables en formato PDF listos para imprimir en A4 y pliego. Incluye guía de confección y video tutorial.">
+  <meta name="theme-color" content="#845ec2">
+
+  <!-- Open Graph / Redes Sociales -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Cosé con Giu - Tienda de Moldes Digitales">
+  <meta property="og:description" content="Descarga patrones de costura en PDF listos para imprimir con guía paso a paso y video tutorial de confección.">
+  <meta property="og:image" content="logo.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cosé con Giu - Tienda de Moldes Digitales">
+  <meta name="twitter:description" content="Patrones de costura en PDF listos para imprimir con guías paso a paso.">
+  <meta name="twitter:image" content="logo.png">
+
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Biblioteca de iconos modernos Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+  <!-- Encabezado y Navegación Principal -->
+  <header class="header">
+    <div class="container header-container">
+      <div class="logo" onclick="cambiarVista('catalogo')" style="cursor: pointer;" title="Ir al catálogo">
+        <img src="logo-cropped.png" alt="Logo Cosé con Giu" class="brand-logo-img">
+        <div>
+          <h1>Cosé con Giu</h1>
+          <p class="tagline">Patrones y moldes digitales listos para descargar</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button id="btn-nav-catalogo" class="nav-btn active" onclick="cambiarVista('catalogo')">
+          <i data-lucide="scissors" class="ui-icon"></i> Catálogo
+        </button>
+        <button id="btn-nav-carrito" class="nav-btn" onclick="cambiarVista('carrito')">
+          <i data-lucide="shopping-bag" class="ui-icon"></i> Carrito <span id="cart-badge" class="badge">0</span>
+        </button>
+        <button id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')">
+          <i data-lucide="sliders-horizontal" class="ui-icon"></i> Panel Admin
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal de Vistas -->
+  <main class="container main-content">
+
+    <!-- 1. VISTA: CATÁLOGO DE MOLDES -->
+    <section id="view-catalogo" class="view-section">
+      <div class="section-header">
+        <h2>Catálogo de Moldes Digitales</h2>
+        <p>Selecciona tus patrones de costura favoritos, agrégalos a tu carrito y recíbelos en PDF listos para imprimir.
+        </p>
+      </div>
+
+      <!-- Barra de herramientas del catálogo: Búsqueda, Categorías y Ordenamiento -->
+      <div class="catalogo-toolbar card">
+        <div class="toolbar-search-row">
+          <div class="search-input-wrap">
+            <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
+            <input type="text" id="catalogo-busqueda" placeholder="Buscar moldes o patrones..."
+              oninput="filtrarCatalogoPorBusqueda(this.value)">
+            <button type="button" class="btn-clear-search" id="btn-clear-catalogo-search"
+              onclick="limpiarBusquedaCatalogo()" title="Limpiar búsqueda" style="display: none;">✕</button>
+          </div>
+        </div>
+
+        <div class="toolbar-filters-row">
+          <div class="category-chips-scroll" id="categoria-chips">
+            <!-- Chips de categorías generados desde app.js -->
+          </div>
+
+          <div class="sort-select-wrap">
+            <label for="catalogo-orden">Ordenar:</label>
+            <select id="catalogo-orden" onchange="cambiarOrdenCatalogo(this.value)" class="filtro-select">
+              <option value="defecto">Más Vendidos primero</option>
+              <option value="precio-menor">Precio: Menor a Mayor</option>
+              <option value="precio-mayor">Precio: Mayor a Menor</option>
+              <option value="nombre">Nombre (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="catalogo-status-bar">
+          <span id="catalogo-counter" class="results-counter">Mostrando moldes</span>
+        </div>
+      </div>
+
+      <div id="catalogo-grid" class="catalogo-grid">
+        <!-- Los productos se cargan dinámicamente desde app.js -->
+      </div>
+    </section>
+
+    <!-- 2. VISTA: DETALLE DE PRODUCTO INDIVIDUAL -->
+    <section id="view-producto" class="view-section" style="display: none;">
+      <div class="product-detail-header-nav">
+        <button class="btn btn-secondary btn-sm" onclick="cambiarVista('catalogo')">
+          <i data-lucide="arrow-left" class="ui-icon"></i> Volver al Catálogo
+        </button>
+      </div>
+
+      <div id="producto-detalle-contenedor" class="card product-detail-card">
+        <!-- Detalle inyectado dinámicamente desde app.js -->
+      </div>
+    </section>
+
+    <!-- 3. VISTA: CARRITO DE COMPRAS -->
+    <section id="view-carrito" class="view-section" style="display: none;">
+      <div class="section-header">
+        <h2>Carrito de Compras</h2>
+        <p>Revisa tus moldes seleccionados antes de finalizar tu pedido.</p>
+      </div>
+
+      <div id="carrito-contenedor">
+        <!-- El contenido del carrito se inyecta desde app.js -->
+      </div>
+    </section>
+
+    <!-- 4. VISTA: LOGIN DE ADMINISTRACIÓN -->
+    <section id="view-admin-login" class="view-section" style="display: none;">
+      <div class="admin-login-wrapper">
+        <div class="card admin-login-card">
+          <div class="admin-login-icon"><i data-lucide="lock" class="ui-icon-lg"></i></div>
+          <h2>Acceso a Administración</h2>
+          <p class="admin-login-subtext">Ingresa tus credenciales para gestionar el catálogo, los moldes y las ventas de
+            Cosé con Giu.</p>
+
+          <form id="form-admin-login" onsubmit="event.preventDefault(); iniciarSesionAdmin();" class="admin-login-form">
+            <div class="form-group">
+              <label for="admin-login-usuario">Usuario</label>
+              <input type="text" id="admin-login-usuario" required placeholder="Ingresa tu usuario (ej: admin)"
+                autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label for="admin-login-password">Contraseña</label>
+              <input type="password" id="admin-login-password" required placeholder="••••••••"
+                autocomplete="current-password">
+            </div>
+            <div id="admin-login-error" class="login-error-msg" style="display: none;"></div>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 0.5rem;">
+              <i data-lucide="key-round" class="ui-icon"></i> Iniciar Sesión
+            </button>
+            <div class="admin-login-hint">
+              <small><em>Credenciales demo:</em> Usuario <strong>admin</strong> · Contraseña
+                <strong>giu2026</strong></small>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. VISTA: PANEL DE ADMINISTRACIÓN -->
+    <section id="view-admin" class="view-section" style="display: none;">
+      <div class="section-header admin-header-flex">
+        <div>
+          <h2>Panel de Administración</h2>
+          <p>Controla las ventas, confirma entregas de moldes a compradores y administra el catálogo.</p>
+        </div>
+        <div class="admin-header-actions">
+          <button type="button" id="btn-status-supabase" class="btn-supabase-status" onclick="abrirModalConfigSupabase()"
+            title="Ver o configurar conexión a la base de datos Supabase">
+            <span class="status-dot-supabase" id="status-dot-supabase"></span>
+            <span id="texto-status-supabase">Modo Local (Respaldo)</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm btn-logout-admin" onclick="cerrarSesionAdmin()"
+            title="Cerrar sesión de administración">
+            <i data-lucide="log-out" class="ui-icon"></i> Cerrar Sesión
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Búsqueda Global en Panel Admin -->
+      <div class="admin-search-card card">
+        <div class="search-input-wrap">
+          <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
+          <input type="text" id="admin-busqueda" placeholder="Buscar comprador o email..."
+            oninput="filtrarAdminPorBusqueda(this.value)">
+          <button type="button" class="btn-clear-search" id="btn-clear-admin-search" onclick="limpiarBusquedaAdmin()"
+            title="Limpiar búsqueda" style="display: none;">✕</button>
+        </div>
+      </div>
+
+      <!-- Tarjetas de Métricas Rápidas: Producto Más Vendido y Resumen -->
+      <div class="admin-metrics-grid">
+        <div class="metric-card metric-bestseller">
+          <div class="metric-icon-wrap"><i data-lucide="trophy" class="ui-icon-metric"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Producto Más Vendido</span>
+            <h4 id="admin-top-producto-nombre" class="metric-value">Calculando...</h4>
+            <p id="admin-top-producto-detalle" class="metric-subtext">0 unidades vendidas</p>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap"><i data-lucide="package" class="ui-icon-metric"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Total de Pedidos</span>
+            <h4 id="admin-total-pedidos" class="metric-value">0</h4>
+            <p id="admin-pedidos-detalle" class="metric-subtext">0 completados · 0 pendientes</p>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap"><i data-lucide="badge-dollar-sign" class="ui-icon-metric"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Ingresos Confirmados</span>
+            <h4 id="admin-total-recaudado" class="metric-value">$0.00</h4>
+            <p class="metric-subtext">Transferencias completadas</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN DE COMPRADORES Y VENTAS EN FORMATO LISTA EXPANDIBLE -->
+      <div class="card admin-orders-card" style="margin-bottom: 2rem;">
+        <div class="admin-list-header">
+          <div>
+            <h3>Listado de Ventas y Compradores (<span id="total-pedidos-count">0</span>)</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+              Haz clic en cualquier pedido para desplegar su detalle completo. Color lateral según estado.
+            </p>
+          </div>
+          <div class="admin-orders-controls">
+            <!-- Filtro rápido de fecha -->
+            <select id="filtro-pedidos-fecha-rapida" onchange="filtrarPedidosAdmin()" class="filtro-select"
+              title="Filtrar por período">
+              <option value="todas">Todas las fechas</option>
+              <option value="hoy">Hoy</option>
+              <option value="semana">Últimos 7 días</option>
+              <option value="mes">Este mes</option>
+            </select>
+
+            <!-- Selector de fecha calendario puntual -->
+            <div class="date-picker-wrap" title="Filtrar por día exacto">
+              <input type="date" id="filtro-pedidos-fecha-input" onchange="filtrarPedidosAdmin()"
+                class="filtro-date-input">
+            </div>
+
+            <!-- Filtro por estado -->
+            <select id="filtro-pedidos-estado" onchange="filtrarPedidosAdmin()" class="filtro-select">
+              <option value="todos">Todos los estados</option>
+              <option value="pendiente">Solo Pendientes</option>
+              <option value="completada">Solo Completadas (Entregados)</option>
+              <option value="cancelada">Solo Canceladas</option>
+            </select>
+
+            <button class="btn btn-secondary btn-sm" onclick="restablecerPedidosDefecto()"
+              title="Restablecer pedidos de ejemplo">
+              <i data-lucide="rotate-ccw" class="ui-icon"></i> Pedidos prueba
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenedor del listado expandible de ventas -->
+        <div id="lista-admin-pedidos" class="orders-expandable-list">
+          <!-- Tarjetas expandibles renderizadas dinámicamente desde app.js -->
+        </div>
+      </div>
+
+      <!-- SECCIÓN DE GESTIÓN DE CATÁLOGO (FORMULARIO Y TABLA) -->
+      <div class="admin-layout">
+        <!-- Formulario para agregar / editar molde -->
+        <div class="card admin-form-card">
+          <h3 id="admin-form-titulo">Agregar Nuevo Molde</h3>
+          <form id="form-producto" onsubmit="guardarProducto(event)">
+            <input type="hidden" id="producto-id" value="">
+
+            <div class="form-group">
+              <label for="producto-nombre">Nombre del molde o producto:</label>
+              <input type="text" id="producto-nombre" required placeholder="Ej: Vestido Solero Verano Talles S-XL">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="producto-categoria">Categoría:</label>
+                <select id="producto-categoria" required>
+                  <option value="Vestidos">Vestidos</option>
+                  <option value="Pantalones">Pantalones</option>
+                  <option value="Camisas">Camisas</option>
+                  <option value="Bolsos y Accesorios">Bolsos y Accesorios</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="producto-icono">Icono representativo:</label>
+                <select id="producto-icono">
+                  <option value="scissors">Tijeras (Costura)</option>
+                  <option value="shirt">Prenda / Camisa</option>
+                  <option value="shopping-bag">Bolso / Accesorio</option>
+                  <option value="file-text">Patrón en PDF</option>
+                  <option value="sparkles">Destacado / Especial</option>
+                  <option value="layers">Moldería en capas</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="producto-descripcion">Descripción detallada del patrón:</label>
+              <input type="text" id="producto-descripcion" required
+                placeholder="Ej: Molde en PDF con guía paso a paso, talles XS al XXL">
+            </div>
+
+            <div class="form-group">
+              <label for="producto-imagen">Imagen del molde (opcional)</label>
+              <input type="file" id="producto-imagen" accept="image/*">
+              <div id="producto-preview-wrap" style="margin-top:0.5rem; display: none;">
+                <img id="producto-preview" src="" alt="Vista previa del molde"
+                  style="max-width:120px; border-radius:8px; border:1px solid var(--border);">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="producto-precio">Precio normal ($):</label>
+                <input type="number" id="producto-precio" required min="0" step="0.01" placeholder="Ej: 2500">
+              </div>
+
+              <div class="form-group">
+                <label for="producto-promo">¿Tiene promoción activa?</label>
+                <select id="producto-promo" onchange="toggleCampoPromo()">
+                  <option value="no">Sin promoción</option>
+                  <option value="si">Con descuento / promoción</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" id="grupo-precio-promo" style="display: none;">
+              <label for="producto-precio-promo">Precio promocional ($):</label>
+              <input type="number" id="producto-precio-promo" min="0" step="0.01" placeholder="Ej: 1900">
+            </div>
+
+            <!-- Enlaces digitales: Archivos en Drive y Video Tutorial -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="producto-link-archivos">Enlace de archivos PDF (Google Drive):</label>
+                <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
+              </div>
+
+              <div class="form-group">
+                <label for="producto-link-video">Enlace de video tutorial (YouTube/Drive):</label>
+                <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+              </div>
+            </div>
+
+            <div class="form-buttons">
+              <button type="submit" class="btn btn-primary" id="btn-guardar-producto">Guardar Molde</button>
+              <button type="button" class="btn btn-secondary" id="btn-cancelar-edicion" style="display: none;"
+                onclick="resetearFormulario()">Cancelar Edición</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Listado de moldes en el inventario -->
+        <div class="card admin-list-card">
+          <div class="admin-list-header">
+            <h3>Moldes en Catálogo (<span id="total-productos-count">0</span>)</h3>
+            <button class="btn btn-link" onclick="restablecerCatalogoDefecto()">
+              <i data-lucide="rotate-ccw" class="ui-icon"></i> Restablecer moldes de prueba
+            </button>
+          </div>
+          <div class="table-scroll-hint">
+            <i data-lucide="chevrons-left-right" class="ui-icon" style="width: 14px; height: 14px;"></i>
+            <span>Desliza la tabla hacia los lados para ver todas las columnas</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Molde (clic para ver)</th>
+                  <th>Categoría</th>
+                  <th>Precio</th>
+                  <th>Promoción</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-admin-productos">
+                <!-- Filas renderizadas desde app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 4. MODAL / VENTANA: CHECKOUT CON DATOS DE TRANSFERENCIA Y FORMULARIO DE CLIENTE -->
+  <div id="modal-checkout" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+    style="display: none;">
+    <div class="modal-box" role="document">
+      <div class="modal-header">
+        <h3 id="checkout-title">Finalizar Compra - Pago por Transferencia</h3>
+        <button class="modal-close-btn" onclick="cerrarCheckout()" title="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Resumen de ítems -->
+        <div class="resumen-checkout">
+          <h4>Resumen de tu pedido:</h4>
+          <p id="checkout-resumen-items" class="checkout-items-text"></p>
+          <div class="checkout-total-box">
+            <span>Total a transferir:</span>
+            <strong id="checkout-total-monto" class="checkout-total-monto">$0.00</strong>
+          </div>
+        </div>
+
+        <!-- Formulario con datos del comprador -->
+        <div class="checkout-cliente-card">
+          <h4><i data-lucide="user-check" class="ui-icon"></i> Datos del Comprador (para la entrega de moldes)</h4>
+          <p class="checkout-cliente-subtext">Cuando el pedido esté completado, te enviaremos a mano un enlace a una
+            carpeta de Google Drive con tus moldes en PDF. Por eso necesitamos un correo @gmail.com.</p>
+          <form id="form-datos-cliente" onsubmit="event.preventDefault(); confirmarPedido();">
+            <div class="form-group">
+              <label for="cliente-nombre">Nombre y Apellido *</label>
+              <input type="text" id="cliente-nombre" required placeholder="Ej: María Valentina Rossi"
+                autocomplete="name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cliente-email">Correo Gmail (para darte acceso a Google Drive) *</label>
+                <input type="email" id="cliente-email" required placeholder="Ej: maria.costura@gmail.com"
+                  autocomplete="email">
+                <div class="form-hint-gmail">
+                  <span class="gmail-pill">Exclusivo @gmail.com</span>
+                  <small>No se aceptan Outlook, Hotmail ni otros dominios. El enlace de Drive se envía manualmente a
+                    este Gmail al completar el pedido.</small>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="cliente-telefono">WhatsApp / Teléfono</label>
+                <input type="tel" id="cliente-telefono" placeholder="Ej: +54 9 11 1234-5678" autocomplete="tel">
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Datos Bancarios -->
+        <div class="datos-transferencia-card">
+          <h4><i data-lucide="credit-card" class="ui-icon"></i> Datos bancarios para la transferencia:</h4>
+          <ul class="datos-lista">
+            <li><strong>Banco:</strong> Banco Nación / Mercado Pago</li>
+            <li><strong>Titular de la cuenta:</strong> Cosé con Giu - Moldes Digitales</li>
+            <li><strong>Alias:</strong> COSE.CON.GIU</li>
+            <li><strong>CBU / CVU:</strong> 0000003100012345678901</li>
+            <li><strong>CUIT / CUIL:</strong> 27-38491204-4</li>
+          </ul>
+          <div class="transferencia-aviso">
+            <p><strong>Pasos para recibir tus moldes:</strong></p>
+            <ol>
+              <li>Realiza la transferencia por el total exacto indicado.</li>
+              <li>Haz clic en el botón <strong>"He realizado la transferencia"</strong> para registrar tu pedido.</li>
+              <li>¡Listo! Tu pedido quedará registrado y te enviaremos los PDFs tan pronto se verifique.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="cerrarCheckout()">Volver al Carrito</button>
+        <button class="btn btn-success" onclick="confirmarPedido()"><i data-lucide="check-circle-2" class="ui-icon"></i>
+          He realizado la transferencia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. MODAL: CONFIRMACIÓN DE PEDIDO Y ENLACE DE WHATSAPP -->
+  <div id="modal-confirmacion-pedido" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+    style="display: none;" onclick="if(event.target === this) cerrarModalConfirmacion();">
+    <div class="modal-box modal-success-box" role="document">
+      <div class="modal-header modal-success-header">
+        <h3 id="confirmacion-titulo"><i data-lucide="party-popper" class="ui-icon"></i> ¡Pedido Registrado con Éxito!
+        </h3>
+        <button class="modal-close-btn" onclick="cerrarModalConfirmacion()" title="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body" id="confirmacion-modal-body">
+        <!-- Contenido generado dinámicamente desde app.js con código, total, botón de WhatsApp y PDF de muestra -->
+      </div>
+
+      <div class="modal-footer" style="justify-content: center;">
+        <button class="btn btn-secondary" onclick="cerrarModalConfirmacion()">
+          <i data-lucide="arrow-left" class="ui-icon"></i> Seguir Explorando el Catálogo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODAL: CONFIGURACIÓN DE BASE DE DATOS SUPABASE (PRODUCCIÓN) -->
+  <div id="modal-config-supabase" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+    style="display: none;" onclick="if(event.target === this) cerrarModalConfigSupabase();">
+    <div class="modal-box" role="document" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 id="config-supabase-title"><i data-lucide="database" class="ui-icon"></i> Base de Datos en la Nube (Supabase)</h3>
+        <button class="modal-close-btn" onclick="cerrarModalConfigSupabase()" title="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="supabase-info-card">
+          <p style="font-size: 0.9rem; margin-bottom: 0.75rem; color: var(--text-main);">
+            Conecta tu proyecto de <strong>Supabase (PostgreSQL + Auth + Storage)</strong> para sincronizar los moldes, las ventas y las fotos en tiempo real desde cualquier dispositivo.
+          </p>
+          <div id="supabase-status-banner" class="supabase-status-banner local">
+            <span class="status-dot-supabase" id="modal-status-dot"></span>
+            <span id="modal-status-text">Modo Local Activo (localStorage)</span>
+          </div>
+        </div>
+
+        <form id="form-config-supabase" onsubmit="event.preventDefault(); guardarConfigSupabaseDesdeModal();">
+          <div class="form-group">
+            <label for="input-supabase-url">Project URL (Supabase) *</label>
+            <input type="url" id="input-supabase-url" placeholder="https://abcdefghijklmno.supabase.co" autocomplete="off" required>
+            <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+              Encuéntrala en: <em>Supabase Dashboard → Tu Proyecto → Settings → API → Project URL</em>
+            </small>
+          </div>
+
+          <div class="form-group" style="margin-top: 1rem;">
+            <label for="input-supabase-anon">Project API Key (anon / public) *</label>
+            <input type="password" id="input-supabase-anon" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off" required>
+            <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+              Encuéntrala en: <em>Settings → API → Project API Keys → anon / public</em>
+            </small>
+          </div>
+
+          <div id="supabase-test-feedback" class="supabase-feedback-box" style="display: none;"></div>
+
+          <div class="modal-actions-dual" style="margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" onclick="probarConexionSupabaseModal()">
+              <i data-lucide="zap" class="ui-icon"></i> Probar Conexión
+            </button>
+            <button type="submit" class="btn btn-primary" style="flex: 1;">
+              <i data-lucide="save" class="ui-icon"></i> Guardar y Conectar
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="restablecerModoLocalSupabase()" title="Desconectar y volver a almacenamiento local">
+              <i data-lucide="rotate-ccw" class="ui-icon"></i> Desconectar
+            </button>
+          </div>
+        </form>
+
+        <div class="supabase-guide-box" style="margin-top: 1.25rem; padding: 0.85rem; background: var(--primary-soft); border-radius: var(--radius); border: 1px solid var(--primary-border); font-size: 0.82rem;">
+          <strong style="color: var(--primary-dark);"><i data-lucide="help-circle" class="ui-icon"></i> Pasos para conectar:</strong>
+          <ol style="margin-left: 1.25rem; margin-top: 0.35rem; line-height: 1.45; color: var(--text-main);">
+            <li>Crea un proyecto gratis en <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" style="color: var(--primary-dark); font-weight: 600;">supabase.com</a>.</li>
+            <li>En el <strong>SQL Editor</strong> de Supabase ejecuta el script <code>supabase-schema.sql</code>.</li>
+            <li>Pega tu URL y anon key aquí arriba y haz clic en <strong>Guardar y Conectar</strong>.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="cerrarModalConfigSupabase()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje flotante de notificación (Toast) -->
+  <div id="toast" class="toast"></div>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>© Cosé con Giu - Venta de Moldes Digitales de Costura. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- Cliente oficial de Supabase v2 desde CDN -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- Conector y servicios de Supabase para producción -->
+  <script src="supabase.js"></script>
+  <!-- Lógica principal de la aplicación -->
+  <script src="app.js"></script>
+</body>
+
+</html>
