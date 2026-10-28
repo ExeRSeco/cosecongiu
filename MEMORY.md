@@ -21,5 +21,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 - Siempre cargar datos iniciales de localStorage de forma síncrona para render instantáneo, y sincronizar con la nube en segundo plano para evitar parpadeos de pantalla blanca.
 
 ## Próximos pasos
-- Despliegue en Vercel o Netlify vinculando el dominio personalizado (ej. `cosecongiu.com`).
+- Despliegue en Vercel o Netlify vinculando el repositorio GitHub (https://github.com/ExeRSeco/cosecongiu.git) y dominio personalizado.
 - Configuración de webhook o pasarela automática opcional (Mercado Pago Checkout Pro).
