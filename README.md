@@ -22,7 +22,7 @@ El proyecto está preparado para producción con costo $0 de hosting y base de d
 ## 🗄️ Conectar Base de Datos en la Nube (Supabase)
 
 1. Crea un proyecto gratuito en [supabase.com](https://supabase.com).
-2. Ve al **SQL Editor** y ejecuta el script completo [`supabase-schema.sql`](file:///d:/Exe/archivos/PROYECTOS/Tienda%20de%20moldes/supabase-schema.sql). Esto creará:
+2. Ve al **SQL Editor** y ejecuta el script completo [`sql/supabase-schema.sql`](file:///d:/Exe/archivos/PROYECTOS/Tienda%20de%20moldes/sql/supabase-schema.sql). Esto creará:
    - Las tablas `productos`, `pedidos` y `pedido_items` con sus índices y políticas de seguridad RLS.
    - El bucket de almacenamiento público `moldes-imagenes` en Supabase Storage.
 3. En la tienda web, ingresa al **Panel Admin** (`admin` / `giu2026`) y haz clic en el botón superior **"Modo Local (Respaldo)"**.

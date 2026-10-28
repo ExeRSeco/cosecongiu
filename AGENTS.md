@@ -30,15 +30,25 @@ Bienvenido al repositorio de **Tienda de Moldes Digitales - Ecommerce MVP**. Est
 
 ```plaintext
 Tienda de moldes/
-├── index.html       # Estructura principal, vistas (catálogo, detalle producto, carrito, admin) y modal de checkout
-├── styles.css       # Sistema de diseño con paleta Cosé con Giu, tarjetas expandibles, badges y toolbar
-├── app.js           # Lógica de negocio, CRUD de productos, filtros de fecha/texto, pedidos y vista de producto
-├── logo.png         # Logo original de Cosé con Giu
-├── logo-cropped.png # Logo optimizado y recortado para el encabezado
-├── favicon.png      # Favicon cuadrado optimizado
-├── commands/        # Comandos slash personalizados ejecutables por el agente (ej. commands/feature.md)
-├── MEMORY.md        # Memoria del proyecto entre sesiones
-└── AGENTS.md        # Guía de contexto y reglas para agentes de desarrollo
+├── index.html            # Estructura principal SPA y modales (checkout, confirmación, supabase)
+├── css/
+│   └── styles.css        # Sistema de diseño con paleta Cosé con Giu, tarjetas expandibles, badges
+├── js/
+│   ├── app.js            # Lógica de negocio, carrito, catálogo, administración y sincronización
+│   └── supabase.js       # Conector de persistencia, Supabase Auth y Supabase Storage
+├── assets/
+│   ├── logo.png          # Logo original de Cosé con Giu
+│   ├── logo-cropped.png  # Logo optimizado y recortado para el encabezado
+│   └── favicon.png       # Favicon cuadrado optimizado
+├── sql/
+│   └── supabase-schema.sql # Esquema relacional PostgreSQL, índices, RLS y bucket Storage
+├── commands/             # Comandos slash personalizados ejecutables por el agente (ej. commands/feature.md)
+├── vercel.json           # Configuración de despliegue y seguridad para Vercel
+├── netlify.toml          # Configuración de despliegue y seguridad para Netlify
+├── robots.txt            # Reglas de indexación SEO
+├── sitemap.xml           # Mapa del sitio XML
+├── MEMORY.md             # Memoria del proyecto entre sesiones
+└── AGENTS.md             # Guía de contexto y reglas para agentes de desarrollo
 ```
 
 ### Detalle de Componentes Clave
@@ -52,31 +62,30 @@ Tienda de moldes/
    - `#view-admin`:
      - Tarjetas métricas superiores: *Producto Más Vendido*, *Total de Pedidos* e *Ingresos Confirmados*.
      - Buscador global admin (`#admin-busqueda`) y filtro por fecha dual (`#filtro-pedidos-fecha-rapida` + `#filtro-pedidos-fecha-input`).
+     - Botón de estado de conexión a Supabase (`#btn-status-supabase`) y modal de configuración (`#modal-config-supabase`).
      - Listado de ventas en tarjetas expandibles tipo acordeón (`#lista-admin-pedidos`) con código de color en el borde izquierdo según estado (`pendiente`: ámbar, `completada`: verde, `cancelada`: rojo) y botón de entrega de archivos de Google Drive y video tutorial por email (`.btn-action-send-files`), con estado deshabilitado tras el envío y opción de reenvío.
      - Formulario de alta/edición de moldes con campos para `producto-link-archivos` (Google Drive), `producto-link-video` (YouTube/Drive), campo de categoría y tabla de gestión del catálogo con nombres clickeables hacia `#view-producto`.
      - Botón `.btn-logout-admin` via `cerrarSesionAdmin()`.
-   - `#modal-checkout`: Ventana modal que captura los datos del comprador (*Nombre*, correo **solo @gmail.com**, *WhatsApp*) antes de confirmar la transferencia. El molde se entrega después, a mano, con un enlace de Google Drive.
+   - `#modal-checkout`: Ventana modal que captura los datos del comprador (*Nombre*, correo **solo @gmail.com**, *WhatsApp*) antes de confirmar la transferencia.
+   - `#modal-confirmacion-pedido`: Confirmación de pedido con botón directo a WhatsApp y descarga de guía de muestra en PDF.
    - `#toast`: Notificaciones emergentes para retroalimentación visual al usuario.
 
-2. **`styles.css`**:
+2. **`css/styles.css`**:
    - Variables CSS globales `:root` basadas en el logo oficial:
      - Primario y variantes: `--primary: #845ec2`, `--primary-hover: #7047a3`, `--primary-dark: #583387`, `--primary-soft: #f4ecfd`.
      - Acento dorado aguja: `--accent-gold: #c7a138`, `--accent-gold-soft: #fef9e8`, `--accent-gold-border: #f6e3a4`.
      - Fondo de página: `--bg-page: #faf7fd`, texto principal: `--text-main: #251b33`.
    - Badges de estado de pedido: `.badge-estado.pendiente`, `.badge-estado.completada`, `.badge-estado.cancelada`.
    - Badges de producto: `.product-badge-bestseller` (dorado) y `.product-badge-promo` (fucsia).
-   - Componentes v3: `.order-expandable-card` (bordes coloreados por estado y cabecera interactiva), `.category-chip` (estados activo/inactivo), `.product-detail-card` y `.product-icon-wrap` (gradientes vectoriales).
+   - Componentes responsivos: `.order-expandable-card`, `.category-chip`, `.product-detail-card`, `.btn-supabase-status`.
 
-3. **`app.js`**:
-   - `PRODUCTOS_POR_DEFECTO` / `PEDIDOS_POR_DEFECTO`: Moldes iniciales con atributos `categoria`, `linkArchivos`, `linkVideo` y pedidos de muestra con `archivosEnviados` y `fechaEnvioArchivos`.
-   - Estado de filtrado: `filtrosCatalogo` (búsqueda, categoría, orden) y `filtrosAdmin` (texto, fecha).
-   - `pedidosExpandidos`: Conjunto `Set` que mantiene el estado de despliegue de las tarjetas de pedidos.
-   - Navegación SPA: `cambiarVista('catalogo' | 'producto' | 'carrito' | 'admin')` y `verDetalleProducto(id)`. `cambiarVista('admin')` muestra `#view-admin-login` si no hay sesión.
-   - Sesión admin (candado de UI): `estaAdminLogueado()`, `iniciarSesionAdmin()`, `cerrarSesionAdmin()` con flag `{ logueado: true }` en `sessionStorage`.
-   - Panel de administración: `renderMetricasAdmin()`, `renderPedidosAdmin()`, `cambiarEstadoPedido(id, nuevoEstado)`, `eliminarPedido(id)`.
-   - Entrega digital: `generarEnlaceCorreoEntrega(pedido)`, `enviarArchivosPedido(id)` y `reenviarArchivosPedido(id)` con apertura inteligente de Gmail Web Compose y fallback `mailto:`.
-   - Checkout con captura de cliente: `confirmarPedido()` exige `esCorreoGmail()` (dominio exacto `gmail.com`) y crea un snapshot histórico de la orden con enlaces digitales.
-   - Utilidades defensivas: `escaparHTML()` (prevención de XSS) y `formatearPrecio()` (formato numérico regional).
+3. **`js/app.js` y `js/supabase.js`**:
+   - `PRODUCTOS_POR_DEFECTO` / `PEDIDOS_POR_DEFECTO`: Moldes iniciales y pedidos de muestra.
+   - Estado de filtrado reactivo (`filtrosCatalogo`, `filtrosAdmin`).
+   - Sincronización transparente con base de datos Supabase en segundo plano con fallback local en `localStorage`.
+   - CRUD de moldes con soporte para subida de fotos a Supabase Storage (`moldes-imagenes`).
+   - Checkout con validación exclusiva `@gmail.com` y registro relacional en Supabase.
+   - Manejo defensivo de fechas locales (reglas de `local-dates`) y prevención de XSS con `escaparHTML()`.
 
 ---
 

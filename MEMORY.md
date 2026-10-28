@@ -1,9 +1,10 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 28/10/2026 — Preparación completa para producción y conexión Supabase.
+Última actualización: 28/10/2026 — Reorganización modular de carpetas (css, js, assets, sql) y sincronización con GitHub.
 
 ## Estado actual
+- Estructura limpia y desacoplada en carpetas modulares (`css/`, `js/`, `assets/`, `sql/`).
 - Arquitectura Vanilla Web Stack lista para producción sin dependencias de build.
 - Backend en la nube: Supabase integrado (PostgreSQL, Auth real y Storage para imágenes) con fallback transparente a `localStorage`.
 - Modal de configuración de Supabase accesible desde el panel admin con indicador de estado (online/local/error) y comprobación de conexión.
