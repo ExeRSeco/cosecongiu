@@ -35,7 +35,8 @@ Tienda de moldes/
 │   └── styles.css        # Sistema de diseño con paleta Cosé con Giu, tarjetas expandibles, badges
 ├── js/
 │   ├── app.js            # Lógica de negocio, carrito, catálogo, administración y sincronización
-│   └── supabase.js       # Conector de persistencia, Supabase Auth y Supabase Storage
+│   ├── supabase.js       # Conector de persistencia, Supabase Auth y Supabase Storage
+│   └── env.example.js    # Plantilla de variables de entorno para desarrollo y producción
 ├── assets/
 │   ├── logo.png          # Logo original de Cosé con Giu
 │   ├── logo-cropped.png  # Logo optimizado y recortado para el encabezado
@@ -58,11 +59,11 @@ Tienda de moldes/
    - `#view-catalogo`: Grid responsivo donde se muestran las tarjetas ampliadas de los moldes con íconos destacados, barra de herramientas con buscador en vivo (`#catalogo-busqueda`), chips de categorías dinámicos (`#categoria-chips`), selector de ordenamiento (`#catalogo-orden`) e insignia dinámica de "⭐ Más Vendido".
    - `#view-producto`: Vista detallada de un molde individual (`#producto-detalle-contenedor`) con especificaciones, estado de oferta y botón de compra directa.
    - `#view-carrito`: Resumen de pedidos, selector de cantidades y botón de checkout.
-   - `#view-admin-login`: Formulario de acceso al panel (`#form-admin-login`). Credenciales demo: usuario `admin`, contraseña `giu2026`.
+   - `#view-admin-login`: Formularios de autenticación administrativa (`#form-admin-login`, `#form-admin-registro`, `#form-admin-recuperar`). Soporta tanto credenciales demo locales (usuario `admin`, contraseña `giu2026`) como cuentas oficiales en la nube mediante Supabase Auth, con enlaces para registrar nuevos administradores y recuperar contraseña por correo.
    - `#view-admin`:
      - Tarjetas métricas superiores: *Producto Más Vendido*, *Total de Pedidos* e *Ingresos Confirmados*.
      - Buscador global admin (`#admin-busqueda`) y filtro por fecha dual (`#filtro-pedidos-fecha-rapida` + `#filtro-pedidos-fecha-input`).
-     - Botón de estado de conexión a Supabase (`#btn-status-supabase`) y modal de configuración (`#modal-config-supabase`).
+     - Botón de estado de conexión a Supabase (`#btn-status-supabase`), distintivo de identidad del administrador activo (`#admin-user-badge`) y modal de configuración (`#modal-config-supabase`).
      - Listado de ventas en tarjetas expandibles tipo acordeón (`#lista-admin-pedidos`) con código de color en el borde izquierdo según estado (`pendiente`: ámbar, `completada`: verde, `cancelada`: rojo) y botón de entrega de archivos de Google Drive y video tutorial por email (`.btn-action-send-files`), con estado deshabilitado tras el envío y opción de reenvío.
      - Formulario de alta/edición de moldes con campos para `producto-link-archivos` (Google Drive), `producto-link-video` (YouTube/Drive), campo de categoría y tabla de gestión del catálogo con nombres clickeables hacia `#view-producto`.
      - Botón `.btn-logout-admin` via `cerrarSesionAdmin()`.

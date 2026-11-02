@@ -218,6 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarContadorCarrito();
   actualizarIconosLucide();
   actualizarBadgeSupabaseUI();
+  inicializarAuthAdmin();
 
   // Sincronización transparente con base de datos Supabase en segundo plano
   sincronizarConSupabaseSiAplica();
@@ -380,77 +381,383 @@ function guardarPedidosEnStorage() {
 
 /**
  * ====================================================================
- * SESIÓN DEL PANEL DE ADMINISTRACIÓN (sessionStorage)
- * Recargar la pestaña mantiene el acceso; cerrar la pestaña pide login.
+ * SISTEMA DE AUTENTICACIÓN Y SESIÓN DEL PANEL DE ADMINISTRACIÓN
+ * Compatible con Supabase Auth (correo/contraseña) y Demo Local (admin/giu2026).
  * ====================================================================
  */
-function estaAdminLogueado() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_ADMIN_AUTH);
-    if (!raw) return false;
-    const datos = JSON.parse(raw);
-    return Boolean(datos && datos.logueado);
-  } catch (error) {
-    return false;
+
+/**
+ * Inicializa el estado de autenticación al arrancar la aplicación
+ */
+async function inicializarAuthAdmin() {
+  actualizarUIAdminSesion();
+
+  // Si Supabase está disponible, recuperamos sesión previa automáticamente
+  if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseObtenerSesion === "function") {
+    try {
+      const sesion = await supabaseObtenerSesion();
+      if (sesion && sesion.user) {
+        guardarSesionAdmin({
+          metodo: "supabase",
+          email: sesion.user.email
+        });
+        actualizarUIAdminSesion();
+      }
+    } catch (e) {
+      console.warn("[Auth] No se pudo recuperar sesión previa de Supabase:", e);
+    }
+
+    // Escucha reactiva de eventos de sesión
+    if (typeof supabaseEscucharCambiosAuth === "function") {
+      supabaseEscucharCambiosAuth((event, sesion) => {
+        if (event === "SIGNED_IN" && sesion && sesion.user) {
+          guardarSesionAdmin({
+            metodo: "supabase",
+            email: sesion.user.email
+          });
+          actualizarUIAdminSesion();
+        } else if (event === "SIGNED_OUT") {
+          borrarSesionAdmin();
+          actualizarUIAdminSesion();
+          const viewAdmin = document.getElementById("view-admin");
+          if (viewAdmin && viewAdmin.style.display !== "none") {
+            cambiarVista("admin");
+          }
+        }
+      });
+    }
   }
 }
 
-function guardarSesionAdmin() {
-  sessionStorage.setItem(STORAGE_ADMIN_AUTH, JSON.stringify({ logueado: true }));
+function obtenerInfoAdminSesion() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_ADMIN_AUTH) || localStorage.getItem(STORAGE_ADMIN_AUTH);
+    if (!raw) return null;
+    const datos = JSON.parse(raw);
+    return Boolean(datos && datos.logueado) ? datos : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function estaAdminLogueado() {
+  return Boolean(obtenerInfoAdminSesion());
+}
+
+function guardarSesionAdmin(datos = {}) {
+  const payload = {
+    logueado: true,
+    metodo: datos.metodo || "demo", // "supabase" | "demo"
+    email: datos.email || (datos.metodo === "supabase" ? "admin@cosecongiu.com" : "admin"),
+    iniciadoEn: new Date().toISOString()
+  };
+
+  sessionStorage.setItem(STORAGE_ADMIN_AUTH, JSON.stringify(payload));
+  if (datos.metodo === "supabase") {
+    localStorage.setItem(STORAGE_ADMIN_AUTH, JSON.stringify(payload));
+  }
 }
 
 function borrarSesionAdmin() {
   sessionStorage.removeItem(STORAGE_ADMIN_AUTH);
+  localStorage.removeItem(STORAGE_ADMIN_AUTH);
+}
+
+function actualizarUIAdminSesion() {
+  const badge = document.getElementById("admin-user-badge");
+  const badgeText = document.getElementById("admin-user-badge-text");
+  const sesion = obtenerInfoAdminSesion();
+
+  if (!badge || !badgeText) return;
+
+  if (sesion && sesion.logueado) {
+    badge.style.display = "inline-flex";
+    if (sesion.metodo === "supabase") {
+      badgeText.textContent = sesion.email || "Supabase Admin";
+      badge.title = `Autenticado en Supabase Auth como ${sesion.email}`;
+    } else {
+      badgeText.textContent = "admin (Demo Local)";
+      badge.title = "Sesión local activa con credenciales demo";
+    }
+  } else {
+    badge.style.display = "none";
+  }
+
+  actualizarIconosLucide();
 }
 
 function mostrarErrorLoginAdmin(mensaje) {
   const cajaError = document.getElementById("admin-login-error");
+  const cajaExito = document.getElementById("admin-login-success");
+  if (cajaExito) cajaExito.style.display = "none";
   if (!cajaError) return;
   cajaError.textContent = mensaje;
   cajaError.style.display = mensaje ? "block" : "none";
 }
 
+function mostrarExitoLoginAdmin(mensaje) {
+  const cajaError = document.getElementById("admin-login-error");
+  const cajaExito = document.getElementById("admin-login-success");
+  if (cajaError) cajaError.style.display = "none";
+  if (!cajaExito) return;
+  cajaExito.textContent = mensaje;
+  cajaExito.style.display = mensaje ? "block" : "none";
+}
+
+function cambiarModoLoginAdmin(modo = "login") {
+  const formLogin = document.getElementById("form-admin-login");
+  const formRegistro = document.getElementById("form-admin-registro");
+  const formRecuperar = document.getElementById("form-admin-recuperar");
+  const title = document.getElementById("admin-auth-title");
+  const subtext = document.getElementById("admin-auth-subtext");
+  const errorBox = document.getElementById("admin-login-error");
+  const successBox = document.getElementById("admin-login-success");
+
+  if (errorBox) errorBox.style.display = "none";
+  if (successBox) successBox.style.display = "none";
+
+  if (modo === "registro") {
+    if (formLogin) formLogin.style.display = "none";
+    if (formRecuperar) formRecuperar.style.display = "none";
+    if (formRegistro) formRegistro.style.display = "block";
+    if (title) title.textContent = "Registrar Administrador";
+    if (subtext) subtext.textContent = "Crea tu cuenta oficial en Supabase Auth para gestionar la tienda en la nube.";
+  } else if (modo === "recuperar") {
+    if (formLogin) formLogin.style.display = "none";
+    if (formRegistro) formRegistro.style.display = "none";
+    if (formRecuperar) formRecuperar.style.display = "block";
+    if (title) title.textContent = "Recuperar Contraseña";
+    if (subtext) subtext.textContent = "Ingresa tu correo para recibir un enlace de restablecimiento seguro.";
+  } else {
+    if (formRegistro) formRegistro.style.display = "none";
+    if (formRecuperar) formRecuperar.style.display = "none";
+    if (formLogin) formLogin.style.display = "block";
+    if (title) title.textContent = "Acceso a Administración";
+    if (subtext) subtext.textContent = "Ingresa tus credenciales para gestionar el catálogo, los moldes y las ventas de Cosé con Giu.";
+  }
+
+  actualizarIconosLucide();
+}
+
+/**
+ * Traduce mensajes de error técnicos de Supabase Auth a explicaciones amigables en español
+ */
+function traducirErrorAuth(errorMsg) {
+  if (!errorMsg) return "Ocurrió un error inesperado al procesar la solicitud.";
+  const msg = errorMsg.toLowerCase();
+
+  if (msg.includes("invalid login credentials")) {
+    return "Correo o contraseña incorrectos. Verifica tus credenciales.";
+  }
+  if (msg.includes("email not confirmed")) {
+    return "Tu correo electrónico aún no ha sido confirmado. Revisa tu casilla de entrada para verificar tu cuenta.";
+  }
+  if (msg.includes("user already registered")) {
+    return "Ya existe una cuenta registrada con este correo electrónico. Intenta iniciar sesión.";
+  }
+  if (msg.includes("password should be at least")) {
+    return "La contraseña debe tener al menos 6 caracteres.";
+  }
+  if (msg.includes("rate limit") || msg.includes("too many requests")) {
+    return "Demasiados intentos seguidos. Por favor espera unos minutos antes de volver a intentar.";
+  }
+  if (msg.includes("network") || msg.includes("failed to fetch")) {
+    return "Error de red o sin conexión. Comprueba tu internet o las credenciales de Supabase.";
+  }
+
+  return errorMsg;
+}
+
 async function iniciarSesionAdmin() {
   const inputUsuario = document.getElementById("admin-login-usuario");
   const inputPassword = document.getElementById("admin-login-password");
+  const btnSubmit = document.getElementById("btn-submit-admin-login");
   const usuario = inputUsuario ? inputUsuario.value.trim() : "";
   const password = inputPassword ? inputPassword.value.trim() : "";
 
   if (!usuario || !password) {
-    mostrarErrorLoginAdmin("Por favor ingresa tu usuario y contraseña.");
+    mostrarErrorLoginAdmin("Por favor ingresa tu usuario/correo y contraseña.");
     return;
   }
 
-  // 1. Si Supabase está configurado y el usuario ingresa un correo, intentamos autenticación oficial
-  if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && usuario.includes("@")) {
-    const resAuth = await supabaseIniciarSesion(usuario, password);
-    if (resAuth && resAuth.exito) {
-      guardarSesionAdmin();
+  const tieneArroba = usuario.includes("@");
+  const supabaseActivo = typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado();
+
+  // Bloqueo visual de carga
+  if (btnSubmit) {
+    btnSubmit.classList.add("is-loading");
+    btnSubmit.disabled = true;
+  }
+
+  try {
+    // 1. Si el usuario ingresa un correo electrónico
+    if (tieneArroba) {
+      if (!supabaseActivo) {
+        mostrarErrorLoginAdmin("Para ingresar con correo debes tener Supabase conectado. Si usas modo local, ingresa con usuario: admin y contraseña: giu2026");
+        return;
+      }
+
+      const resAuth = await supabaseIniciarSesion(usuario, password);
+      if (resAuth && resAuth.exito) {
+        guardarSesionAdmin({
+          metodo: "supabase",
+          email: resAuth.usuario?.email || usuario
+        });
+        mostrarErrorLoginAdmin("");
+        if (document.getElementById("form-admin-login")) {
+          document.getElementById("form-admin-login").reset();
+        }
+        mostrarToast(`Sesión iniciada como ${resAuth.usuario?.email || usuario} (Supabase Auth).`);
+        actualizarUIAdminSesion();
+        cambiarVista("admin");
+        return;
+      } else {
+        const errorTraducido = traducirErrorAuth(resAuth?.mensaje);
+        mostrarErrorLoginAdmin(errorTraducido);
+        if (inputPassword) {
+          inputPassword.value = "";
+          inputPassword.focus();
+        }
+        return;
+      }
+    }
+
+    // 2. Validación con credenciales demo locales (admin / giu2026)
+    if (usuario === ADMIN_USUARIO && password === ADMIN_PASSWORD) {
+      guardarSesionAdmin({
+        metodo: "demo",
+        email: "admin"
+      });
       mostrarErrorLoginAdmin("");
       if (document.getElementById("form-admin-login")) {
         document.getElementById("form-admin-login").reset();
       }
-      mostrarToast(`Sesión iniciada con Supabase Auth (${resAuth.usuario?.email || 'admin'}).`);
+      mostrarToast("Sesión de administración iniciada (Demo Local).");
+      actualizarUIAdminSesion();
       cambiarVista("admin");
       return;
     }
-  }
 
-  // 2. Validación de respaldo con credenciales demo locales
-  if (usuario !== ADMIN_USUARIO || password !== ADMIN_PASSWORD) {
-    mostrarErrorLoginAdmin("Usuario o contraseña incorrectos. Revisa tus credenciales.");
-    if (inputPassword) inputPassword.value = "";
-    if (inputPassword) inputPassword.focus();
+    // 3. Credenciales incorrectas
+    mostrarErrorLoginAdmin("Usuario o contraseña incorrectos. Si tienes una cuenta en Supabase Auth, ingresa tu correo completo.");
+    if (inputPassword) {
+      inputPassword.value = "";
+      inputPassword.focus();
+    }
+  } catch (err) {
+    mostrarErrorLoginAdmin(`Error al iniciar sesión: ${err.message}`);
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.classList.remove("is-loading");
+      btnSubmit.disabled = false;
+    }
+  }
+}
+
+async function registrarAdminSupabase() {
+  const inputEmail = document.getElementById("admin-registro-email");
+  const inputPass = document.getElementById("admin-registro-password");
+  const inputPassConf = document.getElementById("admin-registro-password-confirm");
+  const btnSubmit = document.getElementById("btn-submit-admin-registro");
+
+  const email = inputEmail ? inputEmail.value.trim() : "";
+  const password = inputPass ? inputPass.value.trim() : "";
+  const passwordConf = inputPassConf ? inputPassConf.value.trim() : "";
+
+  if (!email || !password || !passwordConf) {
+    mostrarErrorLoginAdmin("Todos los campos son obligatorios.");
     return;
   }
 
-  guardarSesionAdmin();
-  mostrarErrorLoginAdmin("");
-  if (document.getElementById("form-admin-login")) {
-    document.getElementById("form-admin-login").reset();
+  if (password.length < 6) {
+    mostrarErrorLoginAdmin("La contraseña debe tener al menos 6 caracteres.");
+    return;
   }
-  mostrarToast("Sesión de administración iniciada.");
-  cambiarVista("admin");
+
+  if (password !== passwordConf) {
+    mostrarErrorLoginAdmin("Las contraseñas no coinciden. Por favor verifícalas.");
+    return;
+  }
+
+  if (typeof estaSupabaseConfigurado !== "function" || !estaSupabaseConfigurado()) {
+    mostrarErrorLoginAdmin("Debes configurar y conectar tu proyecto de Supabase antes de registrar una cuenta de administrador.");
+    return;
+  }
+
+  if (btnSubmit) {
+    btnSubmit.classList.add("is-loading");
+    btnSubmit.disabled = true;
+  }
+
+  try {
+    const res = await supabaseRegistrarAdmin(email, password);
+    if (res && res.exito) {
+      if (document.getElementById("form-admin-registro")) {
+        document.getElementById("form-admin-registro").reset();
+      }
+
+      if (res.requiereConfirmacion) {
+        mostrarExitoLoginAdmin("¡Cuenta de administrador creada! Se envió un correo de confirmación. Revisa tu casilla antes de iniciar sesión.");
+      } else {
+        guardarSesionAdmin({
+          metodo: "supabase",
+          email: res.usuario?.email || email
+        });
+        mostrarToast("¡Administrador registrado e identificado con éxito!");
+        actualizarUIAdminSesion();
+        cambiarVista("admin");
+      }
+    } else {
+      mostrarErrorLoginAdmin(traducirErrorAuth(res?.mensaje));
+    }
+  } catch (err) {
+    mostrarErrorLoginAdmin(`Error al registrar administrador: ${err.message}`);
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.classList.remove("is-loading");
+      btnSubmit.disabled = false;
+    }
+  }
+}
+
+async function recuperarPasswordAdmin() {
+  const inputEmail = document.getElementById("admin-recuperar-email");
+  const btnSubmit = document.getElementById("btn-submit-admin-recuperar");
+  const email = inputEmail ? inputEmail.value.trim() : "";
+
+  if (!email) {
+    mostrarErrorLoginAdmin("Por favor ingresa tu correo electrónico.");
+    return;
+  }
+
+  if (typeof estaSupabaseConfigurado !== "function" || !estaSupabaseConfigurado()) {
+    mostrarErrorLoginAdmin("Debes conectar tu proyecto de Supabase para poder restablecer contraseñas de administradores.");
+    return;
+  }
+
+  if (btnSubmit) {
+    btnSubmit.classList.add("is-loading");
+    btnSubmit.disabled = true;
+  }
+
+  try {
+    const res = await supabaseRecuperarPassword(email);
+    if (res && res.exito) {
+      if (document.getElementById("form-admin-recuperar")) {
+        document.getElementById("form-admin-recuperar").reset();
+      }
+      mostrarExitoLoginAdmin("¡Enlace enviado! Revisa tu casilla de correo y sigue las instrucciones para cambiar tu contraseña.");
+    } else {
+      mostrarErrorLoginAdmin(traducirErrorAuth(res?.mensaje));
+    }
+  } catch (err) {
+    mostrarErrorLoginAdmin(`Error al solicitar restablecimiento: ${err.message}`);
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.classList.remove("is-loading");
+      btnSubmit.disabled = false;
+    }
+  }
 }
 
 async function cerrarSesionAdmin() {
@@ -458,9 +765,10 @@ async function cerrarSesionAdmin() {
     await supabaseCerrarSesion();
   }
   borrarSesionAdmin();
+  actualizarUIAdminSesion();
   mostrarErrorLoginAdmin("");
-  mostrarToast("Sesión cerrada. Volvé a ingresar para gestionar ventas.");
-  cambiarVista("admin");
+  mostrarToast("Sesión cerrada correctamente.");
+  cambiarVista("catalogo");
 }
 
 /**
@@ -575,9 +883,11 @@ function cambiarVista(vista) {
     document.getElementById("btn-nav-admin").classList.add("active");
     if (estaAdminLogueado()) {
       document.getElementById("view-admin").style.display = "block";
+      actualizarUIAdminSesion();
       renderAdmin();
     } else if (document.getElementById("view-admin-login")) {
       document.getElementById("view-admin-login").style.display = "block";
+      cambiarModoLoginAdmin("login");
     }
   }
 

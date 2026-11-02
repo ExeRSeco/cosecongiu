@@ -34,9 +34,13 @@ function normalizarUrlSupabase(url) {
 }
 
 /**
- * Obtiene las credenciales activas (prioriza las guardadas en localStorage)
+ * Obtiene las credenciales activas respetando la jerarquía de prioridad:
+ * 1. Personalizada en localStorage (configurada desde el modal de la UI)
+ * 2. Inyectada en window.__ENV (cargada opcionalmente desde js/env.js)
+ * 3. Configuración por defecto del proyecto
  */
 function obtenerCredencialesSupabase() {
+  // 1. Prioridad: Guardado personalizado en localStorage
   try {
     const custom = localStorage.getItem(STORAGE_SUPABASE_CUSTOM);
     if (custom) {
@@ -53,6 +57,24 @@ function obtenerCredencialesSupabase() {
     console.warn("[Supabase] No se pudo leer configuración personalizada:", e);
   }
 
+  // 2. Prioridad: Variables de entorno locales en window.__ENV (js/env.js)
+  try {
+    if (typeof window !== "undefined" && window.__ENV && window.__ENV.SUPABASE_URL && window.__ENV.SUPABASE_ANON_KEY) {
+      const envUrl = window.__ENV.SUPABASE_URL.trim();
+      const envKey = window.__ENV.SUPABASE_ANON_KEY.trim();
+      if (envUrl && envKey && !envUrl.includes("tu-proyecto") && envUrl.startsWith("https://")) {
+        return {
+          url: normalizarUrlSupabase(envUrl),
+          anonKey: envKey,
+          origen: "env"
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("[Supabase] No se pudo leer window.__ENV:", e);
+  }
+
+  // 3. Fallback: Configuración por defecto
   return {
     url: normalizarUrlSupabase(SUPABASE_CONFIG_DEFAULT.url),
     anonKey: (SUPABASE_CONFIG_DEFAULT.anonKey || "").trim(),
@@ -231,6 +253,97 @@ async function supabaseObtenerSesion() {
     const { data } = await client.auth.getSession();
     return data && data.session ? data.session : null;
   } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Registra un nuevo administrador en Supabase Auth
+ */
+async function supabaseRegistrarAdmin(email, password) {
+  const client = obtenerClienteSupabase();
+  if (!client) {
+    return { exito: false, mensaje: "Supabase no está conectado." };
+  }
+
+  try {
+    const { data, error } = await client.auth.signUp({
+      email: email.trim(),
+      password: password.trim()
+    });
+
+    if (error) {
+      return { exito: false, mensaje: error.message };
+    }
+
+    return {
+      exito: true,
+      usuario: data.user,
+      sesion: data.session,
+      requiereConfirmacion: !data.session
+    };
+  } catch (err) {
+    return { exito: false, mensaje: err.message };
+  }
+}
+
+/**
+ * Envía un enlace de restablecimiento de contraseña a la casilla del administrador
+ */
+async function supabaseRecuperarPassword(email) {
+  const client = obtenerClienteSupabase();
+  if (!client) {
+    return { exito: false, mensaje: "Supabase no está conectado." };
+  }
+
+  try {
+    const redirectUrl = window.location.href.split("#")[0];
+    const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: redirectUrl
+    });
+
+    if (error) {
+      return { exito: false, mensaje: error.message };
+    }
+
+    return {
+      exito: true,
+      mensaje: "Enlace enviado. Revisa tu casilla de correo para restablecer la contraseña."
+    };
+  } catch (err) {
+    return { exito: false, mensaje: err.message };
+  }
+}
+
+/**
+ * Obtiene el usuario autenticado en tiempo real desde Supabase
+ */
+async function supabaseObtenerUsuarioActual() {
+  const client = obtenerClienteSupabase();
+  if (!client) return null;
+
+  try {
+    const { data } = await client.auth.getUser();
+    return data && data.user ? data.user : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Escucha cambios en el estado de autenticación de Supabase (SIGNED_IN, SIGNED_OUT, etc.)
+ */
+function supabaseEscucharCambiosAuth(callback) {
+  const client = obtenerClienteSupabase();
+  if (!client || typeof callback !== "function") return null;
+
+  try {
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      callback(event, session);
+    });
+    return data && data.subscription ? data.subscription : null;
+  } catch (err) {
+    console.warn("[Supabase] Error al escuchar cambios de Auth:", err);
     return null;
   }
 }

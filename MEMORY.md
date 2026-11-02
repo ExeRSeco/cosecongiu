@@ -1,26 +1,28 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 28/10/2026 — Reorganización modular de carpetas (css, js, assets, sql) y sincronización con GitHub.
+Última actualización: 02/11/2026 — Sistema completo de autenticación admin (Supabase Auth + Demo), unificación de env y seguridad Git.
 
 ## Estado actual
 - Estructura limpia y desacoplada en carpetas modulares (`css/`, `js/`, `assets/`, `sql/`).
-- Arquitectura Vanilla Web Stack lista para producción sin dependencias de build.
-- Backend en la nube: Supabase integrado (PostgreSQL, Auth real y Storage para imágenes) con fallback transparente a `localStorage`.
-- Modal de configuración de Supabase accesible desde el panel admin con indicador de estado (online/local/error) y comprobación de conexión.
-- Subida de imágenes al bucket `moldes-imagenes` en Supabase Storage con URLs públicas automáticas.
-- Archivos de despliegue y SEO listos: `vercel.json`, `netlify.toml`, `robots.txt`, `sitemap.xml`, Open Graph y Twitter Cards.
-- Credenciales demo vigentes: `admin` / `giu2026` con soporte para login vía email con Supabase Auth.
+- Variables de entorno protegidas: `js/env.example.js` rastreado, `js/env.js` ignorado en Git. Prioridad: `localStorage` > `window.__ENV` > fallback.
+- Sistema de Auth Admin completo:
+  - Soporta credenciales demo locales (`admin` / `giu2026`).
+  - Soporta login oficial con Supabase Auth vía correo y contraseña.
+  - Formulario integrado de registro de nuevos administradores y recuperación de contraseña vía email.
+  - Persistencia de sesión automática con Supabase (`onAuthStateChange` y `getSession`).
+  - Pill de identidad visual en el encabezado del panel admin (`#admin-user-badge`).
+- Persistencia dual completa: Supabase en la nube con fallback 100% offline a `localStorage`.
 
 ## Decisiones y por qué
-- Mantener Vanilla Stack + Supabase: Cero tiempo de build, costo de hosting $0 (Vercel/Netlify), máxima velocidad de carga móvil y cero necesidad de reescribir código.
-- Configuración dinámica en localStorage: Permite conectar el backend desde la UI web sin exponer credenciales fijas en el repositorio ni requerir recompilaciones.
-- Fallback automático a localStorage: Si Supabase no está configurado o falla la red, la tienda sigue operando sin interrumpir la experiencia de compra ni del admin.
+- Doble vía de autenticación: Mantiene la app siempre testeable sin conexión (demo `admin`/`giu2026`) y habilita seguridad robusta en producción mediante tokens JWT de Supabase Auth.
+- Carga de `env.js` antes de scripts: Permite configurar credenciales locales de forma declarativa sin build tools y sin exponer secretos en el repositorio.
+- Auto-restauración de sesión: Evita que el administrador tenga que reingresar credenciales en cada recarga si ya tiene un token válido en Supabase.
 
 ## Aprendizajes y errores a evitar
-- Nunca forzar subida de Base64 a PostgreSQL cuando se puedan usar buckets de Storage; ahorra cuota de base de datos y acelera consultas.
-- Siempre cargar datos iniciales de localStorage de forma síncrona para render instantáneo, y sincronizar con la nube en segundo plano para evitar parpadeos de pantalla blanca.
+- Nunca subir `js/env.js` a Git; mantener siempre actualizada la plantilla `js/env.example.js`.
+- Traducir al español todos los errores devueltos por el backend de Auth para no confundir al usuario final.
 
 ## Próximos pasos
-- Despliegue en Vercel o Netlify vinculando el repositorio GitHub (https://github.com/ExeRSeco/cosecongiu.git) y dominio personalizado.
+- Despliegue en producción en Vercel o Netlify vinculando el repositorio GitHub.
 - Configuración de webhook o pasarela automática opcional (Mercado Pago Checkout Pro).

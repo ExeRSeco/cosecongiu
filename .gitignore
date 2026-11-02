@@ -12,3 +12,9 @@ yarn-error.log*
 # IDEs
 .vscode/
 .idea/
+
+# Variables de entorno y secretos locales
+js/env.js
+.env
+.env.*
+
