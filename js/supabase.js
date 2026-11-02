@@ -276,6 +276,18 @@ async function supabaseRegistrarAdmin(email, password) {
       return { exito: false, mensaje: error.message };
     }
 
+    // Registro de respaldo en la tabla public.administradores (en caso de que el trigger de BD no esté activo)
+    try {
+      const emailNorm = email.trim().toLowerCase();
+      await client.from("administradores").insert({
+        user_id: data.user ? data.user.id : null,
+        email: emailNorm,
+        aprobado: false
+      });
+    } catch (e) {
+      // Si ya existe o el trigger lo insertó, continuamos limpiamente
+    }
+
     return {
       exito: true,
       usuario: data.user,
@@ -345,6 +357,103 @@ function supabaseEscucharCambiosAuth(callback) {
   } catch (err) {
     console.warn("[Supabase] Error al escuchar cambios de Auth:", err);
     return null;
+  }
+}
+
+/**
+ * Comprueba si un correo cuenta con aprobación manual en la tabla public.administradores
+ */
+async function supabaseVerificarAdminAprobado(email) {
+  const client = obtenerClienteSupabase();
+  if (!client || !email) {
+    return { verificado: false, aprobado: false, motivo: "Sin cliente Supabase" };
+  }
+
+  try {
+    const emailNorm = email.trim().toLowerCase();
+    const { data, error } = await client
+      .from("administradores")
+      .select("id, email, rol, aprobado")
+      .eq("email", emailNorm)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("[Supabase] Aviso al consultar tabla administradores:", error);
+      // Si la tabla aún no fue creada en PostgreSQL, informamos para no bloquear catastróficamente
+      return { verificado: false, aprobado: true, tablaInexistente: true };
+    }
+
+    if (!data) {
+      // Si no existe fila para este correo, registramos la solicitud en pendiente
+      try {
+        await client.from("administradores").insert({
+          email: emailNorm,
+          aprobado: false
+        });
+      } catch (e) {
+        // Ignorar colisión
+      }
+      return { verificado: true, aprobado: false, nuevo: true };
+    }
+
+    return {
+      verificado: true,
+      aprobado: Boolean(data.aprobado),
+      rol: data.rol || "admin"
+    };
+  } catch (err) {
+    console.error("[Supabase] Error en supabaseVerificarAdminAprobado:", err);
+    return { verificado: false, aprobado: false, error: err.message };
+  }
+}
+
+/**
+ * Obtiene la lista completa de administradores y solicitudes de acceso
+ */
+async function supabaseObtenerListaAdmins() {
+  const client = obtenerClienteSupabase();
+  if (!client) return [];
+
+  try {
+    const { data, error } = await client
+      .from("administradores")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("[Supabase] Error al listar administradores:", error);
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    console.error("[Supabase] Excepción al listar administradores:", e);
+    return [];
+  }
+}
+
+/**
+ * Aprueba o revoca el acceso de un administrador en Supabase
+ */
+async function supabaseActualizarEstadoAdmin(id, aprobado, aprobadoPor = "admin") {
+  const client = obtenerClienteSupabase();
+  if (!client) return { exito: false, mensaje: "Supabase no conectado" };
+
+  try {
+    const { data, error } = await client
+      .from("administradores")
+      .update({
+        aprobado: Boolean(aprobado),
+        aprobado_por: aprobadoPor
+      })
+      .eq("id", id)
+      .select();
+
+    if (error) {
+      return { exito: false, mensaje: error.message };
+    }
+    return { exito: true, data };
+  } catch (err) {
+    return { exito: false, mensaje: err.message };
   }
 }
 

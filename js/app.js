@@ -397,6 +397,17 @@ async function inicializarAuthAdmin() {
     try {
       const sesion = await supabaseObtenerSesion();
       if (sesion && sesion.user) {
+        // Verificación de aprobación manual en Supabase
+        if (typeof supabaseVerificarAdminAprobado === "function") {
+          const check = await supabaseVerificarAdminAprobado(sesion.user.email);
+          if (check.verificado && !check.aprobado) {
+            await supabaseCerrarSesion();
+            borrarSesionAdmin();
+            actualizarUIAdminSesion();
+            return;
+          }
+        }
+
         guardarSesionAdmin({
           metodo: "supabase",
           email: sesion.user.email
@@ -599,15 +610,32 @@ async function iniciarSesionAdmin() {
 
       const resAuth = await supabaseIniciarSesion(usuario, password);
       if (resAuth && resAuth.exito) {
+        const emailAdmin = resAuth.usuario?.email || usuario;
+
+        // Comprobación de aceptación manual en la tabla administradores de Supabase
+        if (typeof supabaseVerificarAdminAprobado === "function") {
+          const check = await supabaseVerificarAdminAprobado(emailAdmin);
+          if (check.verificado && !check.aprobado) {
+            // Se revoca la sesión activa de inmediato
+            await supabaseCerrarSesion();
+            borrarSesionAdmin();
+            actualizarUIAdminSesion();
+            mostrarErrorLoginAdmin(
+              "⏳ Tu cuenta existe y la contraseña es correcta, pero está PENDIENTE DE APROBACIÓN manual. El administrador principal debe habilitar tu cuenta en la tabla 'administradores' de Supabase."
+            );
+            return;
+          }
+        }
+
         guardarSesionAdmin({
           metodo: "supabase",
-          email: resAuth.usuario?.email || usuario
+          email: emailAdmin
         });
         mostrarErrorLoginAdmin("");
         if (document.getElementById("form-admin-login")) {
           document.getElementById("form-admin-login").reset();
         }
-        mostrarToast(`Sesión iniciada como ${resAuth.usuario?.email || usuario} (Supabase Auth).`);
+        mostrarToast(`Sesión iniciada como ${emailAdmin} (Supabase Auth).`);
         actualizarUIAdminSesion();
         cambiarVista("admin");
         return;
@@ -696,17 +724,20 @@ async function registrarAdminSupabase() {
         document.getElementById("form-admin-registro").reset();
       }
 
-      if (res.requiereConfirmacion) {
-        mostrarExitoLoginAdmin("¡Cuenta de administrador creada! Se envió un correo de confirmación. Revisa tu casilla antes de iniciar sesión.");
-      } else {
-        guardarSesionAdmin({
-          metodo: "supabase",
-          email: res.usuario?.email || email
-        });
-        mostrarToast("¡Administrador registrado e identificado con éxito!");
-        actualizarUIAdminSesion();
-        cambiarVista("admin");
+      // Cerrar cualquier sesión automática para exigir aprobación previa
+      if (typeof supabaseCerrarSesion === "function") {
+        await supabaseCerrarSesion();
       }
+      borrarSesionAdmin();
+      actualizarUIAdminSesion();
+
+      if (res.requiereConfirmacion) {
+        mostrarExitoLoginAdmin("¡Cuenta creada! Se envió un correo de confirmación. Tu acceso está PENDIENTE DE APROBACIÓN manual en Supabase por el administrador principal.");
+      } else {
+        mostrarExitoLoginAdmin("✅ ¡Solicitud registrada! Tu cuenta ha sido creada en estado PENDIENTE DE APROBACIÓN. El administrador principal debe habilitarte en Supabase para que puedas ingresar.");
+      }
+
+      cambiarModoLoginAdmin("login");
     } else {
       mostrarErrorLoginAdmin(traducirErrorAuth(res?.mensaje));
     }

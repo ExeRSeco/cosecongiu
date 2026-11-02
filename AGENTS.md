@@ -59,7 +59,7 @@ Tienda de moldes/
    - `#view-catalogo`: Grid responsivo donde se muestran las tarjetas ampliadas de los moldes con íconos destacados, barra de herramientas con buscador en vivo (`#catalogo-busqueda`), chips de categorías dinámicos (`#categoria-chips`), selector de ordenamiento (`#catalogo-orden`) e insignia dinámica de "⭐ Más Vendido".
    - `#view-producto`: Vista detallada de un molde individual (`#producto-detalle-contenedor`) con especificaciones, estado de oferta y botón de compra directa.
    - `#view-carrito`: Resumen de pedidos, selector de cantidades y botón de checkout.
-   - `#view-admin-login`: Formularios de autenticación administrativa (`#form-admin-login`, `#form-admin-registro`, `#form-admin-recuperar`). Soporta tanto credenciales demo locales (usuario `admin`, contraseña `giu2026`) como cuentas oficiales en la nube mediante Supabase Auth, con enlaces para registrar nuevos administradores y recuperar contraseña por correo.
+   - `#view-admin-login`: Formularios de autenticación administrativa (`#form-admin-login`, `#form-admin-registro`, `#form-admin-recuperar`). Soporta credenciales demo locales (usuario `admin`, contraseña `giu2026`) y cuentas oficiales en Supabase Auth sujetas a aprobación manual previa en la tabla `administradores`.
    - `#view-admin`:
      - Tarjetas métricas superiores: *Producto Más Vendido*, *Total de Pedidos* e *Ingresos Confirmados*.
      - Buscador global admin (`#admin-busqueda`) y filtro por fecha dual (`#filtro-pedidos-fecha-rapida` + `#filtro-pedidos-fecha-input`).
