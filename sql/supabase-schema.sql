@@ -1,6 +1,6 @@
 -- ====================================================================
 -- ESQUEMA DE BASE DE DATOS POSTGRESQL PARA COSÉ CON GIU (SUPABASE)
--- Ejecuta este script completo en el SQL Editor de tu proyecto Supabase.
+-- NORMAS DE SEGURIDAD EN PRODUCCIÓN: RLS ESTRICTO POR ROL DE ADMIN APROBADO
 -- ====================================================================
 
 -- 1. EXTENSIÓN PARA GENERACIÓN DE IDENTIFICADORES Y FUNCIONES
@@ -16,13 +16,12 @@ CREATE TABLE IF NOT EXISTS public.productos (
   precio NUMERIC(10,2) NOT NULL DEFAULT 0,
   en_promo BOOLEAN NOT NULL DEFAULT FALSE,
   precio_promo NUMERIC(10,2) DEFAULT 0,
-  imagen TEXT, -- URL de la imagen en Supabase Storage o DataURL
+  imagen TEXT, -- URL de la imagen en Supabase Storage
   link_archivos TEXT, -- Enlace a carpeta de Google Drive con moldes en PDF
   link_video TEXT, -- Enlace al video tutorial (YouTube/Drive)
   created_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Comentario descriptivo de la tabla productos
 COMMENT ON TABLE public.productos IS 'Catálogo de moldes de costura descargables en formato PDF con enlaces a Drive y video tutorial';
 
 -- 3. TABLA: PEDIDOS (COMPRAS REGISTRADAS MEDIANTE CHECKOUT)
@@ -57,108 +56,7 @@ CREATE TABLE IF NOT EXISTS public.pedido_items (
 
 COMMENT ON TABLE public.pedido_items IS 'Snapshot inmutable de los moldes y enlaces comprados por cada pedido';
 
--- 5. ÍNDICES DE RENDIMIENTO PARA BÚSQUEDAS RÁPIDAS
-CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON public.pedidos(estado);
-CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON public.pedidos(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_pedido_items_pedido_id ON public.pedido_items(pedido_id);
-CREATE INDEX IF NOT EXISTS idx_productos_categoria ON public.productos(categoria);
-
--- 6. POLÍTICAS DE SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
-ALTER TABLE public.productos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pedidos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.pedido_items ENABLE ROW LEVEL SECURITY;
-
--- Limpieza de políticas previas si ya existían para evitar colisiones
-DROP POLICY IF EXISTS "Catálogo accesible para lectura pública" ON public.productos;
-DROP POLICY IF EXISTS "Administración completa de productos" ON public.productos;
-DROP POLICY IF EXISTS "Clientes pueden registrar pedidos desde checkout" ON public.pedidos;
-DROP POLICY IF EXISTS "Lectura y gestión completa de pedidos" ON public.pedidos;
-DROP POLICY IF EXISTS "Inserción de ítems de pedido desde checkout" ON public.pedido_items;
-DROP POLICY IF EXISTS "Lectura y gestión de ítems de pedido" ON public.pedido_items;
-
--- A) POLÍTICAS PARA PRODUCTOS:
--- El catálogo puede ser visualizado por cualquier visitante de la web (anon o autenticado)
-CREATE POLICY "Catálogo accesible para lectura pública"
-  ON public.productos FOR SELECT
-  USING (true);
-
--- Permitir crear, editar y borrar moldes (por clave anónima en SPA o usuario autenticado)
-CREATE POLICY "Administración completa de productos"
-  ON public.productos FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
--- B) POLÍTICAS PARA PEDIDOS:
--- Cualquier comprador puede registrar un nuevo pedido al completar el checkout
-CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
-  ON public.pedidos FOR INSERT
-  WITH CHECK (true);
-
--- Permitir lectura, actualización de estado y eliminación de pedidos en el panel admin
-CREATE POLICY "Lectura y gestión completa de pedidos"
-  ON public.pedidos FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
--- C) POLÍTICAS PARA PEDIDO_ITEMS:
--- Permite insertar los ítems del carrito asociados al pedido confirmado
-CREATE POLICY "Inserción de ítems de pedido desde checkout"
-  ON public.pedido_items FOR INSERT
-  WITH CHECK (true);
-
--- Permite consultar el detalle de los moldes comprados en el panel de ventas
-CREATE POLICY "Lectura y gestión de ítems de pedido"
-  ON public.pedido_items FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
--- 7. CARGA DE MOLDES INICIALES DE DEMOSTRACIÓN (CON ENLACES DRIVE Y VIDEO)
-INSERT INTO public.productos (id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, link_archivos, link_video)
-VALUES
-  (1, 'Molde Vestido Solero Verano (PDF)', 'Patrón descargable en talles XS al XXL con guía de confección paso a paso.', 'Vestidos', 'scissors', 2500, true, 1800, 'https://drive.google.com/drive/folders/1SoleroVerano_PDF_Drive', 'https://www.youtube.com/watch?v=tutorial-vestido-solero'),
-  (2, 'Molde Pantalón Palazzo con Cintura Elástica', 'Corte holgado y cómodo, incluye instrucciones de corte y tabla de medidas.', 'Pantalones', 'layers', 2200, false, 0, 'https://drive.google.com/drive/folders/1Palazzo_Elastic_PDF_Drive', 'https://www.youtube.com/watch?v=tutorial-pantalon-palazzo'),
-  (3, 'Molde Camisa Oversize Cuello Clásico', 'Modelo unisex versátil en formato A4 listo para imprimir y pliego completo.', 'Camisas', 'shirt', 2900, true, 2400, 'https://drive.google.com/drive/folders/1CamisaOversize_PDF_Drive', 'https://www.youtube.com/watch?v=tutorial-camisa-oversize'),
-  (4, 'Molde Bolso Tote Bag y Neceser', 'Ideal para principiantes en costura. Moldería paso a paso con forro interno.', 'Bolsos y Accesorios', 'shopping-bag', 1500, false, 0, 'https://drive.google.com/drive/folders/1ToteBag_Neceser_PDF_Drive', 'https://www.youtube.com/watch?v=tutorial-totebag-neceser')
-ON CONFLICT (id) DO UPDATE SET
-  nombre = EXCLUDED.nombre,
-  descripcion = EXCLUDED.descripcion,
-  categoria = EXCLUDED.categoria,
-  icono = EXCLUDED.icono,
-  precio = EXCLUDED.precio,
-  en_promo = EXCLUDED.en_promo,
-  precio_promo = EXCLUDED.precio_promo,
-  link_archivos = EXCLUDED.link_archivos,
-  link_video = EXCLUDED.link_video;
-
--- Ajustar la secuencia de IDs al valor máximo actual para que los nuevos moldes comiencen desde id 5
-SELECT setval(pg_get_serial_sequence('public.productos', 'id'), COALESCE(MAX(id), 1)) FROM public.productos;
-
--- 8. CONFIGURACIÓN DEL BUCKET DE ALMACENAMIENTO DE IMÁGENES (SUPABASE STORAGE)
--- Crea el bucket público "moldes-imagenes" para alojar las portadas de los moldes
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('moldes-imagenes', 'moldes-imagenes', true)
-ON CONFLICT (id) DO UPDATE SET public = true;
-
--- Políticas de acceso para objetos en el bucket moldes-imagenes
-DROP POLICY IF EXISTS "Lectura pública de fotos de moldes" ON storage.objects;
-DROP POLICY IF EXISTS "Subida de fotos de moldes" ON storage.objects;
-DROP POLICY IF EXISTS "Actualización y borrado de fotos de moldes" ON storage.objects;
-
-CREATE POLICY "Lectura pública de fotos de moldes"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'moldes-imagenes');
-
-CREATE POLICY "Subida de fotos de moldes"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'moldes-imagenes');
-
-CREATE POLICY "Actualización y borrado de fotos de moldes"
-  ON storage.objects FOR ALL
-  USING (bucket_id = 'moldes-imagenes');
-
--- ====================================================================
--- 9. TABLA: ADMINISTRADORES AUTORIZADOS (CONTROL DE ACCESO Y APROBACIÓN MANUAL)
--- ====================================================================
+-- 5. TABLA: ADMINISTRADORES AUTORIZADOS (CONTROL DE ACCESO Y APROBACIÓN MANUAL)
 CREATE TABLE IF NOT EXISTS public.administradores (
   id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   user_id UUID,
@@ -172,30 +70,138 @@ CREATE TABLE IF NOT EXISTS public.administradores (
 
 COMMENT ON TABLE public.administradores IS 'Registro de administradores y control de aprobación manual de cuentas';
 
--- Habilitar RLS en la tabla administradores
+-- 6. ÍNDICES DE RENDIMIENTO PARA BÚSQUEDAS RÁPIDAS
+CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON public.pedidos(estado);
+CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON public.pedidos(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pedido_items_pedido_id ON public.pedido_items(pedido_id);
+CREATE INDEX IF NOT EXISTS idx_productos_categoria ON public.productos(categoria);
+CREATE INDEX IF NOT EXISTS idx_administradores_email ON public.administradores(email);
+
+-- 7. POLÍTICAS DE SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
+ALTER TABLE public.productos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pedidos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pedido_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.administradores ENABLE ROW LEVEL SECURITY;
+
+-- Limpieza de políticas previas
+DROP POLICY IF EXISTS "Catálogo accesible para lectura pública" ON public.productos;
+DROP POLICY IF EXISTS "Administración completa de productos" ON public.productos;
+DROP POLICY IF EXISTS "Administración de productos solo por admins aprobados" ON public.productos;
+
+DROP POLICY IF EXISTS "Clientes pueden registrar pedidos desde checkout" ON public.pedidos;
+DROP POLICY IF EXISTS "Lectura y gestión completa de pedidos" ON public.pedidos;
+DROP POLICY IF EXISTS "Gestión de pedidos solo por admins aprobados" ON public.pedidos;
+
+DROP POLICY IF EXISTS "Inserción de ítems de pedido desde checkout" ON public.pedido_items;
+DROP POLICY IF EXISTS "Lectura y gestión de ítems de pedido" ON public.pedido_items;
+DROP POLICY IF EXISTS "Gestión de ítems solo por admins aprobados" ON public.pedido_items;
 
 DROP POLICY IF EXISTS "Lectura de administradores" ON public.administradores;
 DROP POLICY IF EXISTS "Registro inicial de solicitud de admin" ON public.administradores;
 DROP POLICY IF EXISTS "Gestión completa de administradores" ON public.administradores;
 
--- Permite consultar el estado de aprobación por email
+-- A) POLÍTICAS PARA PRODUCTOS:
+-- El catálogo puede ser visualizado por cualquier visitante (público / anónimo)
+CREATE POLICY "Catálogo accesible para lectura pública"
+  ON public.productos FOR SELECT
+  USING (true);
+
+-- Modificación (crear, editar, borrar) restringida estrictamente a administradores aprobados
+CREATE POLICY "Administración de productos solo por admins aprobados"
+  ON public.productos FOR ALL
+  USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  );
+
+-- B) POLÍTICAS PARA PEDIDOS:
+-- Clientes pueden registrar pedidos al completar el checkout
+CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
+  ON public.pedidos FOR INSERT
+  WITH CHECK (true);
+
+-- Lectura, actualización y eliminación de pedidos restringida solo a administradores aprobados
+CREATE POLICY "Gestión de pedidos solo por admins aprobados"
+  ON public.pedidos FOR ALL
+  USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  );
+
+-- C) POLÍTICAS PARA PEDIDO_ITEMS:
+-- Clientes pueden registrar ítems comprados desde el checkout
+CREATE POLICY "Inserción de ítems de pedido desde checkout"
+  ON public.pedido_items FOR INSERT
+  WITH CHECK (true);
+
+-- Consulta y gestión de ítems de compra restringida a administradores aprobados
+CREATE POLICY "Gestión de ítems solo por admins aprobados"
+  ON public.pedido_items FOR ALL
+  USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  );
+
+-- D) POLÍTICAS PARA ADMINISTRADORES:
+-- Consulta de estado de aprobación
 CREATE POLICY "Lectura de administradores"
   ON public.administradores FOR SELECT
   USING (true);
 
--- Permite registrar una nueva solicitud en estado pendiente (aprobado=false)
+-- Registro inicial de solicitud con aprobado=false
 CREATE POLICY "Registro inicial de solicitud de admin"
   ON public.administradores FOR INSERT
   WITH CHECK (true);
 
--- Permite a administradores autorizados gestionar aprobaciones
+-- Gestión de administradores restringida a admins aprobados
 CREATE POLICY "Gestión completa de administradores"
   ON public.administradores FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  );
 
--- Trigger automático para registrar cuentas creadas en auth.users en la tabla public.administradores
+-- 8. TRIGGER DE AUTORREGISTRO EN ADMINISTRADORES
 CREATE OR REPLACE FUNCTION public.handle_nuevo_usuario_admin()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -211,3 +217,37 @@ CREATE TRIGGER on_auth_user_created_admin
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_nuevo_usuario_admin();
 
+-- 9. CONFIGURACIÓN DEL BUCKET DE IMÁGENES (SUPABASE STORAGE)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('moldes-imagenes', 'moldes-imagenes', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Lectura pública de fotos de moldes" ON storage.objects;
+DROP POLICY IF EXISTS "Subida de fotos de moldes" ON storage.objects;
+DROP POLICY IF EXISTS "Actualización y borrado de fotos de moldes" ON storage.objects;
+DROP POLICY IF EXISTS "Subida y edición de fotos solo por admins aprobados" ON storage.objects;
+
+-- Lectura pública de fotos
+CREATE POLICY "Lectura pública de fotos de moldes"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'moldes-imagenes');
+
+-- Subida y edición de fotos restringida a administradores aprobados
+CREATE POLICY "Subida y edición de fotos solo por admins aprobados"
+  ON storage.objects FOR ALL
+  USING (
+    bucket_id = 'moldes-imagenes' AND
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'moldes-imagenes' AND
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  );

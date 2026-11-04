@@ -62,62 +62,8 @@ const PRODUCTOS_POR_DEFECTO = [
   }
 ];
 
-// Pedidos iniciales de demostración para pruebas inmediatas
-const PEDIDOS_POR_DEFECTO = [
-  {
-    id: 1713001,
-    codigo: "ORD-7821",
-    fecha: "14/10/2026, 11:30",
-    cliente: {
-      nombre: "Lucía Fernández",
-      email: "lucia.costura@gmail.com",
-      telefono: "+54 9 11 4455-8899"
-    },
-    items: [
-      { id: 1, nombre: "Molde Vestido Solero Verano (PDF)", precio: 1800, cantidad: 2, linkArchivos: "https://drive.google.com/drive/folders/1SoleroVerano_PDF_Drive", linkVideo: "https://www.youtube.com/watch?v=tutorial-vestido-solero" },
-      { id: 4, nombre: "Molde Bolso Tote Bag y Neceser", precio: 1500, cantidad: 1, linkArchivos: "https://drive.google.com/drive/folders/1ToteBag_Neceser_PDF_Drive", linkVideo: "https://www.youtube.com/watch?v=tutorial-totebag-neceser" }
-    ],
-    total: 5100,
-    estado: "completada", // "pendiente" | "completada" | "cancelada"
-    archivosEnviados: true,
-    fechaEnvioArchivos: "14/10/2026, 12:05"
-  },
-  {
-    id: 1713002,
-    codigo: "ORD-9104",
-    fecha: "15/10/2026, 09:15",
-    cliente: {
-      nombre: "Martina Rossi",
-      email: "mrossi.telas@gmail.com",
-      telefono: "+54 9 341 556-7788"
-    },
-    items: [
-      { id: 1, nombre: "Molde Vestido Solero Verano (PDF)", precio: 1800, cantidad: 1, linkArchivos: "https://drive.google.com/drive/folders/1SoleroVerano_PDF_Drive", linkVideo: "https://www.youtube.com/watch?v=tutorial-vestido-solero" },
-      { id: 3, nombre: "Molde Camisa Oversize Cuello Clásico", precio: 2400, cantidad: 1, linkArchivos: "https://drive.google.com/drive/folders/1CamisaOversize_PDF_Drive", linkVideo: "https://www.youtube.com/watch?v=tutorial-camisa-oversize" }
-    ],
-    total: 4200,
-    estado: "completada",
-    archivosEnviados: false,
-    fechaEnvioArchivos: null
-  },
-  {
-    id: 1713003,
-    codigo: "ORD-3450",
-    fecha: "15/10/2026, 13:40",
-    cliente: {
-      nombre: "Camila Benítez",
-      email: "camilab.costura@gmail.com",
-      telefono: "+54 9 11 6789-0123"
-    },
-    items: [
-      { id: 2, nombre: "Molde Pantalón Palazzo con Cintura Elástica", precio: 2200, cantidad: 1, linkArchivos: "https://drive.google.com/drive/folders/1Palazzo_Elastic_PDF_Drive", linkVideo: "https://www.youtube.com/watch?v=tutorial-pantalon-palazzo" }
-    ],
-    total: 2200,
-    estado: "pendiente",
-    archivosEnviados: false,
-    fechaEnvioArchivos: null
-  }
-];
+// Pedidos iniciales en producción (comienza vacío sin datos de prueba)
+const PEDIDOS_POR_DEFECTO = [];
 
 // Enlaces de respaldo generales para la entrega digital
 const ENLACE_DRIVE_GENERAL = "https://drive.google.com/drive/folders/1CoseConGiu_MoldesPDF_Oficial";
@@ -128,10 +74,6 @@ const STORAGE_PRODUCTOS = "tienda_moldes_productos";
 const STORAGE_CARRITO = "tienda_moldes_carrito";
 const STORAGE_PEDIDOS = "tienda_moldes_pedidos";
 const STORAGE_ADMIN_AUTH = "cose_admin_auth";
-
-// Credenciales de demostración del panel (candado de UI, no es un backend real)
-const ADMIN_USUARIO = "admin";
-const ADMIN_PASSWORD = "giu2026";
 
 /**
  * ====================================================================
@@ -360,9 +302,17 @@ function cargarDatosDesdeLocalStorage() {
 
   const pedidosGuardados = localStorage.getItem(STORAGE_PEDIDOS);
   if (pedidosGuardados) {
-    pedidos = JSON.parse(pedidosGuardados);
+    try {
+      pedidos = JSON.parse(pedidosGuardados);
+      // Depuración defensiva: eliminar cualquier pedido de prueba previo de testing
+      pedidos = pedidos.filter(p => p && p.id !== 1713001 && p.id !== 1713002 && p.id !== 1713003 && !String(p.codigo || "").startsWith("ORD-7821"));
+      guardarPedidosEnStorage();
+    } catch (e) {
+      pedidos = [];
+      guardarPedidosEnStorage();
+    }
   } else {
-    pedidos = JSON.parse(JSON.stringify(PEDIDOS_POR_DEFECTO));
+    pedidos = [];
     guardarPedidosEnStorage();
   }
 }
@@ -382,7 +332,7 @@ function guardarPedidosEnStorage() {
 /**
  * ====================================================================
  * SISTEMA DE AUTENTICACIÓN Y SESIÓN DEL PANEL DE ADMINISTRACIÓN
- * Compatible con Supabase Auth (correo/contraseña) y Demo Local (admin/giu2026).
+ * Autenticación exclusiva vía Supabase Auth con verificación de aprobación manual.
  * ====================================================================
  */
 
@@ -458,15 +408,13 @@ function estaAdminLogueado() {
 function guardarSesionAdmin(datos = {}) {
   const payload = {
     logueado: true,
-    metodo: datos.metodo || "demo", // "supabase" | "demo"
-    email: datos.email || (datos.metodo === "supabase" ? "admin@cosecongiu.com" : "admin"),
+    metodo: "supabase",
+    email: datos.email || "admin@cosecongiu.com",
     iniciadoEn: new Date().toISOString()
   };
 
   sessionStorage.setItem(STORAGE_ADMIN_AUTH, JSON.stringify(payload));
-  if (datos.metodo === "supabase") {
-    localStorage.setItem(STORAGE_ADMIN_AUTH, JSON.stringify(payload));
-  }
+  localStorage.setItem(STORAGE_ADMIN_AUTH, JSON.stringify(payload));
 }
 
 function borrarSesionAdmin() {
@@ -483,13 +431,8 @@ function actualizarUIAdminSesion() {
 
   if (sesion && sesion.logueado) {
     badge.style.display = "inline-flex";
-    if (sesion.metodo === "supabase") {
-      badgeText.textContent = sesion.email || "Supabase Admin";
-      badge.title = `Autenticado en Supabase Auth como ${sesion.email}`;
-    } else {
-      badgeText.textContent = "admin (Demo Local)";
-      badge.title = "Sesión local activa con credenciales demo";
-    }
+    badgeText.textContent = sesion.email || "Administrador Autorizado";
+    badge.title = `Autenticado en Supabase Auth como ${sesion.email}`;
   } else {
     badge.style.display = "none";
   }
@@ -601,76 +544,55 @@ async function iniciarSesionAdmin() {
   }
 
   try {
-    // 1. Si el usuario ingresa un correo electrónico
-    if (tieneArroba) {
-      if (!supabaseActivo) {
-        mostrarErrorLoginAdmin("Para ingresar con correo debes tener Supabase conectado. Si usas modo local, ingresa con usuario: admin y contraseña: giu2026");
-        return;
-      }
-
-      const resAuth = await supabaseIniciarSesion(usuario, password);
-      if (resAuth && resAuth.exito) {
-        const emailAdmin = resAuth.usuario?.email || usuario;
-
-        // Comprobación de aceptación manual en la tabla administradores de Supabase
-        if (typeof supabaseVerificarAdminAprobado === "function") {
-          const check = await supabaseVerificarAdminAprobado(emailAdmin);
-          if (check.verificado && !check.aprobado) {
-            // Se revoca la sesión activa de inmediato
-            await supabaseCerrarSesion();
-            borrarSesionAdmin();
-            actualizarUIAdminSesion();
-            mostrarErrorLoginAdmin(
-              "⏳ Tu cuenta existe y la contraseña es correcta, pero está PENDIENTE DE APROBACIÓN manual. El administrador principal debe habilitar tu cuenta en la tabla 'administradores' de Supabase."
-            );
-            return;
-          }
-        }
-
-        guardarSesionAdmin({
-          metodo: "supabase",
-          email: emailAdmin
-        });
-        mostrarErrorLoginAdmin("");
-        if (document.getElementById("form-admin-login")) {
-          document.getElementById("form-admin-login").reset();
-        }
-        mostrarToast(`Sesión iniciada como ${emailAdmin} (Supabase Auth).`);
-        actualizarUIAdminSesion();
-        cambiarVista("admin");
-        return;
-      } else {
-        const errorTraducido = traducirErrorAuth(resAuth?.mensaje);
-        mostrarErrorLoginAdmin(errorTraducido);
-        if (inputPassword) {
-          inputPassword.value = "";
-          inputPassword.focus();
-        }
-        return;
-      }
+    if (!tieneArroba) {
+      mostrarErrorLoginAdmin("Por favor ingresa tu correo electrónico registrado de administración.");
+      return;
     }
 
-    // 2. Validación con credenciales demo locales (admin / giu2026)
-    if (usuario === ADMIN_USUARIO && password === ADMIN_PASSWORD) {
+    if (!supabaseActivo) {
+      mostrarErrorLoginAdmin("El servicio Supabase no está conectado. Revisa las variables de entorno o configura tus credenciales.");
+      return;
+    }
+
+    const resAuth = await supabaseIniciarSesion(usuario, password);
+    if (resAuth && resAuth.exito) {
+      const emailAdmin = resAuth.usuario?.email || usuario;
+
+      // Comprobación de aceptación manual en la tabla administradores de Supabase
+      if (typeof supabaseVerificarAdminAprobado === "function") {
+        const check = await supabaseVerificarAdminAprobado(emailAdmin);
+        if (check.verificado && !check.aprobado) {
+          // Se revoca la sesión activa de inmediato
+          await supabaseCerrarSesion();
+          borrarSesionAdmin();
+          actualizarUIAdminSesion();
+          mostrarErrorLoginAdmin(
+            "⏳ Tu cuenta existe y la contraseña es correcta, pero está PENDIENTE DE APROBACIÓN manual. El administrador principal debe habilitar tu cuenta en la tabla 'administradores' de Supabase."
+          );
+          return;
+        }
+      }
+
       guardarSesionAdmin({
-        metodo: "demo",
-        email: "admin"
+        metodo: "supabase",
+        email: emailAdmin
       });
       mostrarErrorLoginAdmin("");
       if (document.getElementById("form-admin-login")) {
         document.getElementById("form-admin-login").reset();
       }
-      mostrarToast("Sesión de administración iniciada (Demo Local).");
+      mostrarToast(`Sesión iniciada como ${emailAdmin} (Supabase Auth).`);
       actualizarUIAdminSesion();
       cambiarVista("admin");
       return;
-    }
-
-    // 3. Credenciales incorrectas
-    mostrarErrorLoginAdmin("Usuario o contraseña incorrectos. Si tienes una cuenta en Supabase Auth, ingresa tu correo completo.");
-    if (inputPassword) {
-      inputPassword.value = "";
-      inputPassword.focus();
+    } else {
+      const errorTraducido = traducirErrorAuth(resAuth?.mensaje);
+      mostrarErrorLoginAdmin(errorTraducido);
+      if (inputPassword) {
+        inputPassword.value = "";
+        inputPassword.focus();
+      }
+      return;
     }
   } catch (err) {
     mostrarErrorLoginAdmin(`Error al iniciar sesión: ${err.message}`);
@@ -1838,19 +1760,6 @@ function resetearFormulario() {
   if (previewImg) previewImg.src = "";
 }
 
-function restablecerCatalogoDefecto() {
-  const confirmar = confirm("¿Deseas restablecer el catálogo a los 4 moldes de ejemplo iniciales?");
-  if (!confirmar) return;
-
-  productos = JSON.parse(JSON.stringify(PRODUCTOS_POR_DEFECTO));
-  guardarProductosEnStorage();
-  resetearFormulario();
-  renderCategoriasChips();
-  renderAdmin();
-  renderCatalogo();
-  mostrarToast("Catálogo restablecido con éxito.");
-}
-
 function renderAdmin() {
   renderMetricasAdmin();
   renderPedidosAdmin();
@@ -2409,21 +2318,6 @@ function restablecerModoLocalSupabase() {
 
   cerrarModalConfigSupabase();
   mostrarToast("Desconectado de Supabase. Modo local activo.");
-}
-
-/**
- * Restablece la lista de pedidos con los 3 ejemplos de demostración
- */
-function restablecerPedidosDefecto() {
-  const confirmar = confirm("¿Deseas restablecer los pedidos de prueba con los ejemplos iniciales?");
-  if (!confirmar) return;
-
-  pedidos = JSON.parse(JSON.stringify(PEDIDOS_POR_DEFECTO));
-  pedidosExpandidos.clear();
-  guardarPedidosEnStorage();
-  renderAdmin();
-  renderCatalogo();
-  mostrarToast("Pedidos de prueba restablecidos.");
 }
 
 /**

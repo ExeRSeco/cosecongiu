@@ -59,7 +59,7 @@ Tienda de moldes/
    - `#view-catalogo`: Grid responsivo donde se muestran las tarjetas ampliadas de los moldes con íconos destacados, barra de herramientas con buscador en vivo (`#catalogo-busqueda`), chips de categorías dinámicos (`#categoria-chips`), selector de ordenamiento (`#catalogo-orden`) e insignia dinámica de "⭐ Más Vendido".
    - `#view-producto`: Vista detallada de un molde individual (`#producto-detalle-contenedor`) con especificaciones, estado de oferta y botón de compra directa.
    - `#view-carrito`: Resumen de pedidos, selector de cantidades y botón de checkout.
-   - `#view-admin-login`: Formularios de autenticación administrativa (`#form-admin-login`, `#form-admin-registro`, `#form-admin-recuperar`). Soporta credenciales demo locales (usuario `admin`, contraseña `giu2026`) y cuentas oficiales en Supabase Auth sujetas a aprobación manual previa en la tabla `administradores`.
+   - `#view-admin-login`: Formularios de autenticación administrativa (`#form-admin-login`, `#form-admin-registro`, `#form-admin-recuperar`). Acceso exclusivo mediante cuentas oficiales en Supabase Auth sujetas a aprobación manual previa en la tabla `administradores` (sin backdoors ni credenciales demo en producción).
    - `#view-admin`:
      - Tarjetas métricas superiores: *Producto Más Vendido*, *Total de Pedidos* e *Ingresos Confirmados*.
      - Buscador global admin (`#admin-busqueda`) y filtro por fecha dual (`#filtro-pedidos-fecha-rapida` + `#filtro-pedidos-fecha-input`).
@@ -116,7 +116,7 @@ Cuando un agente interactúe con este repositorio, debe acatar las siguientes re
 3. **Preservar la consistencia estética:** Usar las variables definidas en `:root` de `styles.css`. No introducir colores aleatorios fuera de la paleta ya configurada.
 4. **No romper la compatibilidad local:** La aplicación debe funcionar abriendo directamente el archivo [index.html](file:///d:/Exe/archivos/PROYECTOS/Tienda%20de%20moldes/index.html) en cualquier navegador moderno o mediante un servidor estático simple (`npx serve`, etc.).
 5. **Verificación visual y de enlaces:** Toda referencia a archivos locales en respuestas o documentación debe utilizar enlaces Markdown válidos con formato `[nombre](file:///ruta/completa)`.
-6. **No eliminar datos por defecto sin alternativa:** Las opciones de prueba como `restablecerCatalogoDefecto` y `restablecerPedidosDefecto` deben seguir funcionando para permitir pruebas rápidas en el navegador.
+6. **Producción y Seguridad:** En producción, no mantener credenciales fijas de prueba ni datos mock en la base de datos o almacenamiento. Toda operación administrativa sensible debe estar protegida por Supabase Auth y políticas RLS estrictas en PostgreSQL.
 
 ---
 

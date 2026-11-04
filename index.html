@@ -165,8 +165,7 @@
             </div>
 
             <div class="admin-login-hint">
-              <small><em>Credenciales demo:</em> Usuario <strong>admin</strong> · Contraseña
-                <strong>giu2026</strong>. Con Supabase conectado, usa tu correo y contraseña oficial.</small>
+              <small><i data-lucide="shield-check" class="ui-icon-sm"></i> Acceso restringido exclusivamente a administradores autorizados vía Supabase Auth.</small>
             </div>
           </form>
 
@@ -317,11 +316,6 @@
               <option value="completada">Solo Completadas (Entregados)</option>
               <option value="cancelada">Solo Canceladas</option>
             </select>
-
-            <button class="btn btn-secondary btn-sm" onclick="restablecerPedidosDefecto()"
-              title="Restablecer pedidos de ejemplo">
-              <i data-lucide="rotate-ccw" class="ui-icon"></i> Pedidos prueba
-            </button>
           </div>
         </div>
 
@@ -429,9 +423,6 @@
         <div class="card admin-list-card">
           <div class="admin-list-header">
             <h3>Moldes en Catálogo (<span id="total-productos-count">0</span>)</h3>
-            <button class="btn btn-link" onclick="restablecerCatalogoDefecto()">
-              <i data-lucide="rotate-ccw" class="ui-icon"></i> Restablecer moldes de prueba
-            </button>
           </div>
           <div class="table-scroll-hint">
             <i data-lucide="chevrons-left-right" class="ui-icon" style="width: 14px; height: 14px;"></i>
