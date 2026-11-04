@@ -173,17 +173,14 @@ CREATE POLICY "Gestión de ítems solo por admins aprobados"
   );
 
 -- D) POLÍTICAS PARA ADMINISTRADORES:
--- Consulta de estado de aprobación
+-- Consulta de administradores solo para usuarios autenticados
 CREATE POLICY "Lectura de administradores"
   ON public.administradores FOR SELECT
-  USING (true);
+  USING (
+    auth.role() = 'authenticated'
+  );
 
--- Registro inicial de solicitud con aprobado=false
-CREATE POLICY "Registro inicial de solicitud de admin"
-  ON public.administradores FOR INSERT
-  WITH CHECK (true);
-
--- Gestión de administradores restringida a admins aprobados
+-- Gestión y creación de administradores restringida exclusivamente a admins aprobados
 CREATE POLICY "Gestión completa de administradores"
   ON public.administradores FOR ALL
   USING (
