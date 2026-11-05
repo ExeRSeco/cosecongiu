@@ -36,8 +36,14 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
   estado TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'completada', 'cancelada')),
   archivos_enviados BOOLEAN NOT NULL DEFAULT FALSE,
   fecha_envio_archivos TEXT,
+  comprobante_url TEXT, -- Enlace o ruta al comprobante de transferencia adjunto
+  numero_operacion TEXT, -- N° de operación bancaria ingresado por el cliente
   created_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
 );
+
+-- Migración idempotente por si la tabla ya existía
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS comprobante_url TEXT;
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS numero_operacion TEXT;
 
 COMMENT ON TABLE public.pedidos IS 'Órdenes de compra registradas tras confirmar pago por transferencia bancaria';
 
@@ -242,6 +248,90 @@ CREATE POLICY "Subida y edición de fotos solo por admins aprobados"
   )
   WITH CHECK (
     bucket_id = 'moldes-imagenes' AND
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  );
+
+-- 10. TABLA: TIENDA_CONFIG (CONFIGURACIÓN GLOBAL: DATOS BANCARIOS Y AVISOS)
+CREATE TABLE IF NOT EXISTS public.tienda_config (
+  clave TEXT PRIMARY KEY,
+  valor JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
+);
+
+COMMENT ON TABLE public.tienda_config IS 'Configuración global de la tienda (datos bancarios, avisos, etc.)';
+
+ALTER TABLE public.tienda_config ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Lectura pública de configuración de la tienda" ON public.tienda_config;
+DROP POLICY IF EXISTS "Gestión de configuración solo por admins aprobados" ON public.tienda_config;
+
+-- Lectura pública para que clientes vean alias y CBU actualizados en checkout
+CREATE POLICY "Lectura pública de configuración de la tienda"
+  ON public.tienda_config FOR SELECT
+  USING (true);
+
+-- Modificación restringida estrictamente a administradores aprobados
+CREATE POLICY "Gestión de configuración solo por admins aprobados"
+  ON public.tienda_config FOR ALL
+  USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  );
+
+-- Valor inicial por defecto para datos bancarios
+INSERT INTO public.tienda_config (clave, valor)
+VALUES (
+  'datos_bancarios',
+  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4"}'::jsonb
+)
+ON CONFLICT (clave) DO NOTHING;
+
+-- 11. CONFIGURACIÓN DEL BUCKET DE COMPROBANTES DE TRANSFERENCIA (SUPABASE STORAGE)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('comprobantes-transferencia', 'comprobantes-transferencia', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Subida de comprobantes desde checkout" ON storage.objects;
+DROP POLICY IF EXISTS "Lectura pública de comprobantes de transferencia" ON storage.objects;
+DROP POLICY IF EXISTS "Gestión de comprobantes por admins aprobados" ON storage.objects;
+
+-- Clientes pueden subir comprobantes al confirmar su compra
+CREATE POLICY "Subida de comprobantes desde checkout"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'comprobantes-transferencia');
+
+-- Lectura pública de comprobantes (permite previsualización por el comprador y el admin)
+CREATE POLICY "Lectura pública de comprobantes de transferencia"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'comprobantes-transferencia');
+
+-- Administradores aprobados pueden gestionar o depurar comprobantes
+CREATE POLICY "Gestión de comprobantes por admins aprobados"
+  ON storage.objects FOR ALL
+  USING (
+    bucket_id = 'comprobantes-transferencia' AND
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.administradores
+      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'comprobantes-transferencia' AND
     auth.role() = 'authenticated' AND
     EXISTS (
       SELECT 1 FROM public.administradores

@@ -384,6 +384,57 @@
           </div>
         </div>
       </div>
+
+      <!-- SECCIÓN DE CONFIGURACIÓN BANCARIA (DATOS PARA TRANSFERENCIAS) -->
+      <div class="card admin-bank-card">
+        <div class="admin-bank-header">
+          <div>
+            <h3 style="color: var(--primary-dark); margin-bottom: 0.25rem;">
+              <i data-lucide="landmark" class="ui-icon"></i> Configuración de Cuenta Bancaria (Transferencias)
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+              Modifica la cuenta bancaria donde los clientes realizarán sus transferencias. Los cambios se actualizan de inmediato en el checkout.
+            </p>
+          </div>
+        </div>
+
+        <form id="form-config-banco" onsubmit="event.preventDefault(); guardarDatosBancariosDesdeAdmin();" style="margin-top: 1rem;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="admin-banco-nombre">Banco o Billetera Virtual *</label>
+              <input type="text" id="admin-banco-nombre" required placeholder="Ej: Banco Nación / Mercado Pago">
+            </div>
+
+            <div class="form-group">
+              <label for="admin-banco-titular">Titular de la Cuenta *</label>
+              <input type="text" id="admin-banco-titular" required placeholder="Ej: Cosé con Giu - Giuliana">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="admin-banco-alias">Alias Bancario *</label>
+              <input type="text" id="admin-banco-alias" required placeholder="Ej: COSE.CON.GIU">
+            </div>
+
+            <div class="form-group">
+              <label for="admin-banco-cbu">CBU o CVU (22 dígitos) *</label>
+              <input type="text" id="admin-banco-cbu" required placeholder="Ej: 0000003100012345678901">
+            </div>
+
+            <div class="form-group">
+              <label for="admin-banco-cuit">CUIT o CUIL *</label>
+              <input type="text" id="admin-banco-cuit" required placeholder="Ej: 27-38491204-4">
+            </div>
+          </div>
+
+          <div class="form-buttons" style="justify-content: flex-end; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary" id="btn-guardar-banco">
+              <i data-lucide="save" class="ui-icon"></i> Guardar Cambios Bancarios
+            </button>
+          </div>
+        </form>
+      </div>
     </section>
 
   </main>
@@ -406,6 +457,17 @@
             <span>Total a transferir:</span>
             <strong id="checkout-total-monto" class="checkout-total-monto">$0.00</strong>
           </div>
+        </div>
+
+        <!-- Aviso destacado de entrega en 1 hora -->
+        <div class="alert-box alert-plazo-entrega">
+          <div class="alert-plazo-header">
+            <i data-lucide="clock" class="ui-icon alert-plazo-icon"></i>
+            <strong>Entrega digital en un plazo máximo de 1 hora</strong>
+          </div>
+          <p class="alert-plazo-texto">
+            Una vez confirmada tu transferencia, te habilitaremos el acceso a la carpeta de Google Drive con tus moldes en PDF y video tutoriales en un plazo máximo de <strong>1 hora</strong> (horario de atención de 08:00 a 22:00 hs).
+          </p>
         </div>
 
         <!-- Formulario con datos del comprador -->
@@ -438,22 +500,72 @@
           </form>
         </div>
 
-        <!-- Datos Bancarios -->
+        <!-- Datos Bancarios Dinámicos con Copiado Rápido -->
         <div class="datos-transferencia-card">
           <h4><i data-lucide="credit-card" class="ui-icon"></i> Datos bancarios para la transferencia:</h4>
           <ul class="datos-lista">
-            <li><strong>Banco:</strong> Banco Nación / Mercado Pago</li>
-            <li><strong>Titular de la cuenta:</strong> Cosé con Giu - Moldes Digitales</li>
-            <li><strong>Alias:</strong> COSE.CON.GIU</li>
-            <li><strong>CBU / CVU:</strong> 0000003100012345678901</li>
-            <li><strong>CUIT / CUIL:</strong> 27-38491204-4</li>
+            <li><strong>Banco / Billetera:</strong> <span id="checkout-banco-nombre">Banco Nación / Mercado Pago</span></li>
+            <li><strong>Titular:</strong> <span id="checkout-banco-titular">Cosé con Giu - Moldes Digitales</span></li>
+            <li class="dato-copiable-row">
+              <div class="dato-info">
+                <strong>Alias:</strong> <span id="checkout-banco-alias" class="copy-value">COSE.CON.GIU</span>
+              </div>
+              <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('alias', this)" title="Copiar alias bancario">
+                <i data-lucide="copy" class="ui-icon"></i> Copiar Alias
+              </button>
+            </li>
+            <li class="dato-copiable-row">
+              <div class="dato-info">
+                <strong>CBU / CVU:</strong> <span id="checkout-banco-cbu" class="copy-value">0000003100012345678901</span>
+              </div>
+              <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('cbu', this)" title="Copiar CBU o CVU">
+                <i data-lucide="copy" class="ui-icon"></i> Copiar CBU
+              </button>
+            </li>
+            <li><strong>CUIT / CUIL:</strong> <span id="checkout-banco-cuit">27-38491204-4</span></li>
           </ul>
+
+          <!-- Comprobante de transferencia y N° de Operación -->
+          <div class="comprobante-seccion-card">
+            <h5><i data-lucide="receipt" class="ui-icon"></i> Comprobante de Transferencia (Recomendado)</h5>
+            <p class="comprobante-subtext">
+              Adjunta el comprobante y el N° de operación para verificar tu pago y enviarte los moldes mucho más rápido:
+            </p>
+
+            <div class="form-group" style="margin-bottom: 0.75rem;">
+              <label for="checkout-num-operacion">N° de Operación o Transferencia (opcional):</label>
+              <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230 (código de la app bancaria)" autocomplete="off">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Adjuntar foto o archivo del comprobante:</label>
+              <div class="dropzone-comprobante" id="dropzone-comprobante" onclick="document.getElementById('checkout-comprobante-file').click();">
+                <input type="file" id="checkout-comprobante-file" accept="image/*,application/pdf" style="display: none;" onchange="manejarSeleccionComprobante(this)">
+                <div id="dropzone-vacio" class="dropzone-vacio">
+                  <i data-lucide="upload-cloud" class="ui-icon dropzone-icon"></i>
+                  <span>Haz clic aquí para seleccionar tu comprobante (JPG, PNG o PDF)</span>
+                </div>
+                <div id="dropzone-previa" class="dropzone-previa" style="display: none;">
+                  <div class="previa-info">
+                    <i data-lucide="file-check" class="ui-icon previa-icon"></i>
+                    <span id="previa-nombre">comprobante.jpg</span>
+                    <span id="previa-tamano" class="previa-size"></span>
+                  </div>
+                  <button type="button" class="btn-quitar-comprobante" onclick="event.stopPropagation(); quitarComprobante();" title="Quitar archivo">
+                    <i data-lucide="trash-2" class="ui-icon"></i> Quitar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="transferencia-aviso">
             <p><strong>Pasos para recibir tus moldes:</strong></p>
             <ol>
               <li>Realiza la transferencia por el total exacto indicado.</li>
+              <li>Adjunta tu comprobante o N° de operación (recomendado).</li>
               <li>Haz clic en el botón <strong>"He realizado la transferencia"</strong> para registrar tu pedido.</li>
-              <li>¡Listo! Tu pedido quedará registrado y te enviaremos los PDFs tan pronto se verifique.</li>
+              <li>¡Listo! En el plazo de 1 hora tras confirmar el pago, recibirás los moldes en tu Gmail.</li>
             </ol>
           </div>
         </div>
@@ -553,6 +665,28 @@
 
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="cerrarModalConfigSupabase()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. MODAL: VISOR DE COMPROBANTE DE TRANSFERENCIA BANCARIA -->
+  <div id="modal-visor-comprobante" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+    style="display: none;" onclick="if(event.target === this) cerrarModalComprobante();">
+    <div class="modal-box visor-comprobante-box" role="document">
+      <div class="modal-header">
+        <h3 id="visor-comprobante-titulo"><i data-lucide="receipt" class="ui-icon"></i> Comprobante de Transferencia</h3>
+        <button class="modal-close-btn" onclick="cerrarModalComprobante()" title="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body" id="visor-comprobante-body">
+        <!-- Contenido dinámico (imagen, visor o enlace PDF, datos de orden y N° de operación) -->
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between;">
+        <a id="visor-comprobante-enlace" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display: none;">
+          <i data-lucide="external-link" class="ui-icon"></i> Abrir en Pestaña Nueva
+        </a>
+        <button class="btn btn-primary" onclick="cerrarModalComprobante()">Cerrar Visor</button>
       </div>
     </div>
   </div>

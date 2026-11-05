@@ -499,6 +499,41 @@ async function supabaseSubirImagenMolde(archivo) {
 }
 
 /**
+ * Sube un archivo de comprobante de pago al bucket "comprobantes-transferencia"
+ */
+async function supabaseSubirComprobanteTransferencia(archivo, codigoPedido = "pedido") {
+  const client = obtenerClienteSupabase();
+  if (!client || !archivo) return null;
+
+  try {
+    const extension = (archivo.name.split(".").pop() || "jpg").toLowerCase();
+    const nombreLimpio = archivo.name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20);
+    const nombreUnico = `comp_${Date.now()}_${codigoPedido}_${nombreLimpio}.${extension}`;
+
+    const { data, error } = await client.storage
+      .from("comprobantes-transferencia")
+      .upload(nombreUnico, archivo, {
+        cacheControl: "3600",
+        upsert: true
+      });
+
+    if (error) {
+      console.error("[Supabase Storage] Error al subir comprobante:", error);
+      return null;
+    }
+
+    const { data: publicData } = client.storage
+      .from("comprobantes-transferencia")
+      .getPublicUrl(nombreUnico);
+
+    return publicData && publicData.publicUrl ? publicData.publicUrl : null;
+  } catch (err) {
+    console.error("[Supabase Storage] Excepción al subir comprobante:", err);
+    return null;
+  }
+}
+
+/**
  * ====================================================================
  * 4. SERVICIOS DEL CATÁLOGO DE PRODUCTOS (MOLDES)
  * ====================================================================
@@ -639,6 +674,8 @@ async function supabaseObtenerPedidos() {
         estado,
         archivos_enviados,
         fecha_envio_archivos,
+        comprobante_url,
+        numero_operacion,
         pedido_items (
           id,
           producto_id,
@@ -669,6 +706,8 @@ async function supabaseObtenerPedidos() {
       estado: p.estado,
       archivosEnviados: Boolean(p.archivos_enviados),
       fechaEnvioArchivos: p.fecha_envio_archivos || null,
+      comprobanteUrl: p.comprobante_url || null,
+      numeroOperacion: p.numero_operacion || null,
       items: (p.pedido_items || []).map(it => ({
         id: it.producto_id || it.id,
         nombre: it.nombre,
@@ -704,7 +743,9 @@ async function supabaseCrearPedido(pedido) {
         total: pedido.total,
         estado: pedido.estado || "pendiente",
         archivos_enviados: Boolean(pedido.archivosEnviados),
-        fecha_envio_archivos: pedido.fechaEnvioArchivos || null
+        fecha_envio_archivos: pedido.fechaEnvioArchivos || null,
+        comprobante_url: pedido.comprobanteUrl || null,
+        numero_operacion: pedido.numeroOperacion || null
       }])
       .select()
       .single();
@@ -784,6 +825,64 @@ async function supabaseEliminarPedido(pedidoId) {
     return true;
   } catch (err) {
     console.error("[Supabase] Error al eliminar pedido:", err);
+    return false;
+  }
+}
+
+/**
+ * ====================================================================
+ * 6. CONFIGURACIÓN GLOBAL DE LA TIENDA (TABLA tienda_config)
+ * ====================================================================
+ */
+
+/**
+ * Obtiene el valor JSON de una clave de configuración global de la tienda
+ */
+async function supabaseObtenerConfig(clave) {
+  const client = obtenerClienteSupabase();
+  if (!client || !clave) return null;
+
+  try {
+    const { data, error } = await client
+      .from("tienda_config")
+      .select("valor")
+      .eq("clave", clave)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`[Supabase] Error al consultar configuración '${clave}':`, error);
+      return null;
+    }
+    return data ? data.valor : null;
+  } catch (err) {
+    console.warn(`[Supabase] Excepción al obtener configuración '${clave}':`, err);
+    return null;
+  }
+}
+
+/**
+ * Guarda o actualiza un valor de configuración global (exclusivo para admins autenticados)
+ */
+async function supabaseGuardarConfig(clave, valor) {
+  const client = obtenerClienteSupabase();
+  if (!client || !clave) return false;
+
+  try {
+    const { error } = await client
+      .from("tienda_config")
+      .upsert({
+        clave: clave,
+        valor: valor,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "clave" });
+
+    if (error) {
+      console.error(`[Supabase] Error al guardar configuración '${clave}':`, error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[Supabase] Excepción al guardar configuración '${clave}':`, err);
     return false;
   }
 }

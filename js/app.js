@@ -74,6 +74,19 @@ const STORAGE_PRODUCTOS = "tienda_moldes_productos";
 const STORAGE_CARRITO = "tienda_moldes_carrito";
 const STORAGE_PEDIDOS = "tienda_moldes_pedidos";
 const STORAGE_ADMIN_AUTH = "cose_admin_auth";
+const STORAGE_DATOS_BANCO = "cose_datos_bancarios";
+
+// Datos bancarios iniciales por defecto para cobro de moldería
+const DATOS_BANCARIOS_POR_DEFECTO = {
+  banco: "Banco Nación / Mercado Pago",
+  titular: "Cosé con Giu - Moldes Digitales",
+  alias: "COSE.CON.GIU",
+  cbu: "0000003100012345678901",
+  cuit: "27-38491204-4"
+};
+
+let datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
+let archivoComprobanteSeleccionado = null;
 
 /**
  * ====================================================================
@@ -153,6 +166,7 @@ let pedidosExpandidos = new Set();
  */
 document.addEventListener("DOMContentLoaded", () => {
   cargarDatosDesdeLocalStorage();
+  cargarDatosBancarios();
   renderCategoriasChips();
   renderCatalogo();
   renderCarrito();
@@ -272,6 +286,16 @@ async function sincronizarConSupabaseSiAplica() {
       }
     }
 
+    // 3. Obtener configuración de cuenta bancaria desde Supabase
+    if (typeof supabaseObtenerConfig === "function") {
+      const configBanco = await supabaseObtenerConfig("datos_bancarios");
+      if (configBanco && typeof configBanco === "object") {
+        datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO, ...configBanco };
+        localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
+        actualizarDatosBancariosUI();
+      }
+    }
+
     actualizarBadgeSupabaseUI("online");
   } catch (err) {
     console.warn("[Supabase] No se pudo sincronizar en segundo plano:", err);
@@ -327,6 +351,236 @@ function guardarCarritoEnStorage() {
 
 function guardarPedidosEnStorage() {
   localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidos));
+}
+
+/**
+ * ====================================================================
+ * GESTIÓN DE DATOS BANCARIOS (CONFIGURACIÓN EDITABLE DESDE ADMIN)
+ * ====================================================================
+ */
+
+/**
+ * Carga los datos bancarios desde localStorage o inicia con los datos por defecto
+ */
+function cargarDatosBancarios() {
+  const guardados = localStorage.getItem(STORAGE_DATOS_BANCO);
+  if (guardados) {
+    try {
+      const parsed = JSON.parse(guardados);
+      datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO, ...parsed };
+    } catch (e) {
+      datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
+    }
+  } else {
+    datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
+    localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
+  }
+  actualizarDatosBancariosUI();
+}
+
+/**
+ * Actualiza los textos del checkout y los inputs del panel de administración con los datos bancarios vigentes
+ */
+function actualizarDatosBancariosUI() {
+  // 1. Textos en el checkout de compra
+  const elemBanco = document.getElementById("checkout-banco-nombre");
+  const elemTitular = document.getElementById("checkout-banco-titular");
+  const elemAlias = document.getElementById("checkout-banco-alias");
+  const elemCbu = document.getElementById("checkout-banco-cbu");
+  const elemCuit = document.getElementById("checkout-banco-cuit");
+
+  if (elemBanco) elemBanco.textContent = datosBancarios.banco || DATOS_BANCARIOS_POR_DEFECTO.banco;
+  if (elemTitular) elemTitular.textContent = datosBancarios.titular || DATOS_BANCARIOS_POR_DEFECTO.titular;
+  if (elemAlias) elemAlias.textContent = datosBancarios.alias || DATOS_BANCARIOS_POR_DEFECTO.alias;
+  if (elemCbu) elemCbu.textContent = datosBancarios.cbu || DATOS_BANCARIOS_POR_DEFECTO.cbu;
+  if (elemCuit) elemCuit.textContent = datosBancarios.cuit || DATOS_BANCARIOS_POR_DEFECTO.cuit;
+
+  // 2. Inputs en el formulario de configuración bancaria del admin
+  const inBanco = document.getElementById("admin-banco-nombre");
+  const inTitular = document.getElementById("admin-banco-titular");
+  const inAlias = document.getElementById("admin-banco-alias");
+  const inCbu = document.getElementById("admin-banco-cbu");
+  const inCuit = document.getElementById("admin-banco-cuit");
+
+  if (inBanco && (!inBanco.value || inBanco.value === DATOS_BANCARIOS_POR_DEFECTO.banco)) {
+    inBanco.value = datosBancarios.banco;
+  }
+  if (inTitular && (!inTitular.value || inTitular.value === DATOS_BANCARIOS_POR_DEFECTO.titular)) {
+    inTitular.value = datosBancarios.titular;
+  }
+  if (inAlias && (!inAlias.value || inAlias.value === DATOS_BANCARIOS_POR_DEFECTO.alias)) {
+    inAlias.value = datosBancarios.alias;
+  }
+  if (inCbu && (!inCbu.value || inCbu.value === DATOS_BANCARIOS_POR_DEFECTO.cbu)) {
+    inCbu.value = datosBancarios.cbu;
+  }
+  if (inCuit && (!inCuit.value || inCuit.value === DATOS_BANCARIOS_POR_DEFECTO.cuit)) {
+    inCuit.value = datosBancarios.cuit;
+  }
+}
+
+/**
+ * Guarda los datos bancarios modificados desde el panel admin (local + Supabase)
+ */
+async function guardarDatosBancariosDesdeAdmin() {
+  const inBanco = document.getElementById("admin-banco-nombre");
+  const inTitular = document.getElementById("admin-banco-titular");
+  const inAlias = document.getElementById("admin-banco-alias");
+  const inCbu = document.getElementById("admin-banco-cbu");
+  const inCuit = document.getElementById("admin-banco-cuit");
+  const btnGuardar = document.getElementById("btn-guardar-banco");
+
+  const banco = inBanco ? inBanco.value.trim() : "";
+  const titular = inTitular ? inTitular.value.trim() : "";
+  const alias = inAlias ? inAlias.value.trim() : "";
+  const cbu = inCbu ? inCbu.value.trim() : "";
+  const cuit = inCuit ? inCuit.value.trim() : "";
+
+  if (!banco || !titular || !alias || !cbu || !cuit) {
+    mostrarToast("Por favor completa todos los campos de la cuenta bancaria.");
+    return;
+  }
+
+  datosBancarios = { banco, titular, alias, cbu, cuit };
+  localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
+  actualizarDatosBancariosUI();
+
+  if (btnGuardar) {
+    btnGuardar.classList.add("is-loading");
+    btnGuardar.disabled = true;
+  }
+
+  try {
+    if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseGuardarConfig === "function") {
+      const ok = await supabaseGuardarConfig("datos_bancarios", datosBancarios);
+      if (ok) {
+        mostrarToast("¡Datos bancarios guardados en la nube y actualizados en el checkout!");
+      } else {
+        mostrarToast("Guardado localmente. (Supabase requiere sesión de admin aprobada)");
+      }
+    } else {
+      mostrarToast("¡Datos bancarios guardados y actualizados en el checkout!");
+    }
+  } catch (err) {
+    console.error("[Config Banco] Error al guardar en Supabase:", err);
+    mostrarToast("Guardado localmente. Error al sincronizar con la nube.");
+  } finally {
+    if (btnGuardar) {
+      btnGuardar.classList.remove("is-loading");
+      btnGuardar.disabled = false;
+    }
+  }
+}
+
+/**
+ * Copia el Alias o CBU al portapapeles con confirmación visual
+ */
+async function copiarDatoBancario(tipo, btnElement) {
+  let texto = "";
+  let etiqueta = "";
+  if (tipo === "alias") {
+    texto = datosBancarios.alias || DATOS_BANCARIOS_POR_DEFECTO.alias;
+    etiqueta = "Alias";
+  } else if (tipo === "cbu") {
+    texto = datosBancarios.cbu || DATOS_BANCARIOS_POR_DEFECTO.cbu;
+    etiqueta = "CBU / CVU";
+  }
+
+  if (!texto) return;
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(texto);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = texto;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+
+    if (btnElement) {
+      const htmlOriginal = btnElement.innerHTML;
+      btnElement.innerHTML = `<i data-lucide="check" class="ui-icon"></i> ¡Copiado!`;
+      btnElement.classList.add("copied");
+      actualizarIconosLucide();
+
+      setTimeout(() => {
+        btnElement.innerHTML = htmlOriginal;
+        btnElement.classList.remove("copied");
+        actualizarIconosLucide();
+      }, 2000);
+    }
+    mostrarToast(`✓ ${etiqueta} copiado al portapapeles: ${texto}`);
+  } catch (err) {
+    console.warn("Fallo al copiar con clipboard:", err);
+    mostrarToast(`Copia manualmente: ${texto}`);
+  }
+}
+
+/**
+ * Procesa el archivo de comprobante de transferencia seleccionado por el cliente
+ */
+function manejarSeleccionComprobante(input) {
+  const file = input && input.files && input.files[0];
+  if (!file) return;
+
+  const maxBytes = 5 * 1024 * 1024; // 5 MB
+  if (file.size > maxBytes) {
+    mostrarToast("El archivo supera el límite de 5 MB. Por favor elige uno más liviano.");
+    input.value = "";
+    return;
+  }
+
+  archivoComprobanteSeleccionado = file;
+
+  const dropzoneVacio = document.getElementById("dropzone-vacio");
+  const dropzonePrevia = document.getElementById("dropzone-previa");
+  const previaNombre = document.getElementById("previa-nombre");
+  const previaTamano = document.getElementById("previa-tamano");
+
+  if (dropzoneVacio) dropzoneVacio.style.display = "none";
+  if (dropzonePrevia) dropzonePrevia.style.display = "flex";
+  if (previaNombre) previaNombre.textContent = file.name;
+  if (previaTamano) {
+    const kb = (file.size / 1024).toFixed(1);
+    previaTamano.textContent = kb > 1024 ? `(${(kb / 1024).toFixed(2)} MB)` : `(${kb} KB)`;
+  }
+
+  actualizarIconosLucide();
+  mostrarToast("Comprobante adjuntado correctamente.");
+}
+
+/**
+ * Quita el archivo de comprobante seleccionado y restablece la dropzone
+ */
+function quitarComprobante() {
+  archivoComprobanteSeleccionado = null;
+  const input = document.getElementById("checkout-comprobante-file");
+  if (input) input.value = "";
+
+  const dropzoneVacio = document.getElementById("dropzone-vacio");
+  const dropzonePrevia = document.getElementById("dropzone-previa");
+
+  if (dropzoneVacio) dropzoneVacio.style.display = "flex";
+  if (dropzonePrevia) dropzonePrevia.style.display = "none";
+  actualizarIconosLucide();
+}
+
+/**
+ * Convierte un File a DataURL base64 para guardado local como respaldo
+ */
+function leerArchivoComoDataUrl(file) {
+  return new Promise(resolve => {
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
 }
 
 /**
@@ -1108,6 +1362,11 @@ function abrirCheckout() {
     return;
   }
 
+  actualizarDatosBancariosUI();
+  quitarComprobante();
+  const numOpInput = document.getElementById("checkout-num-operacion");
+  if (numOpInput) numOpInput.value = "";
+
   const sumaTotal = calcularTotalCarrito();
   const resumenItemsTexto = carrito
     .map(item => `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - $${formatearPrecio(item.precio * item.cantidad)}`)
@@ -1142,10 +1401,12 @@ async function confirmarPedido() {
   const nombreInput = document.getElementById("cliente-nombre");
   const emailInput = document.getElementById("cliente-email");
   const telefonoInput = document.getElementById("cliente-telefono");
+  const numOpInput = document.getElementById("checkout-num-operacion");
 
   const nombre = nombreInput ? nombreInput.value.trim() : "";
   const email = emailInput ? emailInput.value.trim() : "";
   const telefono = telefonoInput ? telefonoInput.value.trim() : "";
+  const numeroOperacion = numOpInput ? numOpInput.value.trim() : "";
 
   if (!nombre) {
     mostrarToast("Por favor ingresa tu Nombre y Apellido para recibir los moldes.");
@@ -1169,11 +1430,27 @@ async function confirmarPedido() {
 
   const sumaTotal = calcularTotalCarrito();
   const fechaActual = obtenerFechaLocalHoraTexto(new Date());
+  const codigoPedido = "ORD-" + Math.floor(1000 + Math.random() * 9000);
+
+  // Subida del comprobante a Supabase Storage con fallback local en Base64
+  let comprobanteUrl = null;
+  if (archivoComprobanteSeleccionado) {
+    mostrarToast("Procesando comprobante de pago...");
+    if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
+      if (typeof supabaseSubirComprobanteTransferencia === "function") {
+        comprobanteUrl = await supabaseSubirComprobanteTransferencia(archivoComprobanteSeleccionado, codigoPedido);
+      }
+    }
+    // Si no está Supabase o falló la subida a Storage, se guarda en Base64
+    if (!comprobanteUrl) {
+      comprobanteUrl = await leerArchivoComoDataUrl(archivoComprobanteSeleccionado);
+    }
+  }
 
   // Creamos el nuevo pedido con snapshot de items y estado pendiente
   const nuevoPedido = {
     id: Date.now(),
-    codigo: "ORD-" + Math.floor(1000 + Math.random() * 9000),
+    codigo: codigoPedido,
     fecha: fechaActual,
     cliente: {
       nombre: nombre,
@@ -1194,7 +1471,9 @@ async function confirmarPedido() {
     total: sumaTotal,
     estado: "pendiente", // "pendiente" | "completada" | "cancelada"
     archivosEnviados: false,
-    fechaEnvioArchivos: null
+    fechaEnvioArchivos: null,
+    comprobanteUrl: comprobanteUrl || null,
+    numeroOperacion: numeroOperacion || null
   };
 
   pedidos.unshift(nuevoPedido);
@@ -1216,10 +1495,12 @@ async function confirmarPedido() {
   actualizarContadorCarrito();
   renderCarrito();
 
-  // Limpiamos los campos del formulario del cliente
+  // Limpiamos los campos del formulario del cliente y el comprobante
   if (document.getElementById("form-datos-cliente")) {
     document.getElementById("form-datos-cliente").reset();
   }
+  quitarComprobante();
+  if (numOpInput) numOpInput.value = "";
 
   cerrarCheckout();
 
@@ -1244,14 +1525,21 @@ function mostrarModalConfirmacion(pedido) {
 
   const totalFormateado = formatearPrecio(pedido.total);
   const itemsLista = pedido.items.map(i => `${i.nombre} (x${i.cantidad})`).join(", ");
+  const tieneComprobante = Boolean(pedido.comprobanteUrl);
+  const infoOp = pedido.numeroOperacion ? `• N° de Operación: ${pedido.numeroOperacion}\n` : "";
+  const infoComp = tieneComprobante
+    ? `• Comprobante: Adjunto en la tienda web ✓\n`
+    : `• Comprobante: Se adjunta en este mensaje\n`;
 
   const mensajeWhatsApp = encodeURIComponent(
-    `¡Hola Cosé con Giu! Acabo de realizar la transferencia bancaria para mi pedido ${pedido.codigo}.\n` +
+    `¡Hola Cosé con Giu! Acabo de registrar la transferencia bancaria para mi pedido ${pedido.codigo}.\n` +
     `• Nombre: ${pedido.cliente.nombre}\n` +
     `• Email Gmail: ${pedido.cliente.email}\n` +
     `• Moldes: ${itemsLista}\n` +
-    `• Monto: $${totalFormateado}\n\n` +
-    `Adjunto el comprobante de pago para su verificación y envío de los moldes a Google Drive. ¡Muchas gracias!`
+    `• Monto: $${totalFormateado}\n` +
+    infoOp +
+    infoComp +
+    `\nQuedo a la espera del acceso a Google Drive en el plazo de 1 hora. ¡Muchas gracias!`
   );
 
   contenedorBody.innerHTML = `
@@ -1266,6 +1554,17 @@ function mostrarModalConfirmacion(pedido) {
       </div>
     </div>
 
+    <!-- Alert destacado de entrega en 1 hora -->
+    <div class="alert-box alert-plazo-entrega" style="margin: 0.9rem 0; text-align: left;">
+      <div class="alert-plazo-header">
+        <i data-lucide="clock" class="ui-icon alert-plazo-icon" style="color: #0369a1;"></i>
+        <strong style="color: #0369a1;">Plazo de entrega de tus moldes:</strong>
+      </div>
+      <p class="alert-plazo-texto" style="color: #075985;">
+        En un <strong>plazo máximo de 1 hora</strong> tras verificar tu transferencia bancaria, recibirás la invitación con acceso completo a Google Drive directamente en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong> (horario de atención de 08:00 a 22:00 hs).
+      </p>
+    </div>
+
     <div class="order-success-details">
       <div class="order-success-row">
         <span>Total a transferir:</span>
@@ -1275,23 +1574,32 @@ function mostrarModalConfirmacion(pedido) {
         <span>Correo Gmail registrado:</span>
         <strong>${escaparHTML(pedido.cliente.email)}</strong>
       </div>
+      ${pedido.numeroOperacion ? `
+      <div class="order-success-row">
+        <span>N° de Operación:</span>
+        <strong style="font-family: monospace; color: var(--primary-dark);">${escaparHTML(pedido.numeroOperacion)}</strong>
+      </div>` : ''}
+      <div class="order-success-row">
+        <span>Comprobante:</span>
+        <span>${tieneComprobante ? '✓ Adjuntado en la orden' : 'Pendiente de envío por WhatsApp'}</span>
+      </div>
       <div class="order-success-row">
         <span>Estado del pedido:</span>
         <span class="badge-estado pendiente"><i data-lucide="clock" class="badge-icon"></i> Pendiente</span>
       </div>
       <div class="order-success-row">
         <span>Entrega:</span>
-        <span>Google Drive (tras verificar pago)</span>
+        <span>Google Drive (máx. 1 hora tras confirmar)</span>
       </div>
     </div>
 
     <div class="whatsapp-action-box">
-      <h4 style="color: #166534; margin-bottom: 0.35rem; font-size: 1rem;"><i data-lucide="message-circle" class="ui-icon"></i> Envíanos tu comprobante por WhatsApp</h4>
+      <h4 style="color: #166534; margin-bottom: 0.35rem; font-size: 1rem;"><i data-lucide="message-circle" class="ui-icon"></i> Envíanos un aviso por WhatsApp</h4>
       <p style="font-size: 0.85rem; color: #14532d; margin-bottom: 0.85rem;">
-        Haz clic para abrir WhatsApp con el mensaje ya armado. Solo debes adjuntar la captura de la transferencia.
+        ${tieneComprobante ? 'Ya adjuntaste el comprobante, pero puedes notificarnos por WhatsApp para agilizar la entrega:' : 'Haz clic para avisarnos y adjuntar la captura de tu transferencia:'}
       </p>
-      <a href="https://api.whatsapp.com/send?phone=5491144558899&text=${mensajeWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Enviar comprobante por WhatsApp">
-        <i data-lucide="message-circle" class="ui-icon"></i> Enviar Comprobante por WhatsApp
+      <a href="https://api.whatsapp.com/send?phone=5491144558899&text=${mensajeWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Avisar por WhatsApp">
+        <i data-lucide="message-circle" class="ui-icon"></i> Notificar Pago por WhatsApp
       </a>
     </div>
 
@@ -1609,6 +1917,7 @@ function renderAdmin() {
   renderMetricasAdmin();
   renderPedidosAdmin();
   renderCatalogoAdmin();
+  actualizarDatosBancariosUI();
 }
 
 /**
@@ -1835,6 +2144,8 @@ function renderPedidosAdmin() {
             <span class="order-code-badge">${pedido.codigo || ('#' + pedido.id.toString().slice(-4))}</span>
             <span class="order-card-buyer">${escaparHTML(pedido.cliente.nombre)}</span>
             <span class="order-card-date"><i data-lucide="calendar" class="ui-icon"></i> ${pedido.fecha}</span>
+            ${pedido.numeroOperacion ? `<span class="badge-op-num" title="N° de Operación Bancaria">Op: ${escaparHTML(pedido.numeroOperacion)}</span>` : ''}
+            ${pedido.comprobanteUrl ? `<span class="badge-comprobante-pill" title="Comprobante de pago adjuntado"><i data-lucide="file-check" class="badge-icon"></i> Comprobante</span>` : ''}
           </div>
 
           <div class="order-card-amount-box">
@@ -1879,6 +2190,27 @@ function renderPedidosAdmin() {
                 ` : '')}
               </div>
             </div>
+
+            <div class="order-detail-block order-detail-block-transfer">
+              <h5><i data-lucide="receipt" class="ui-icon"></i> Transferencia Bancaria</h5>
+              <div class="order-detail-content">
+                <div style="margin-bottom: 0.35rem;">
+                  <span style="color: var(--text-muted); font-size: 0.82rem;">N° de Operación:</span><br>
+                  ${pedido.numeroOperacion ? `<strong style="font-family: monospace; color: var(--primary-dark); font-size: 0.95rem;">${escaparHTML(pedido.numeroOperacion)}</strong>` : '<span style="color: var(--text-muted); font-size: 0.85rem;">No informado</span>'}
+                </div>
+                <div style="margin-top: 0.6rem;">
+                  ${pedido.comprobanteUrl ? `
+                    <button type="button" class="btn-action btn-action-view-receipt" onclick="verComprobanteModal('${escaparHTML(pedido.comprobanteUrl)}', '${escaparHTML(pedido.codigo)}', '${escaparHTML(pedido.numeroOperacion || '')}', '${escaparHTML(pedido.cliente.nombre)}', '${formatearPrecio(pedido.total)}')" title="Ver comprobante adjunto">
+                      <i data-lucide="file-text" class="ui-icon"></i> Ver Comprobante
+                    </button>
+                  ` : `
+                    <span style="font-size: 0.82rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.25rem;">
+                      <i data-lucide="info" class="ui-icon" style="width: 14px; height: 14px;"></i> Sin comprobante
+                    </span>
+                  `}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="order-card-footer">
@@ -1895,6 +2227,75 @@ function renderPedidosAdmin() {
   }).join("");
 
   actualizarIconosLucide();
+}
+
+/**
+ * Despliega el modal visor con la imagen o documento del comprobante bancario
+ */
+function verComprobanteModal(url, codigo, numOperacion, clienteNombre, total) {
+  const modal = document.getElementById("modal-visor-comprobante");
+  const contenedorBody = document.getElementById("visor-comprobante-body");
+  const btnEnlace = document.getElementById("visor-comprobante-enlace");
+  const titulo = document.getElementById("visor-comprobante-titulo");
+
+  if (!modal || !contenedorBody) return;
+
+  if (titulo) {
+    titulo.innerHTML = `<i data-lucide="receipt" class="ui-icon"></i> Comprobante de Pedido ${escaparHTML(codigo)}`;
+  }
+
+  const esPdf = (url || "").toLowerCase().includes(".pdf") || (url || "").startsWith("data:application/pdf");
+
+  let visorHtml = "";
+  if (esPdf) {
+    visorHtml = `
+      <div class="visor-pdf-container">
+        <i data-lucide="file-text" style="width: 3.5rem; height: 3.5rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+        <h4 style="margin-bottom: 0.25rem; color: var(--primary-dark);">Comprobante en Formato PDF</h4>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
+          El comprador adjuntó su comprobante bancario en formato PDF.
+        </p>
+        <a href="${url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" download="comprobante_${codigo}.pdf">
+          <i data-lucide="download" class="ui-icon"></i> Descargar o Abrir PDF
+        </a>
+      </div>
+    `;
+  } else {
+    visorHtml = `
+      <div class="visor-imagen-container">
+        <img src="${url}" alt="Comprobante de transferencia ${escaparHTML(codigo)}" class="visor-imagen-preview">
+      </div>
+    `;
+  }
+
+  contenedorBody.innerHTML = `
+    <div class="visor-meta-bar">
+      <div><strong>Comprador:</strong> ${escaparHTML(clienteNombre || '')}</div>
+      <div><strong>Total:</strong> $${total}</div>
+      <div><strong>N° Operación:</strong> ${numOperacion ? `<span style="font-family: monospace; font-weight: 700; color: var(--primary-dark);">${escaparHTML(numOperacion)}</span>` : '<span style="color: var(--text-muted);">No especificado</span>'}</div>
+    </div>
+    ${visorHtml}
+  `;
+
+  if (btnEnlace) {
+    btnEnlace.href = url;
+    btnEnlace.style.display = "inline-flex";
+  }
+
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+  actualizarIconosLucide();
+}
+
+/**
+ * Cierra el modal visor de comprobantes
+ */
+function cerrarModalComprobante() {
+  const modal = document.getElementById("modal-visor-comprobante");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
 }
 
 /**
