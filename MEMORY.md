@@ -1,31 +1,30 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 04/11/2026 — Checkout mejorado para transferencias, comprobantes adjuntos, visor en admin y datos bancarios editables.
+Última actualización: 04/11/2026 — App lista para el público: FAQ, botón flotante de WhatsApp, guía de impresión A4, metatags Open Graph y canales de contacto editables en admin.
 
 ## Estado actual
-- Tienda desplegada y funcionando en producción en Vercel.
-- Checkout optimizado para pago por transferencia:
-  - Carga opcional recomendada de comprobante de pago (JPG, PNG o PDF hasta 5 MB).
-  - Almacenamiento en bucket Supabase Storage `comprobantes-transferencia` con fallback local en Base64.
-  - Campo para N° de operación bancaria.
-  - Botones de copiado rápido de Alias y CBU/CVU con feedback visual.
-  - Alerta destacada de entrega digital en un plazo máximo de 1 hora en checkout y modal de éxito.
-- Panel de Administración:
-  - Tarjeta de configuración bancaria editable (Banco, Titular, Alias, CBU, CUIT) sincronizada con Supabase (`tienda_config`) y `localStorage`.
-  - Tarjetas de pedidos con badges de N° de operación y comprobante.
-  - Modal visor de comprobantes (`#modal-visor-comprobante`) para imágenes y PDFs.
-- Autenticación administrativa exclusiva vía Supabase Auth con aprobación manual en tabla `administradores`.
-- RLS blindado en Supabase para `productos`, `pedidos`, `tienda_config` y buckets de Storage.
+- Tienda desplegada y lista para lanzamiento comercial en Vercel.
+- Confianza y experiencia de compra optimizadas:
+  - Sección interactiva de Preguntas Frecuentes (FAQ) sobre entrega en 1 hora, impresión en A4 y talles.
+  - Bloque de guía de impresión con recordatorio de calibración (5x5 cm) en el detalle del molde.
+  - Botón flotante interactivo de WhatsApp en la tienda para consultas en vivo.
+  - Pie de página enriquecido con enlaces a Instagram, WhatsApp oficial y sellos de confianza.
+  - Metadatos Open Graph completos para previsualización atractiva al compartir en Instagram y WhatsApp.
+- Configuración de la tienda desde el Panel Admin:
+  - Datos bancarios (Banco, Titular, Alias, CBU, CUIT) y canales de contacto (WhatsApp e Instagram) editables dinámicamente con persistencia en Supabase (`tienda_config`) y `localStorage`.
+- Checkout y administración de transferencias:
+  - Subida de comprobantes a Supabase Storage con fallback Base64, registro de N° de operación y visor modal.
+  - Generación de enlace de WhatsApp con el número oficial configurado en el panel.
 
 ## Decisiones y por qué
-- Datos bancarios en `tienda_config`: Permite modificar Alias o CBU desde el admin sin tocar código ni redesplegar.
-- Fallback Base64 para comprobantes: Permite operar sin interrupciones tanto en modo local como con Supabase Storage.
-- Alerta de 1 hora: Reduce la ansiedad del comprador y refuerza la confianza tras la transferencia.
+- WhatsApp editable en admin: Evita tener números de teléfono fijos o hardcodeados en el código.
+- FAQ y guía de impresión visibles: Resuelven las dos mayores fricciones de venta (desconfianza en entrega y dudas sobre cómo imprimir).
+- Open Graph canónico: Asegura que el enlace se comparta con imagen de portada y descripción clara en redes sociales.
 
 ## Aprendizajes y errores a evitar
-- Cumplir siempre las reglas de `local-dates` para fechas y horas en los pedidos.
-- Comprobar límites de peso (5 MB) al procesar archivos de comprobantes antes de subirlos.
+- Limpiar caracteres no numéricos al construir URLs de `api.whatsapp.com`.
+- Mantener diseño no invasivo del botón flotante en pantallas móviles para no bloquear el carrito ni el checkout.
 
 ## Próximos pasos
-- Envío automático de correo con API de mailing (ej. Resend / SendGrid) si se desea prescindir del cliente de correo nativo.
+- Carga de los moldes reales con sus fotos y enlaces finales a Google Drive por parte del administrador.

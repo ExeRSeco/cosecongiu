@@ -76,13 +76,15 @@ const STORAGE_PEDIDOS = "tienda_moldes_pedidos";
 const STORAGE_ADMIN_AUTH = "cose_admin_auth";
 const STORAGE_DATOS_BANCO = "cose_datos_bancarios";
 
-// Datos bancarios iniciales por defecto para cobro de moldería
+// Datos bancarios y de contacto iniciales por defecto para cobro y atención al cliente
 const DATOS_BANCARIOS_POR_DEFECTO = {
   banco: "Banco Nación / Mercado Pago",
   titular: "Cosé con Giu - Moldes Digitales",
   alias: "COSE.CON.GIU",
   cbu: "0000003100012345678901",
-  cuit: "27-38491204-4"
+  cuit: "27-38491204-4",
+  whatsapp: "+54 9 11 4455-8899",
+  instagram: "@cosecongiu"
 };
 
 let datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
@@ -379,7 +381,7 @@ function cargarDatosBancarios() {
 }
 
 /**
- * Actualiza los textos del checkout y los inputs del panel de administración con los datos bancarios vigentes
+ * Actualiza los textos del checkout, los inputs del panel de administración y los enlaces de contacto
  */
 function actualizarDatosBancariosUI() {
   // 1. Textos en el checkout de compra
@@ -395,12 +397,14 @@ function actualizarDatosBancariosUI() {
   if (elemCbu) elemCbu.textContent = datosBancarios.cbu || DATOS_BANCARIOS_POR_DEFECTO.cbu;
   if (elemCuit) elemCuit.textContent = datosBancarios.cuit || DATOS_BANCARIOS_POR_DEFECTO.cuit;
 
-  // 2. Inputs en el formulario de configuración bancaria del admin
+  // 2. Inputs en el formulario de configuración bancaria y tienda del admin
   const inBanco = document.getElementById("admin-banco-nombre");
   const inTitular = document.getElementById("admin-banco-titular");
   const inAlias = document.getElementById("admin-banco-alias");
   const inCbu = document.getElementById("admin-banco-cbu");
   const inCuit = document.getElementById("admin-banco-cuit");
+  const inWhatsapp = document.getElementById("admin-tienda-whatsapp");
+  const inInstagram = document.getElementById("admin-tienda-instagram");
 
   if (inBanco && (!inBanco.value || inBanco.value === DATOS_BANCARIOS_POR_DEFECTO.banco)) {
     inBanco.value = datosBancarios.banco;
@@ -417,10 +421,32 @@ function actualizarDatosBancariosUI() {
   if (inCuit && (!inCuit.value || inCuit.value === DATOS_BANCARIOS_POR_DEFECTO.cuit)) {
     inCuit.value = datosBancarios.cuit;
   }
+  if (inWhatsapp && (!inWhatsapp.value || inWhatsapp.value === DATOS_BANCARIOS_POR_DEFECTO.whatsapp)) {
+    inWhatsapp.value = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
+  }
+  if (inInstagram && (!inInstagram.value || inInstagram.value === DATOS_BANCARIOS_POR_DEFECTO.instagram)) {
+    inInstagram.value = datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram;
+  }
+
+  // 3. Enlaces dinámicos en el pie de página
+  const footerTextoWa = document.getElementById("footer-texto-whatsapp");
+  const footerTextoIg = document.getElementById("footer-texto-instagram");
+  const footerBtnIg = document.getElementById("footer-btn-instagram");
+
+  if (footerTextoWa) {
+    footerTextoWa.textContent = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
+  }
+  if (footerTextoIg) {
+    footerTextoIg.textContent = datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram;
+  }
+  if (footerBtnIg && datosBancarios.instagram) {
+    const handleIg = datosBancarios.instagram.replace("@", "").trim();
+    footerBtnIg.href = `https://instagram.com/${handleIg}`;
+  }
 }
 
 /**
- * Guarda los datos bancarios modificados desde el panel admin (local + Supabase)
+ * Guarda los datos bancarios y de contacto modificados desde el panel admin (local + Supabase)
  */
 async function guardarDatosBancariosDesdeAdmin() {
   const inBanco = document.getElementById("admin-banco-nombre");
@@ -428,6 +454,8 @@ async function guardarDatosBancariosDesdeAdmin() {
   const inAlias = document.getElementById("admin-banco-alias");
   const inCbu = document.getElementById("admin-banco-cbu");
   const inCuit = document.getElementById("admin-banco-cuit");
+  const inWhatsapp = document.getElementById("admin-tienda-whatsapp");
+  const inInstagram = document.getElementById("admin-tienda-instagram");
   const btnGuardar = document.getElementById("btn-guardar-banco");
 
   const banco = inBanco ? inBanco.value.trim() : "";
@@ -435,13 +463,15 @@ async function guardarDatosBancariosDesdeAdmin() {
   const alias = inAlias ? inAlias.value.trim() : "";
   const cbu = inCbu ? inCbu.value.trim() : "";
   const cuit = inCuit ? inCuit.value.trim() : "";
+  const whatsapp = inWhatsapp ? inWhatsapp.value.trim() : (datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp);
+  const instagram = inInstagram ? inInstagram.value.trim() : (datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram);
 
   if (!banco || !titular || !alias || !cbu || !cuit) {
     mostrarToast("Por favor completa todos los campos de la cuenta bancaria.");
     return;
   }
 
-  datosBancarios = { banco, titular, alias, cbu, cuit };
+  datosBancarios = { banco, titular, alias, cbu, cuit, whatsapp, instagram };
   localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
   actualizarDatosBancariosUI();
 
@@ -454,12 +484,12 @@ async function guardarDatosBancariosDesdeAdmin() {
     if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseGuardarConfig === "function") {
       const ok = await supabaseGuardarConfig("datos_bancarios", datosBancarios);
       if (ok) {
-        mostrarToast("¡Datos bancarios guardados en la nube y actualizados en el checkout!");
+        mostrarToast("¡Configuración de tienda y banco guardada en la nube!");
       } else {
         mostrarToast("Guardado localmente. (Supabase requiere sesión de admin aprobada)");
       }
     } else {
-      mostrarToast("¡Datos bancarios guardados y actualizados en el checkout!");
+      mostrarToast("¡Configuración de tienda y banco guardada con éxito!");
     }
   } catch (err) {
     console.error("[Config Banco] Error al guardar en Supabase:", err);
@@ -470,6 +500,17 @@ async function guardarDatosBancariosDesdeAdmin() {
       btnGuardar.disabled = false;
     }
   }
+}
+
+/**
+ * Abre un chat directo de WhatsApp con el número oficial de la tienda
+ */
+function abrirWhatsappConsulta(event) {
+  if (event) event.preventDefault();
+  const telOriginal = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
+  const telLimpio = telOriginal.replace(/[^0-9]/g, "");
+  const mensaje = encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta sobre los patrones...");
+  window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${mensaje}`, "_blank", "noopener,noreferrer");
 }
 
 /**
@@ -991,10 +1032,20 @@ function verDetalleProducto(productoId) {
         <ul>
           <li><i data-lucide="file-text" class="ui-icon"></i> <strong>Formato:</strong> PDF A4 y Pliego A0</li>
           <li><i data-lucide="ruler" class="ui-icon"></i> <strong>Talles:</strong> XS, S, M, L, XL, XXL</li>
-          <li><i data-lucide="scissors" class="ui-icon"></i> <strong>Márgenes:</strong> 1 cm incluidos</li>
-          <li><i data-lucide="book-open" class="ui-icon"></i> <strong>Guía:</strong> Paso a paso de confección</li>
+          <li><i data-lucide="scissors" class="ui-icon"></i> <strong>Márgenes:</strong> 1 cm ya incluidos</li>
+          <li><i data-lucide="book-open" class="ui-icon"></i> <strong>Guía:</strong> Paso a paso de confección ilustrada</li>
           <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> Confección guiada incluida</li>
         </ul>
+      </div>
+
+      <div class="product-print-tip-box">
+        <div class="print-tip-header">
+          <i data-lucide="printer" class="ui-icon"></i>
+          <strong>Impresión fácil en casa (Hojas A4)</strong>
+        </div>
+        <p>
+          Configura tu impresora en <strong>"Escala 100%" o "Tamaño Real"</strong> (sin ajustar a página). La primera página incluye un <strong>cuadrado de calibración de 5x5 cm</strong> para verificar con regla antes de cortar.
+        </p>
       </div>
 
       <div class="product-price-box" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
@@ -1531,6 +1582,8 @@ function mostrarModalConfirmacion(pedido) {
     ? `• Comprobante: Adjunto en la tienda web ✓\n`
     : `• Comprobante: Se adjunta en este mensaje\n`;
 
+  const telefonoWa = (datosBancarios.whatsapp || "5491144558899").replace(/[^0-9]/g, "");
+
   const mensajeWhatsApp = encodeURIComponent(
     `¡Hola Cosé con Giu! Acabo de registrar la transferencia bancaria para mi pedido ${pedido.codigo}.\n` +
     `• Nombre: ${pedido.cliente.nombre}\n` +
@@ -1598,7 +1651,7 @@ function mostrarModalConfirmacion(pedido) {
       <p style="font-size: 0.85rem; color: #14532d; margin-bottom: 0.85rem;">
         ${tieneComprobante ? 'Ya adjuntaste el comprobante, pero puedes notificarnos por WhatsApp para agilizar la entrega:' : 'Haz clic para avisarnos y adjuntar la captura de tu transferencia:'}
       </p>
-      <a href="https://api.whatsapp.com/send?phone=5491144558899&text=${mensajeWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Avisar por WhatsApp">
+      <a href="https://api.whatsapp.com/send?phone=${telefonoWa}&text=${mensajeWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Avisar por WhatsApp">
         <i data-lucide="message-circle" class="ui-icon"></i> Notificar Pago por WhatsApp
       </a>
     </div>

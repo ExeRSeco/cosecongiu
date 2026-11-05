@@ -292,11 +292,11 @@ CREATE POLICY "Gestión de configuración solo por admins aprobados"
     )
   );
 
--- Valor inicial por defecto para datos bancarios
+-- Valor inicial por defecto para datos bancarios y canales de atención
 INSERT INTO public.tienda_config (clave, valor)
 VALUES (
   'datos_bancarios',
-  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4"}'::jsonb
+  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4", "whatsapp": "+54 9 11 4455-8899", "instagram": "@cosecongiu"}'::jsonb
 )
 ON CONFLICT (clave) DO NOTHING;
 
