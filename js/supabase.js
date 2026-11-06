@@ -479,6 +479,7 @@ async function supabaseSubirImagenMolde(archivo) {
       .from("moldes-imagenes")
       .upload(nombreUnico, archivo, {
         cacheControl: "3600",
+        contentType: archivo.type || (extension === "webp" ? "image/webp" : "image/jpeg"),
         upsert: true
       });
 
@@ -514,6 +515,7 @@ async function supabaseSubirComprobanteTransferencia(archivo, codigoPedido = "pe
       .from("comprobantes-transferencia")
       .upload(nombreUnico, archivo, {
         cacheControl: "3600",
+        contentType: archivo.type || (extension === "pdf" ? "application/pdf" : (extension === "webp" ? "image/webp" : "image/jpeg")),
         upsert: true
       });
 

@@ -423,6 +423,7 @@
             <div class="form-group">
               <label for="producto-imagen">Imagen del molde (opcional)</label>
               <input type="file" id="producto-imagen" accept="image/*">
+              <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">⚡ Optimización automática: se comprime y convierte a WebP para ahorrar espacio y cargar ultra rápido.</small>
               <div id="producto-preview-wrap" style="margin-top:0.5rem; display: none;">
                 <img id="producto-preview" src="" alt="Vista previa del molde"
                   style="max-width:120px; border-radius:8px; border:1px solid var(--border);">
@@ -670,7 +671,7 @@
                 <input type="file" id="checkout-comprobante-file" accept="image/*,application/pdf" style="display: none;" onchange="manejarSeleccionComprobante(this)">
                 <div id="dropzone-vacio" class="dropzone-vacio">
                   <i data-lucide="upload-cloud" class="ui-icon dropzone-icon"></i>
-                  <span>Haz clic aquí para seleccionar tu comprobante (JPG, PNG o PDF)</span>
+                  <span>Haz clic aquí para seleccionar tu comprobante (JPG, PNG o PDF — se optimiza automáticamente)</span>
                 </div>
                 <div id="dropzone-previa" class="dropzone-previa" style="display: none;">
                   <div class="previa-info">
