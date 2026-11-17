@@ -192,6 +192,9 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarBadgeSupabaseUI();
   inicializarAuthAdmin();
 
+  // Procesar retorno automático de pago con Mercado Pago si la URL contiene parámetros
+  procesarRetornoMercadoPago();
+
   // Sincronización transparente con base de datos Supabase en segundo plano
   sincronizarConSupabaseSiAplica();
 
@@ -1926,7 +1929,7 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
     // Mercado Pago (por defecto)
     if (tituloModal) tituloModal.textContent = "Finalizar Compra - Pago Rápido con Mercado Pago";
     if (totalEtiqueta) totalEtiqueta.textContent = "Total a pagar:";
-    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "He realizado el pago por Mercado Pago";
+    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "Pagar con Mercado Pago";
 
     if (filaSubtotal) filaSubtotal.style.display = "none";
     if (filaDescuento) filaDescuento.style.display = "none";
@@ -2129,6 +2132,48 @@ async function confirmarPedido() {
     }
   }
 
+  // Si eligió Mercado Pago sin ingresar comprobante manual, iniciamos el Checkout Pro oficial
+  if (esMercadoPago && !numeroOperacion && !archivoComprobanteSeleccionado) {
+    const btnConfirmar = document.getElementById("btn-confirmar-checkout");
+    const textoOriginal = btnConfirmar ? btnConfirmar.innerHTML : "";
+    if (btnConfirmar) {
+      btnConfirmar.disabled = true;
+      btnConfirmar.innerHTML = `<i data-lucide="loader" class="ui-icon is-spinning"></i> Abriendo Mercado Pago...`;
+      actualizarIconosLucide();
+    }
+
+    try {
+      mostrarToast("Conectando con pasarela segura de Mercado Pago...");
+      const resPref = await fetch("/api/crear-preferencia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          codigoPedido: nuevoPedido.codigo,
+          cliente: nuevoPedido.cliente,
+          items: nuevoPedido.items
+        })
+      });
+
+      if (resPref.ok) {
+        const dataPref = await resPref.json();
+        if (dataPref.init_point) {
+          sessionStorage.setItem("cose_mp_pending_order", nuevoPedido.codigo);
+          // Redirigir directamente a la pantalla oficial de Mercado Pago
+          window.location.href = dataPref.init_point;
+          return;
+        }
+      }
+    } catch (ePref) {
+      console.warn("[Mercado Pago] No se pudo conectar con /api/crear-preferencia (fallback local activo):", ePref);
+    } finally {
+      if (btnConfirmar) {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = textoOriginal;
+        actualizarIconosLucide();
+      }
+    }
+  }
+
   // Vaciamos el carrito tras finalizar la orden
   carrito = [];
   guardarCarritoEnStorage();
@@ -2153,6 +2198,69 @@ async function confirmarPedido() {
   renderCatalogo();
   cambiarVista("catalogo");
   mostrarToast("¡Pedido registrado exitosamente!");
+}
+
+/**
+ * ====================================================================
+ * RETORNO AUTOMÁTICO TRAS PAGO CON MERCADO PAGO
+ * ====================================================================
+ */
+async function procesarRetornoMercadoPago() {
+  if (typeof window === "undefined" || !window.location.search) return;
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const status = urlParams.get("mp_status") || urlParams.get("collection_status") || urlParams.get("status");
+  const codigoOrden = urlParams.get("orden") || urlParams.get("external_reference") || sessionStorage.getItem("cose_mp_pending_order");
+  const paymentId = urlParams.get("payment_id") || urlParams.get("collection_id") || "";
+
+  if (!status) return;
+
+  console.log("[Mercado Pago Retorno]", { status, codigoOrden, paymentId });
+
+  // Buscar el pedido registrado en memoria local
+  let pedido = pedidos.find(p => p.codigo === codigoOrden);
+
+  if (status === "approved") {
+    if (pedido) {
+      pedido.estado = "completada";
+      if (paymentId) pedido.numeroOperacion = paymentId;
+      guardarPedidosEnStorage();
+
+      if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
+        try {
+          await supabaseActualizarEstadoPedido(pedido.id, "completada");
+        } catch (e) {
+          console.warn("[Supabase] Error actualizando pedido aprobado de MP:", e);
+        }
+      }
+
+      // Vaciamos el carrito tras compra exitosa
+      carrito = [];
+      guardarCarritoEnStorage();
+      actualizarContadorCarrito();
+      renderCarrito();
+
+      renderAdmin();
+      mostrarModalConfirmacion(pedido);
+      mostrarToast("¡Pago con Mercado Pago aprobado exitosamente! Acceso listo.");
+    } else {
+      mostrarToast("✓ Pago aprobado por Mercado Pago.");
+    }
+
+    sessionStorage.removeItem("cose_mp_pending_order");
+  } else if (status === "pending") {
+    mostrarToast("Tu pago está en proceso de acreditación en Mercado Pago.");
+  } else if (status === "failure") {
+    mostrarToast("El pago no fue completado en Mercado Pago. Podés intentar nuevamente.");
+  }
+
+  // Limpiar parámetros de la URL sin recargar la página para una experiencia limpia
+  try {
+    const cleanUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+  } catch (e) {
+    // ignorar si el navegador restringe replaceState
+  }
 }
 
 /**

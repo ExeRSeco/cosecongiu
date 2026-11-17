@@ -760,26 +760,34 @@
           </div>
 
           <p class="mp-instrucciones-lead">
-            Podés abonar con dinero en cuenta de Mercado Pago, tarjeta de débito o crédito, o transferencia directa desde la app de MP:
+            Podés abonar con dinero en cuenta de Mercado Pago, tarjeta de débito o crédito, con acreditación automática e instantánea:
           </p>
 
-          <ul class="datos-lista">
-            <li class="dato-copiable-row">
-              <div class="dato-info">
-                <strong>Alias Mercado Pago (CVU):</strong>
-                <span id="checkout-mp-alias" class="copy-value">COSECONGIU.MP</span>
-              </div>
-              <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('mpAlias', this)" title="Copiar alias de Mercado Pago">
-                <i data-lucide="copy" class="ui-icon"></i> Copiar Alias MP
-              </button>
-            </li>
-            <li><strong>Titular de la cuenta:</strong> <span id="checkout-mp-titular">Cosé con Giu - Moldes Digitales</span></li>
-          </ul>
+          <div style="margin: 0.85rem 0;">
+            <button type="button" class="btn-mp-open" onclick="confirmarPedido()" title="Pagar ahora con Mercado Pago">
+              <i data-lucide="zap" class="ui-icon"></i> Pagar con Mercado Pago (Tarjetas o Dinero MP)
+            </button>
+            <small style="display: block; text-align: center; color: var(--text-muted); font-size: 0.78rem; margin-top: 0.35rem;">
+              Al hacer clic se abrirá la pasarela oficial de Mercado Pago para abonar de forma 100% segura.
+            </small>
+          </div>
 
-          <div id="wrap-btn-mp-link" style="margin: 0.85rem 0; display: none;">
-            <a id="btn-abrir-mp-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-mp-open">
-              <i data-lucide="external-link" class="ui-icon"></i> Abrir Mercado Pago para Pagar
-            </a>
+          <div style="border-top: 1px dashed #bae6fd; padding-top: 0.75rem; margin-top: 0.75rem;">
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              <strong>O también podés transferir directamente por Alias desde tu app de MP:</strong>
+            </p>
+            <ul class="datos-lista">
+              <li class="dato-copiable-row">
+                <div class="dato-info">
+                  <strong>Alias Mercado Pago (CVU):</strong>
+                  <span id="checkout-mp-alias" class="copy-value">COSECONGIU.MP</span>
+                </div>
+                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('mpAlias', this)" title="Copiar alias de Mercado Pago">
+                  <i data-lucide="copy" class="ui-icon"></i> Copiar Alias MP
+                </button>
+              </li>
+              <li><strong>Titular de la cuenta:</strong> <span id="checkout-mp-titular">Cosé con Giu - Moldes Digitales</span></li>
+            </ul>
           </div>
 
           <div class="comprobante-seccion-card">

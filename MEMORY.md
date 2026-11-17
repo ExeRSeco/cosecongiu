@@ -1,27 +1,29 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 17/11/2026 — Medios de pago múltiples: Mercado Pago (inmediato), Transferencia con 10% OFF (hasta 48 hs hábiles) y PayPal (USD manual).
+Última actualización: 17/11/2026 — Checkout Pro de Mercado Pago 100% automatizado con Serverless API y Webhook IPN en Vercel.
 
 ## Estado actual
-- Medios de pago y checkout tri-modal completado:
-  - **Mercado Pago:** Cobro en ARS con dinero en cuenta, tarjetas o alias/link, con acreditación y entrega inmediata.
-  - **Transferencia Bancaria:** 10% de descuento automático en el total a transferir, con aviso explícito en checkout, detalle de producto, confirmación y WhatsApp de demora de **hasta 48 horas hábiles** por conciliación bancaria.
-  - **PayPal Internacional:** Cobro en USD con precio manual por molde (`precioUsd` / `precioPromoUsd`) para clientes del exterior.
-- Precios y descuentos visibles en catálogo (`renderCatalogo`), detalle (`verDetalleProducto`), carrito y checkout con desglose detallado.
-- Panel Admin actualizado: configuración editable de alias/link de Mercado Pago, CBU/CVU bancario y PayPal; métricas en ARS y USD; gestión de ventas con badges diferenciados.
-- Esquema de base de datos (`supabase-schema.sql`) y conector (`supabase.js`) con soporte idempotente para `metodo_pago`, `moneda`, `precio_usd` y `precio_promo_usd`.
+- Integración automática de Mercado Pago Checkout Pro completada:
+  - Backend Serverless en Vercel (`api/crear-preferencia.js` y `api/webhook-mercadopago.js`).
+  - Creación dinámica de preferencia con ítems, montos en ARS y `external_reference`.
+  - Redirección directa a pasarela oficial de MP y retorno automático a la tienda (`?mp_status=approved`).
+  - Webhook sincronizado con Supabase para marcar compras aprobadas en segundo plano.
+- Medios de pago activos y tri-modal en checkout:
+  - **Mercado Pago:** Acreditación instantánea con tarjetas o saldo en cuenta.
+  - **Transferencia Bancaria:** 10% de descuento automático con demora de hasta 48 horas hábiles.
+  - **PayPal Internacional:** Cobro en USD manual para el exterior.
+- Panel Admin y Catálogo con precios sincronizados y badges de estado y método de pago.
 
 ## Decisiones y por qué
-- 10% OFF en Transferencia: Incentiva el pago directo sin comisiones de pasarelas, compensando la espera de verificación bancaria.
-- Aviso de 48 hs hábiles: Gestiona expectativas del comprador de patrones de costura, evitando reclamos inmediatos en pagos por transferencia.
-- Precios en USD manuales: Permite controlar márgenes comerciales para ventas internacionales en PayPal sin depender de tasas de cambio volátiles.
-- Compresión client-side en Canvas: Mantiene fotos de comprobantes y moldes optimizadas (85-98% ahorro) cuidando el 1 GB de Supabase.
+- Serverless API en `/api`: Oculta y resguarda el Access Token de Mercado Pago fuera del código del navegador.
+- Redirect nativo con `init_point`: Elimina la necesidad de cargar SDKs pesados en el cliente, respetando la filosofía Vanilla JS.
+- Sincronización dual (Retorno + Webhook): Garantiza que si el usuario cierra la ventana, el webhook de MP igualmente actualice la orden en Supabase.
 
 ## Aprendizajes y errores a evitar
-- El descuento del 10% solo aplica si el método seleccionado es estrictamente transferencia.
-- Fechas locales: usar siempre `getFullYear()`, `getMonth()` y `getDate()`, sin `toISOString()` ni cálculos en milisegundos.
-- Mantener las dropzones sincronizadas en los 3 métodos de pago para evitar inconsistencias al adjuntar comprobantes.
+- Nunca exponer tokens privados en el cliente ni en `MEMORY.md`.
+- Asegurar que `vercel.json` no reescriba `/api/*` hacia `/index.html`.
+- Respetar siempre las reglas de fechas locales en reportes y órdenes.
 
 ## Próximos pasos
 - Carga de moldes reales y enlaces finales a carpetas de Google Drive por parte del administrador.

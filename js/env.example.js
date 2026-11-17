@@ -10,5 +10,7 @@
 
 window.__ENV = {
   SUPABASE_URL: "https://tu-proyecto.supabase.co",
-  SUPABASE_ANON_KEY: "tu-anon-key-aqui"
+  SUPABASE_ANON_KEY: "tu-anon-key-aqui",
+  MP_PUBLIC_KEY: "APP_USR-...",
+  MP_ACCESS_TOKEN: "APP_USR-..." // Configurar en Vercel Dashboard -> Settings -> Environment Variables
 };
