@@ -629,369 +629,283 @@
 
   </main>
 
-  <!-- 4. MODAL / VENTANA: CHECKOUT CON DATOS DE TRANSFERENCIA Y FORMULARIO DE CLIENTE -->
+  <!-- 4. MODAL / VENTANA: CHECKOUT GUIADO Y LIMPIO (2 PASOS) -->
   <div id="modal-checkout" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
     style="display: none;">
-    <div class="modal-box" role="document">
-      <div class="modal-header">
-        <h3 id="checkout-title">Finalizar Compra - Datos de Pago</h3>
+    <div class="modal-box checkout-modal-box" role="document">
+      <div class="modal-header checkout-modal-header">
+        <div>
+          <h3 id="checkout-title" class="checkout-main-title">Finalizar Compra</h3>
+          <p class="checkout-subtitle">Acceso directo a tus moldes en PDF y video tutorial</p>
+        </div>
         <button class="modal-close-btn" onclick="cerrarCheckout()" title="Cerrar">&times;</button>
       </div>
 
-      <div class="modal-body">
-        <!-- Selector de Método de Pago -->
-        <div class="metodo-pago-selector">
-          <label class="metodo-pago-label">Selecciona tu medio de pago:</label>
-          <div class="metodo-pago-tabs" role="tablist">
-            <button type="button" id="tab-pago-mercadopago" class="tab-pago active" role="tab" aria-selected="true" onclick="seleccionarMetodoPagoCheckout('mercadopago')">
-              <span class="tab-flag">💳</span>
-              <span class="tab-text">
-                <strong>Mercado Pago</strong>
-                <small>Tarjetas, Débito o Dinero MP</small>
-                <span class="tab-badge-delivery">⚡ Entrega Inmediata</span>
-              </span>
-            </button>
-            <button type="button" id="tab-pago-transferencia" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('transferencia')">
-              <span class="tab-flag">🏦</span>
-              <span class="tab-text">
-                <strong>Transferencia Bancaria</strong>
-                <small>CBU / CVU / Alias</small>
-                <span class="tab-badge-discount">🔥 10% DE DESCUENTO</span>
-              </span>
-            </button>
-            <button type="button" id="tab-pago-paypal" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('paypal')">
-              <span class="tab-flag">🌎</span>
-              <span class="tab-text">
-                <strong>PayPal Internacional</strong>
-                <small>Dólares (USD)</small>
-                <span class="tab-badge-intl">Exterior</span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Resumen de ítems -->
-        <div class="resumen-checkout">
-          <h4>Resumen de tu pedido:</h4>
-          <p id="checkout-resumen-items" class="checkout-items-text"></p>
-          <div class="checkout-desglose-box">
-            <div class="checkout-desglose-fila" id="checkout-fila-subtotal" style="display: none;">
-              <span>Subtotal precio de lista:</span>
-              <span id="checkout-subtotal-monto">$0.00</span>
-            </div>
-            <div class="checkout-desglose-fila fila-descuento" id="checkout-fila-descuento" style="display: none;">
-              <span><i data-lucide="tag" class="ui-icon" style="width: 13px; height: 13px; vertical-align: -2px;"></i> Descuento Transferencia (10% OFF):</span>
-              <strong id="checkout-descuento-monto">-$0.00</strong>
-            </div>
-            <div class="checkout-total-box">
-              <span id="checkout-total-etiqueta">Total a pagar:</span>
-              <strong id="checkout-total-monto" class="checkout-total-monto">$0.00</strong>
+      <div class="modal-body checkout-modal-body">
+        <!-- PASO 1: DATOS DEL COMPRADOR -->
+        <div class="checkout-step-card">
+          <div class="checkout-step-header">
+            <span class="step-badge">1</span>
+            <div class="step-info">
+              <h4 class="step-title">¿A dónde te enviamos los moldes?</h4>
+              <p class="step-desc">Se habilitará el acceso a la carpeta de Google Drive con este correo.</p>
             </div>
           </div>
-        </div>
 
-        <!-- Avisos dinámicos de plazo de entrega según medio de pago -->
-        <div id="alert-plazo-transferencia" class="alert-box alert-plazo-transferencia" style="display: none;">
-          <div class="alert-plazo-header">
-            <i data-lucide="clock" class="ui-icon alert-plazo-icon"></i>
-            <strong>Demora de hasta 48 horas hábiles para la entrega</strong>
-          </div>
-          <p class="alert-plazo-texto">
-            Al abonar por transferencia bancaria con el <strong>10% de descuento</strong>, se requiere verificación manual de la acreditación bancaria. Por este motivo, el acceso a la carpeta de Google Drive con tus moldes y videos tiene una demora de <strong>hasta 48 horas hábiles</strong> (días hábiles de lunes a viernes). Te notificaremos a tu Gmail una vez acreditado.
-          </p>
-        </div>
-
-        <div id="alert-plazo-mercadopago" class="alert-box alert-plazo-inmediato">
-          <div class="alert-plazo-header">
-            <i data-lucide="zap" class="ui-icon alert-plazo-icon"></i>
-            <strong>Acreditación y entrega inmediata</strong>
-          </div>
-          <p class="alert-plazo-texto">
-            Al abonar mediante Mercado Pago (dinero en cuenta, tarjeta de débito o crédito), la acreditación es instantánea y te daremos acceso inmediato a la carpeta de Google Drive en tu Gmail registrado.
-          </p>
-        </div>
-
-        <div id="alert-plazo-paypal" class="alert-box alert-plazo-paypal" style="display: none;">
-          <div class="alert-plazo-header">
-            <i data-lucide="globe" class="ui-icon alert-plazo-icon"></i>
-            <strong>Entrega para compradores internacionales</strong>
-          </div>
-          <p class="alert-plazo-texto">
-            Tras verificar el envío de dólares en PayPal, recibirás la invitación con acceso completo a Google Drive en tu correo Gmail en un plazo de 1 hora.
-          </p>
-        </div>
-
-        <!-- Formulario con datos del comprador -->
-        <div class="checkout-cliente-card">
-          <h4><i data-lucide="user-check" class="ui-icon"></i> Datos del Comprador (para la entrega de moldes)</h4>
-          <p class="checkout-cliente-subtext">Cuando el pedido esté completado, te enviaremos el enlace a la carpeta de Google Drive con tus moldes en PDF y videos tutoriales. Por eso necesitamos un correo @gmail.com.</p>
-          <form id="form-datos-cliente" onsubmit="event.preventDefault(); confirmarPedido();">
-            <div class="form-group">
+          <form id="form-datos-cliente" onsubmit="event.preventDefault(); confirmarPedido();" class="checkout-form-compact">
+            <div class="form-group" style="margin-bottom: 0.75rem;">
               <label for="cliente-nombre">Nombre y Apellido *</label>
-              <input type="text" id="cliente-nombre" required placeholder="Ej: María Valentina Rossi"
-                autocomplete="name">
+              <input type="text" id="cliente-nombre" required placeholder="Ej: María Rossi" autocomplete="name">
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="cliente-email">Correo Gmail (para darte acceso a Google Drive) *</label>
-                <input type="email" id="cliente-email" required placeholder="Ej: maria.costura@gmail.com"
-                  autocomplete="email">
-                <div class="form-hint-gmail">
-                  <span class="gmail-pill">Exclusivo @gmail.com</span>
-                  <small>No se aceptan Outlook, Hotmail ni otros dominios. El enlace de Drive se envía a este Gmail.</small>
-                </div>
+
+            <div class="form-row" style="margin-bottom: 0;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="cliente-email">Correo Gmail *</label>
+                <input type="email" id="cliente-email" required placeholder="maria.costura@gmail.com" autocomplete="email">
+                <small class="field-subhint"><i data-lucide="info" class="ui-icon-xs"></i> Cuenta @gmail.com para habilitarte Google Drive</small>
               </div>
-              <div class="form-group">
-                <label for="cliente-telefono">WhatsApp / Teléfono</label>
-                <input type="tel" id="cliente-telefono" placeholder="Ej: +54 9 11 1234-5678" autocomplete="tel">
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="cliente-telefono">WhatsApp (opcional)</label>
+                <input type="tel" id="cliente-telefono" placeholder="+54 9 11 1234-5678" autocomplete="tel">
+                <small class="field-subhint">Para contacto ante dudas con tu pedido</small>
               </div>
             </div>
           </form>
         </div>
 
-        <!-- Datos de Pago con Mercado Pago Dinámicos -->
-        <div id="seccion-pago-mercadopago" class="datos-transferencia-card seccion-mp-box">
-          <div class="mp-header-row">
-            <div class="mp-badge-brand">
-              <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i>
-              <strong>Pago Rápido con Mercado Pago</strong>
+        <!-- PASO 2: SELECCIÓN DE MEDIO DE PAGO -->
+        <div class="checkout-step-card">
+          <div class="checkout-step-header">
+            <span class="step-badge">2</span>
+            <div class="step-info">
+              <h4 class="step-title">Elegí tu medio de pago</h4>
+              <p class="step-desc">Aboná con acreditación automática o aprovechá el 10% OFF:</p>
             </div>
-            <span class="mp-currency-pill">Acreditación Inmediata</span>
           </div>
 
-          <p class="mp-instrucciones-lead">
-            Podés abonar con dinero en cuenta de Mercado Pago, tarjeta de débito o crédito, con acreditación automática e instantánea:
-          </p>
+          <div class="metodo-pago-selector">
+            <div class="metodo-pago-tabs" role="tablist">
+              <button type="button" id="tab-pago-mercadopago" class="tab-pago active" role="tab" aria-selected="true" onclick="seleccionarMetodoPagoCheckout('mercadopago')">
+                <span class="tab-indicator"></span>
+                <span class="tab-icon-wrap">💳</span>
+                <span class="tab-text">
+                  <span class="tab-title-row">
+                    <strong>Mercado Pago</strong>
+                    <span class="pill-badge pill-mp">⚡ Inmediato</span>
+                  </span>
+                  <small>Tarjetas o dinero en cuenta</small>
+                </span>
+              </button>
 
-          <div style="margin: 0.85rem 0;">
-            <button type="button" class="btn-mp-open" onclick="confirmarPedido()" title="Pagar ahora con Mercado Pago">
-              <i data-lucide="zap" class="ui-icon"></i> Pagar con Mercado Pago (Tarjetas o Dinero MP)
-            </button>
-            <small style="display: block; text-align: center; color: var(--text-muted); font-size: 0.78rem; margin-top: 0.35rem;">
-              Al hacer clic se abrirá la pasarela oficial de Mercado Pago para abonar de forma 100% segura.
-            </small>
+              <button type="button" id="tab-pago-transferencia" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('transferencia')">
+                <span class="tab-indicator"></span>
+                <span class="tab-icon-wrap">🏦</span>
+                <span class="tab-text">
+                  <span class="tab-title-row">
+                    <strong>Transferencia</strong>
+                    <span class="pill-badge pill-transf">🔥 10% OFF</span>
+                  </span>
+                  <small>CBU / CVU / Alias bancario</small>
+                </span>
+              </button>
+
+              <button type="button" id="tab-pago-paypal" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('paypal')">
+                <span class="tab-indicator"></span>
+                <span class="tab-icon-wrap">🌎</span>
+                <span class="tab-text">
+                  <span class="tab-title-row">
+                    <strong>PayPal</strong>
+                    <span class="pill-badge pill-paypal">Exterior</span>
+                  </span>
+                  <small>Dólares (USD)</small>
+                </span>
+              </button>
+            </div>
           </div>
 
-          <div style="border-top: 1px dashed #bae6fd; padding-top: 0.75rem; margin-top: 0.75rem;">
-            <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-              <strong>O también podés transferir directamente por Alias desde tu app de MP:</strong>
-            </p>
-            <ul class="datos-lista">
-              <li class="dato-copiable-row">
-                <div class="dato-info">
-                  <strong>Alias Mercado Pago (CVU):</strong>
-                  <span id="checkout-mp-alias" class="copy-value">COSECONGIU.MP</span>
+          <!-- DETALLE MÉTODO: MERCADO PAGO -->
+          <div id="seccion-pago-mercadopago" class="method-detail-card mp-panel">
+            <div class="mp-callout-clean">
+              <div class="mp-callout-header">
+                <i data-lucide="zap" class="ui-icon" style="color: #009ee3;"></i>
+                <strong>Acreditación instantánea 100% automatizada</strong>
+              </div>
+              <p class="mp-callout-desc">
+                Al presionar el botón se abrirá la pasarela oficial de Mercado Pago para pagar con tarjeta de crédito, débito o dinero en cuenta.
+              </p>
+              <div class="mp-payment-badges">
+                <span class="tag-chip">Visa</span>
+                <span class="tag-chip">Mastercard</span>
+                <span class="tag-chip">Débito</span>
+                <span class="tag-chip">Saldo MP</span>
+              </div>
+            </div>
+
+            <!-- Opción alternativa sutil por si el cliente desea transferir por Alias MP -->
+            <details class="alias-mp-dropdown">
+              <summary><i data-lucide="help-circle" class="ui-icon-xs"></i> ¿Querés transferir manualmente por Alias desde la app de MP?</summary>
+              <div class="alias-mp-content">
+                <div class="alias-mp-line">
+                  <span>Alias MP:</span>
+                  <strong id="checkout-mp-alias" class="copy-value">COSECONGIU.MP</strong>
+                  <button type="button" class="btn-copy-mini" onclick="copiarDatoBancario('mpAlias', this)">Copiar</button>
                 </div>
-                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('mpAlias', this)" title="Copiar alias de Mercado Pago">
-                  <i data-lucide="copy" class="ui-icon"></i> Copiar Alias MP
+                <div class="alias-mp-line">
+                  <span>Titular:</span>
+                  <span id="checkout-mp-titular">Cosé con Giu - Moldes Digitales</span>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <!-- DETALLE MÉTODO: TRANSFERENCIA (10% OFF) -->
+          <div id="seccion-transferencia-bancaria" class="method-detail-card transf-panel" style="display: none;">
+            <div class="transf-clean-notice">
+              <i data-lucide="percent" class="ui-icon" style="color: #16a34a;"></i>
+              <span><strong>10% de Descuento aplicado</strong> en el total a transferir</span>
+            </div>
+
+            <div class="bank-details-grid">
+              <div class="bank-grid-item">
+                <span class="b-label">Banco / Billetera</span>
+                <strong id="checkout-banco-nombre" class="b-value">Banco Nación / Mercado Pago</strong>
+              </div>
+              <div class="bank-grid-item">
+                <span class="b-label">Titular de Cuenta</span>
+                <span id="checkout-banco-titular" class="b-value">Cosé con Giu - Moldes Digitales</span>
+              </div>
+              <div class="bank-grid-item b-action-item">
+                <div>
+                  <span class="b-label">Alias Bancario</span>
+                  <strong id="checkout-banco-alias" class="copy-value b-value">COSE.CON.GIU</strong>
+                </div>
+                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('alias', this)" title="Copiar alias">
+                  <i data-lucide="copy" class="ui-icon-xs"></i> Copiar
                 </button>
-              </li>
-              <li><strong>Titular de la cuenta:</strong> <span id="checkout-mp-titular">Cosé con Giu - Moldes Digitales</span></li>
-            </ul>
-          </div>
-
-          <div class="comprobante-seccion-card">
-            <h5><i data-lucide="receipt" class="ui-icon"></i> N° de Operación o Comprobante de Mercado Pago (opcional)</h5>
-            <p class="comprobante-subtext">
-              Si realizaste el pago desde la app, ingresá el N° de operación o adjuntá la captura para agilizar la entrega:
-            </p>
-
-            <div class="form-group" style="margin-bottom: 0.75rem;">
-              <label for="checkout-mp-num-operacion">N° de Operación de Mercado Pago (opcional):</label>
-              <input type="text" id="checkout-mp-num-operacion" placeholder="Ej: 9876543210 (código de la app de Mercado Pago)" autocomplete="off">
-            </div>
-
-            <div class="form-group" style="margin-bottom: 0;">
-              <label>Adjuntar foto o comprobante de pago (opcional):</label>
-              <div class="dropzone-comprobante" onclick="document.getElementById('checkout-comprobante-file').click();">
-                <div id="dropzone-vacio-mp" class="dropzone-vacio">
-                  <i data-lucide="upload-cloud" class="ui-icon dropzone-icon"></i>
-                  <span>Haz clic aquí para seleccionar tu comprobante de MP (JPG, PNG o PDF)</span>
+              </div>
+              <div class="bank-grid-item b-action-item">
+                <div>
+                  <span class="b-label">CBU / CVU</span>
+                  <span id="checkout-banco-cbu" class="copy-value b-value">0000003100012345678901</span>
                 </div>
-                <div id="dropzone-previa-mp" class="dropzone-previa" style="display: none;">
-                  <div class="previa-info">
-                    <i data-lucide="file-check" class="ui-icon previa-icon"></i>
-                    <span id="previa-nombre-mp">comprobante.jpg</span>
-                    <span id="previa-tamano-mp" class="previa-size"></span>
-                  </div>
-                  <button type="button" class="btn-quitar-comprobante" onclick="event.stopPropagation(); quitarComprobante();" title="Quitar archivo">
-                    <i data-lucide="trash-2" class="ui-icon"></i> Quitar
-                  </button>
-                </div>
+                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('cbu', this)" title="Copiar CBU">
+                  <i data-lucide="copy" class="ui-icon-xs"></i> Copiar
+                </button>
+              </div>
+              <div class="bank-grid-item">
+                <span class="b-label">CUIT</span>
+                <span id="checkout-banco-cuit" class="b-value">27-38491204-4</span>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Datos Bancarios Dinámicos con Copiado Rápido (Transferencia ARS con 10% OFF) -->
-        <div id="seccion-transferencia-bancaria" class="datos-transferencia-card" style="display: none;">
-          <div style="background: #f0fdf4; border: 1px dashed #86efac; border-radius: 6px; padding: 0.6rem 0.85rem; margin-bottom: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i data-lucide="tag" class="ui-icon" style="color: #16a34a;"></i>
-            <span style="font-size: 0.88rem; color: #15803d; font-weight: 700;">
-              ¡10% de Descuento aplicado en el total a transferir!
-            </span>
-          </div>
-
-          <h4><i data-lucide="landmark" class="ui-icon"></i> Datos bancarios para la transferencia:</h4>
-          <ul class="datos-lista">
-            <li><strong>Banco / Billetera:</strong> <span id="checkout-banco-nombre">Banco Nación / Mercado Pago</span></li>
-            <li><strong>Titular:</strong> <span id="checkout-banco-titular">Cosé con Giu - Moldes Digitales</span></li>
-            <li class="dato-copiable-row">
-              <div class="dato-info">
-                <strong>Alias:</strong> <span id="checkout-banco-alias" class="copy-value">COSE.CON.GIU</span>
+            <!-- Adjuntar Comprobante Compacto -->
+            <div class="comprobante-compact-wrap">
+              <div class="form-group" style="margin-bottom: 0.6rem;">
+                <label for="checkout-num-operacion">N° de Operación Bancaria (opcional):</label>
+                <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230 (código en app bancaria)" autocomplete="off">
               </div>
-              <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('alias', this)" title="Copiar alias bancario">
-                <i data-lucide="copy" class="ui-icon"></i> Copiar Alias
-              </button>
-            </li>
-            <li class="dato-copiable-row">
-              <div class="dato-info">
-                <strong>CBU / CVU:</strong> <span id="checkout-banco-cbu" class="copy-value">0000003100012345678901</span>
-              </div>
-              <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('cbu', this)" title="Copiar CBU o CVU">
-                <i data-lucide="copy" class="ui-icon"></i> Copiar CBU
-              </button>
-            </li>
-            <li><strong>CUIT / CUIL:</strong> <span id="checkout-banco-cuit">27-38491204-4</span></li>
-          </ul>
 
-          <!-- Comprobante de transferencia y N° de Operación -->
-          <div class="comprobante-seccion-card">
-            <h5><i data-lucide="receipt" class="ui-icon"></i> Comprobante de Transferencia (Recomendado)</h5>
-            <p class="comprobante-subtext">
-              Adjunta el comprobante y el N° de operación para verificar tu transferencia y enviarte los moldes:
-            </p>
-
-            <div class="form-group" style="margin-bottom: 0.75rem;">
-              <label for="checkout-num-operacion">N° de Operación o Transferencia (opcional):</label>
-              <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230 (código de la app bancaria)" autocomplete="off">
-            </div>
-
-            <div class="form-group" style="margin-bottom: 0;">
-              <label>Adjuntar foto o archivo del comprobante:</label>
-              <div class="dropzone-comprobante" id="dropzone-comprobante" onclick="document.getElementById('checkout-comprobante-file').click();">
+              <div class="dropzone-compact" id="dropzone-comprobante" onclick="document.getElementById('checkout-comprobante-file').click();">
                 <input type="file" id="checkout-comprobante-file" accept="image/*,application/pdf" style="display: none;" onchange="manejarSeleccionComprobante(this)">
-                <div id="dropzone-vacio" class="dropzone-vacio">
-                  <i data-lucide="upload-cloud" class="ui-icon dropzone-icon"></i>
-                  <span>Haz clic aquí para seleccionar tu comprobante (JPG, PNG o PDF — se optimiza automáticamente)</span>
+                <div id="dropzone-vacio" class="dropzone-compact-empty">
+                  <i data-lucide="paperclip" class="ui-icon"></i>
+                  <span>Adjuntar foto o PDF del comprobante (opcional)</span>
                 </div>
-                <div id="dropzone-previa" class="dropzone-previa" style="display: none;">
-                  <div class="previa-info">
-                    <i data-lucide="file-check" class="ui-icon previa-icon"></i>
+                <div id="dropzone-previa" class="dropzone-compact-preview" style="display: none;">
+                  <div class="previa-info-clean">
+                    <i data-lucide="file-check" class="ui-icon" style="color: #16a34a;"></i>
                     <span id="previa-nombre">comprobante.jpg</span>
                     <span id="previa-tamano" class="previa-size"></span>
                   </div>
-                  <button type="button" class="btn-quitar-comprobante" onclick="event.stopPropagation(); quitarComprobante();" title="Quitar archivo">
-                    <i data-lucide="trash-2" class="ui-icon"></i> Quitar
-                  </button>
+                  <button type="button" class="btn-quitar-mini" onclick="event.stopPropagation(); quitarComprobante();" title="Quitar">&times;</button>
                 </div>
+              </div>
+
+              <div class="verification-note">
+                <i data-lucide="clock" class="ui-icon-xs"></i>
+                <span>Verificación manual: te daremos acceso a los moldes en tu Gmail en un plazo de hasta 48 hs hábiles.</span>
               </div>
             </div>
           </div>
 
-          <div class="transferencia-aviso" style="border-left-color: #f59e0b; background: #fffbeb;">
-            <p style="color: #92400e;"><strong>Plazo y pasos para recibir tus moldes (Transferencia):</strong></p>
-            <ol style="color: #78350f;">
-              <li>Realiza la transferencia por el total exacto con <strong>10% OFF</strong>.</li>
-              <li>Adjunta tu comprobante o N° de operación (recomendado).</li>
-              <li>Haz clic en el botón <strong>"He realizado la transferencia"</strong> para registrar tu compra.</li>
-              <li>La verificación bancaria y entrega tiene una <strong>demora de hasta 48 horas hábiles</strong>. Te llegará el enlace de Drive directo a tu Gmail.</li>
-            </ol>
+          <!-- DETALLE MÉTODO: PAYPAL (USD EXTERIOR) -->
+          <div id="seccion-pago-paypal" class="method-detail-card paypal-panel" style="display: none;">
+            <div class="paypal-clean-header">
+              <i data-lucide="globe" class="ui-icon" style="color: #0070ba;"></i>
+              <strong>Pago Internacional en Dólares (USD)</strong>
+            </div>
+            <p class="paypal-clean-desc">
+              Envía el monto total en USD a través de PayPal a nuestra cuenta oficial:
+            </p>
+
+            <div class="paypal-details-box">
+              <div class="paypal-email-row">
+                <div>
+                  <span class="b-label">Correo de PayPal:</span>
+                  <strong id="checkout-paypal-email" class="copy-value b-value">cosecongiu@gmail.com</strong>
+                </div>
+                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('paypal', this)">
+                  <i data-lucide="copy" class="ui-icon-xs"></i> Copiar
+                </button>
+              </div>
+
+              <a id="btn-abrir-paypal-link" href="https://paypal.me/cosecongiu" target="_blank" rel="noopener noreferrer" class="btn-paypal-clean">
+                <i data-lucide="external-link" class="ui-icon-xs"></i> Abrir PayPal para transferir
+              </a>
+            </div>
+
+            <div class="form-group" style="margin-top: 0.75rem; margin-bottom: 0.5rem;">
+              <label for="checkout-paypal-txid">ID de Transacción de PayPal (opcional):</label>
+              <input type="text" id="checkout-paypal-txid" placeholder="Ej: 9XY876543210" autocomplete="off">
+            </div>
+
+            <div class="verification-note">
+              <i data-lucide="clock" class="ui-icon-xs"></i>
+              <span>Envío de acceso a tu Gmail en el plazo de 1 hora tras confirmarse la recepción.</span>
+            </div>
           </div>
         </div>
 
-        <!-- Datos de Pago con PayPal Dinámicos (Cobros en USD al Exterior) -->
-        <div id="seccion-pago-paypal" class="datos-transferencia-card seccion-paypal-box" style="display: none;">
-          <div class="paypal-header-row">
-            <div class="paypal-badge-brand">
-              <i data-lucide="globe" class="ui-icon" style="color: #003087;"></i>
-              <strong>Pago Internacional por PayPal (USD)</strong>
-            </div>
-            <span class="paypal-currency-pill">Moneda: Dólares (USD)</span>
+        <!-- RESUMEN COMPACTO DEL PEDIDO -->
+        <div class="checkout-summary-card">
+          <div class="summary-line-header">
+            <span class="summary-lbl">Moldes en tu pedido:</span>
+            <span id="checkout-resumen-items" class="summary-items-list"></span>
           </div>
 
-          <p class="paypal-instrucciones-lead">
-            Envía el monto total en <strong>Dólares (USD)</strong> directamente a la cuenta de PayPal oficial de la tienda. Puedes transferir entre cuentas ingresando el correo o haciendo clic en el botón directo:
-          </p>
-
-          <ul class="datos-lista">
-            <li class="dato-copiable-row">
-              <div class="dato-info">
-                <strong>Correo oficial de PayPal:</strong>
-                <span id="checkout-paypal-email" class="copy-value">cosecongiu@gmail.com</span>
-              </div>
-              <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('paypal', this)" title="Copiar correo de PayPal">
-                <i data-lucide="copy" class="ui-icon"></i> Copiar Correo
-              </button>
-            </li>
-            <li class="dato-copiable-row" id="row-checkout-paypal-me">
-              <div class="dato-info">
-                <strong>Enlace directo PayPal.Me:</strong>
-                <span id="checkout-paypal-me-texto" class="copy-value">paypal.me/cosecongiu</span>
-              </div>
-              <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('paypalMe', this)" title="Copiar link PayPal.Me">
-                <i data-lucide="copy" class="ui-icon"></i> Copiar Link
-              </button>
-            </li>
-          </ul>
-
-          <div class="paypal-direct-actions">
-            <a id="btn-abrir-paypal-link" href="https://www.paypal.com/myaccount/transfer/homepage/buy/preview" target="_blank" rel="noopener noreferrer" class="btn-paypal-open">
-              <i data-lucide="external-link" class="ui-icon"></i> Abrir PayPal para Transferir Dólares
-            </a>
-          </div>
-
-          <!-- Comprobante e ID de Transacción PayPal -->
-          <div class="comprobante-seccion-card">
-            <h5><i data-lucide="receipt" class="ui-icon"></i> Comprobante o ID de Transacción de PayPal</h5>
-            <p class="comprobante-subtext">
-              Ingresa el ID generado por PayPal o adjunta una captura de la pantalla de confirmación para verificar tu pago:
-            </p>
-
-            <div class="form-group" style="margin-bottom: 0.75rem;">
-              <label for="checkout-paypal-txid">ID de Transacción de PayPal (opcional):</label>
-              <input type="text" id="checkout-paypal-txid" placeholder="Ej: 9XY876543210 (Código de confirmación de PayPal)" autocomplete="off">
+          <div class="summary-totals-breakdown">
+            <div id="checkout-fila-subtotal" class="summary-total-row" style="display: none;">
+              <span>Subtotal precio regular:</span>
+              <span id="checkout-subtotal-monto">$0.00</span>
             </div>
-
-            <div class="form-group" style="margin-bottom: 0;">
-              <label>Adjuntar captura o comprobante del pago:</label>
-              <div class="dropzone-comprobante" id="dropzone-comprobante-paypal" onclick="document.getElementById('checkout-comprobante-file').click();">
-                <div id="dropzone-vacio-paypal" class="dropzone-vacio">
-                  <i data-lucide="upload-cloud" class="ui-icon dropzone-icon"></i>
-                  <span>Haz clic aquí para seleccionar la captura de tu pago en PayPal (JPG, PNG o PDF)</span>
-                </div>
-                <div id="dropzone-previa-paypal" class="dropzone-previa" style="display: none;">
-                  <div class="previa-info">
-                    <i data-lucide="file-check" class="ui-icon previa-icon"></i>
-                    <span id="previa-nombre-paypal">comprobante.jpg</span>
-                    <span id="previa-tamano-paypal" class="previa-size"></span>
-                  </div>
-                  <button type="button" class="btn-quitar-comprobante" onclick="event.stopPropagation(); quitarComprobante();" title="Quitar archivo">
-                    <i data-lucide="trash-2" class="ui-icon"></i> Quitar
-                  </button>
-                </div>
-              </div>
+            <div id="checkout-fila-descuento" class="summary-total-row discount-row" style="display: none;">
+              <span><i data-lucide="tag" class="ui-icon-xs"></i> Descuento Transferencia (10% OFF):</span>
+              <strong id="checkout-descuento-monto">-$0.00</strong>
+            </div>
+            <div class="summary-grand-total">
+              <span id="checkout-total-etiqueta">Total a pagar:</span>
+              <strong id="checkout-total-monto" class="total-monto-highlight">$0.00</strong>
             </div>
           </div>
+        </div>
 
-          <div class="transferencia-aviso" style="background: #f0f7ff; border-left-color: #0284c7;">
-            <p style="color: #0369a1;"><strong>Pasos para recibir tus moldes con PayPal:</strong></p>
-            <ol style="color: #0c4a6e;">
-              <li>Copia el correo de PayPal o haz clic en "Abrir PayPal para Transferir Dólares".</li>
-              <li>Envía el importe total indicado en <strong>USD</strong>.</li>
-              <li>Ingresa el ID de transacción o adjunta la captura (opcional pero acelera la entrega).</li>
-              <li>Haz clic en <strong>"He realizado el pago por PayPal"</strong>.</li>
-              <li>¡Listo! En un plazo máximo de 1 hora, te daremos acceso a los moldes en tu Gmail registrado.</li>
-            </ol>
-          </div>
+        <!-- Elementos ocultos para compatibilidad JS -->
+        <div style="display: none;" aria-hidden="true">
+          <div id="alert-plazo-transferencia"></div>
+          <div id="alert-plazo-mercadopago"></div>
+          <div id="alert-plazo-paypal"></div>
+          <input type="text" id="checkout-mp-num-operacion">
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="cerrarCheckout()">Volver al Carrito</button>
-        <button class="btn btn-success" id="btn-confirmar-checkout" onclick="confirmarPedido()">
-          <i data-lucide="check-circle-2" class="ui-icon"></i>
-          <span id="btn-confirmar-texto">He realizado el pago por Mercado Pago</span>
+      <div class="modal-footer checkout-modal-footer">
+        <button type="button" class="btn btn-secondary checkout-btn-return" onclick="cerrarCheckout()">
+          Volver al Carrito
+        </button>
+        <button type="button" class="btn btn-primary checkout-btn-confirm" id="btn-confirmar-checkout" onclick="confirmarPedido()">
+          <i data-lucide="shield-check" class="ui-icon"></i>
+          <span id="btn-confirmar-texto">Pagar con Mercado Pago</span>
         </button>
       </div>
     </div>

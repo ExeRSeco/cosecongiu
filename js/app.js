@@ -1794,10 +1794,10 @@ function renderCarrito() {
           <i data-lucide="arrow-left" class="ui-icon"></i> Continuar viendo moldes
         </button>
 
-        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); line-height: 1.45;">
-          <div><strong style="color: #15803d;">🔥 10% DE DESCUENTO</strong> pagando por Transferencia Bancaria</div>
-          <div style="margin-top: 0.25rem;"><strong style="color: #0284c7;">⚡ Acreditación Inmediata</strong> con Mercado Pago</div>
-          <div style="margin-top: 0.25rem;"><strong style="color: #003087;">🌎 Compras desde el Exterior:</strong> Pago en USD con PayPal</div>
+        <div class="cart-trust-badges">
+          <div class="cart-trust-item"><i data-lucide="shield-check" class="ui-icon-xs"></i> Pago 100% Seguro</div>
+          <div class="cart-trust-item"><i data-lucide="zap" class="ui-icon-xs"></i> Entrega inmediata con Mercado Pago</div>
+          <div class="cart-trust-item"><i data-lucide="percent" class="ui-icon-xs"></i> 10% OFF pagando por Transferencia</div>
         </div>
       </div>
     </div>
@@ -1873,10 +1873,11 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
   if (alertPaypal) alertPaypal.style.display = esPaypal ? "block" : "none";
 
   // Configuración de títulos, desglose y montos según método seleccionado
+  if (tituloModal) tituloModal.textContent = "Finalizar Compra";
+
   if (esTransferencia) {
-    if (tituloModal) tituloModal.textContent = "Finalizar Compra - Transferencia Bancaria (10% OFF)";
     if (totalEtiqueta) totalEtiqueta.textContent = "Total a transferir (10% OFF):";
-    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "He realizado la transferencia (10% OFF)";
+    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "Confirmar Transferencia (10% OFF)";
 
     const subtotalArs = calcularTotalCarrito("ARS");
     const descuento = Math.round(subtotalArs * 0.10 * 100) / 100;
@@ -1890,15 +1891,12 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
 
     if (elemResumen) {
       elemResumen.innerHTML = carrito.map(item => {
-        const subItem = item.precio * item.cantidad;
-        const descItem = Math.round(subItem * 0.10 * 100) / 100;
-        return `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - <span style="text-decoration: line-through; opacity: 0.7;">$${formatearPrecio(subItem)}</span> <strong>$${formatearPrecio(subItem - descItem)}</strong>`;
-      }).join("<br>");
+        return `<span class="checkout-item-badge">${escaparHTML(item.nombre)} <small>x${item.cantidad}</small></span>`;
+      }).join(" ");
     }
   } else if (esPaypal) {
-    if (tituloModal) tituloModal.textContent = "Finalizar Compra - Pago con PayPal (USD)";
-    if (totalEtiqueta) totalEtiqueta.textContent = "Total a pagar en USD:";
-    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "He realizado el pago por PayPal";
+    if (totalEtiqueta) totalEtiqueta.textContent = "Total en USD:";
+    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "Confirmar Pago por PayPal";
 
     if (filaSubtotal) filaSubtotal.style.display = "none";
     if (filaDescuento) filaDescuento.style.display = "none";
@@ -1908,12 +1906,8 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
 
     if (elemResumen) {
       elemResumen.innerHTML = carrito.map(item => {
-        const prod = productos.find(p => p.id === item.id) || {};
-        const usdUnitario = (prod.enPromo && prod.precioPromoUsd > 0)
-          ? prod.precioPromoUsd
-          : (Number(prod.precioUsd) || (item.precioUsd || 0));
-        return `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - USD $${(usdUnitario * item.cantidad).toFixed(2)}`;
-      }).join("<br>");
+        return `<span class="checkout-item-badge">${escaparHTML(item.nombre)} <small>x${item.cantidad}</small></span>`;
+      }).join(" ");
     }
 
     if (btnAbrirPaypal) {
@@ -1927,7 +1921,6 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
     }
   } else {
     // Mercado Pago (por defecto)
-    if (tituloModal) tituloModal.textContent = "Finalizar Compra - Pago Rápido con Mercado Pago";
     if (totalEtiqueta) totalEtiqueta.textContent = "Total a pagar:";
     if (btnConfirmarTexto) btnConfirmarTexto.textContent = "Pagar con Mercado Pago";
 
@@ -1939,8 +1932,8 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
 
     if (elemResumen) {
       elemResumen.innerHTML = carrito.map(item => {
-        return `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - $${formatearPrecio(item.precio * item.cantidad)}`;
-      }).join("<br>");
+        return `<span class="checkout-item-badge">${escaparHTML(item.nombre)} <small>x${item.cantidad}</small></span>`;
+      }).join(" ");
     }
 
     const mpLinkValido = (datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink || "").trim();
@@ -1973,6 +1966,7 @@ function abrirCheckout() {
   if (modal) {
     modal.style.display = "flex";
     modal.setAttribute('aria-hidden', 'false');
+    actualizarIconosLucide();
   }
   // Poner foco en el primer campo del formulario para accesibilidad
   const nombreInput = document.getElementById("cliente-nombre");
