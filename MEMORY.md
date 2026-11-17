@@ -19,6 +19,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 ## Aprendizajes y errores a evitar
 - Menos es más en microcopy: notas sutiles convierten mejor que advertencias extensas o restrictivas.
 - No duplicar botones de acción en modales para evitar confusión de flujo.
+- En CSS Grid dentro de modales, usar siempre minmax(0, 1fr) y overflow-x: hidden para evitar desbordes horizontales.
 
 ## Próximos pasos
 - Carga de moldes reales y enlaces finales a Google Drive por parte del administrador.
