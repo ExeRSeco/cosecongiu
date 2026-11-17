@@ -1,14 +1,14 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 17/11/2026 — Checkout Pro de Mercado Pago 100% automatizado con Serverless API y Webhook IPN en Vercel.
+Última actualización: 17/11/2026 — Checkout Pro MP completado + SQL optimizado con SECURITY DEFINER para RLS y Webhook.
 
 ## Estado actual
 - Integración automática de Mercado Pago Checkout Pro completada:
   - Backend Serverless en Vercel (`api/crear-preferencia.js` y `api/webhook-mercadopago.js`).
   - Creación dinámica de preferencia con ítems, montos en ARS y `external_reference`.
-  - Redirección directa a pasarela oficial de MP y retorno automático a la tienda (`?mp_status=approved`).
-  - Webhook sincronizado con Supabase para marcar compras aprobadas en segundo plano.
+  - Redirección directa a pasarela de MP y retorno automático a la tienda (`?mp_status=approved`).
+  - Webhook sincronizado con Supabase vía función RPC `marcar_pedido_completado_mp`.
 - Medios de pago activos y tri-modal en checkout:
   - **Mercado Pago:** Acreditación instantánea con tarjetas o saldo en cuenta.
   - **Transferencia Bancaria:** 10% de descuento automático con demora de hasta 48 horas hábiles.
@@ -17,13 +17,15 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
 ## Decisiones y por qué
 - Serverless API en `/api`: Oculta y resguarda el Access Token de Mercado Pago fuera del código del navegador.
-- Redirect nativo con `init_point`: Elimina la necesidad de cargar SDKs pesados en el cliente, respetando la filosofía Vanilla JS.
-- Sincronización dual (Retorno + Webhook): Garantiza que si el usuario cierra la ventana, el webhook de MP igualmente actualice la orden en Supabase.
+- Redirect nativo con `init_point`: Elimina la necesidad de cargar SDKs pesados en el cliente, respetando Vanilla JS.
+- RPC `marcar_pedido_completado_mp` (SECURITY DEFINER): Permite actualizar el estado de la compra desde el Webhook/Retorno sin violar RLS ni exponer credenciales master.
+- Función `es_admin_aprobado()` (SECURITY DEFINER): Elimina el error 42P17 de recursión infinita en RLS.
 
 ## Aprendizajes y errores a evitar
-- Nunca exponer tokens privados en el cliente ni en `MEMORY.md`.
-- Asegurar que `vercel.json` no reescriba `/api/*` hacia `/index.html`.
+- Nunca referenciar la misma tabla en su propia política RLS sin SECURITY DEFINER.
+- No exponer tokens privados en el cliente ni en `MEMORY.md`.
 - Respetar siempre las reglas de fechas locales en reportes y órdenes.
 
 ## Próximos pasos
+- Ejecutar el script SQL de migración en el editor de Supabase.
 - Carga de moldes reales y enlaces finales a carpetas de Google Drive por parte del administrador.
