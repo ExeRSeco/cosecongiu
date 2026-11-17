@@ -3629,3 +3629,413 @@ select:focus {
     height: 52px;
   }
 }
+
+/* ====================================================================
+   SELECTOR DE MÉTODO DE PAGO Y SECCIÓN PAYPAL
+   ==================================================================== */
+.metodo-pago-selector {
+  margin-bottom: 1.15rem;
+}
+
+.metodo-pago-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.metodo-pago-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.tab-pago {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: inherit;
+}
+
+.tab-pago:hover {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  transform: translateY(-1px);
+}
+
+.tab-pago.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: 0 4px 12px rgba(132, 94, 194, 0.15);
+}
+
+.tab-pago#tab-pago-mercadopago.active {
+  border-color: #009ee3;
+  background: #f0f9ff;
+  box-shadow: 0 4px 12px rgba(0, 158, 227, 0.15);
+}
+
+.tab-pago#tab-pago-mercadopago.active .tab-text strong {
+  color: #007bb5;
+}
+
+.tab-pago#tab-pago-transferencia.active {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+}
+
+.tab-pago#tab-pago-transferencia.active .tab-text strong {
+  color: #15803d;
+}
+
+.tab-pago#tab-pago-paypal.active {
+  border-color: #0070ba;
+  background: #eff6ff;
+  box-shadow: 0 4px 12px rgba(0, 112, 186, 0.15);
+}
+
+.tab-badge-discount {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  margin-top: 0.25rem;
+  width: fit-content;
+  letter-spacing: 0.3px;
+}
+
+.tab-badge-delivery {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #0284c7;
+  background: #e0f2fe;
+  border: 1px solid #7dd3fc;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  margin-top: 0.25rem;
+  width: fit-content;
+  letter-spacing: 0.3px;
+}
+
+.tab-badge-intl {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #003087;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  margin-top: 0.25rem;
+  width: fit-content;
+  letter-spacing: 0.3px;
+}
+
+/* Caja de pago con Mercado Pago */
+.seccion-mp-box {
+  border: 2px dashed #7dd3fc !important;
+  background-color: #f8fcff !important;
+}
+
+.mp-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.mp-badge-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  color: #007bb5;
+  font-weight: 700;
+}
+
+.mp-currency-pill {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #bae6fd;
+}
+
+.mp-instrucciones-lead {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  margin-bottom: 0.85rem;
+  line-height: 1.45;
+}
+
+.btn-mp-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #009ee3 0%, #007bb5 100%);
+  color: #ffffff !important;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 10px rgba(0, 158, 227, 0.25);
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-mp-open:hover {
+  background: linear-gradient(135deg, #0081bb 0%, #00608e 100%);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 158, 227, 0.35);
+}
+
+/* Alertas de plazo dinámicas en checkout */
+.alert-plazo-transferencia {
+  background-color: #fffbeb !important;
+  border-left: 4px solid #f59e0b !important;
+  border-color: #fde68a !important;
+}
+
+.alert-plazo-transferencia .alert-plazo-icon {
+  color: #d97706 !important;
+}
+
+.alert-plazo-inmediato {
+  background-color: #f0fdf4 !important;
+  border-left: 4px solid #16a34a !important;
+  border-color: #bbf7d0 !important;
+}
+
+.alert-plazo-inmediato .alert-plazo-icon {
+  color: #16a34a !important;
+}
+
+.alert-plazo-paypal {
+  background-color: #f0f9ff !important;
+  border-left: 4px solid #0284c7 !important;
+  border-color: #bae6fd !important;
+}
+
+/* Desglose de subtotal y descuento 10% en checkout */
+.checkout-desglose-box {
+  margin-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem;
+}
+
+.checkout-desglose-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.checkout-desglose-fila.fila-descuento {
+  color: #15803d;
+  font-weight: 700;
+  background: #f0fdf4;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px dashed #86efac;
+}
+
+.checkout-desglose-fila.fila-descuento strong {
+  color: #15803d;
+  font-size: 1rem;
+}
+
+/* Badges de método de pago */
+.badge-metodo-pago.mercadopago {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+/* Desglose de precios en vista de producto y catálogo */
+.product-price-transfer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  margin-top: 0.35rem;
+  width: fit-content;
+}
+
+.tab-flag {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tab-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-text strong {
+  font-size: 0.92rem;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.tab-text small {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.tab-pago.active .tab-text strong {
+  color: var(--primary-dark);
+}
+
+.tab-pago#tab-pago-paypal.active .tab-text strong {
+  color: #003087;
+}
+
+/* Caja de pago con PayPal */
+.seccion-paypal-box {
+  border: 2px dashed #93c5fd !important;
+  background-color: #fbfdff !important;
+}
+
+.paypal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.paypal-badge-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  color: #003087;
+  font-weight: 700;
+}
+
+.paypal-currency-pill {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #003087;
+  background: #e0f2fe;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #bae6fd;
+}
+
+.paypal-instrucciones-lead {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  margin-bottom: 0.85rem;
+  line-height: 1.45;
+}
+
+.paypal-direct-actions {
+  margin: 0.85rem 0;
+}
+
+.btn-paypal-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #0070ba 0%, #003087 100%);
+  color: #ffffff !important;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 10px rgba(0, 48, 135, 0.25);
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-paypal-open:hover {
+  background: linear-gradient(135deg, #005ea6 0%, #002266 100%);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 48, 135, 0.35);
+}
+
+/* Badges de método de pago en pedidos y órdenes */
+.badge-metodo-pago {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+.badge-metodo-pago.paypal {
+  background: #eff6ff;
+  color: #003087;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-metodo-pago.transferencia {
+  background: #f5f3ff;
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-border);
+}
+
+/* Badge de precio en USD para catálogo */
+.price-usd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 580px) {
+  .metodo-pago-tabs {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}

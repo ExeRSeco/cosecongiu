@@ -16,11 +16,17 @@ CREATE TABLE IF NOT EXISTS public.productos (
   precio NUMERIC(10,2) NOT NULL DEFAULT 0,
   en_promo BOOLEAN NOT NULL DEFAULT FALSE,
   precio_promo NUMERIC(10,2) DEFAULT 0,
+  precio_usd NUMERIC(10,2) DEFAULT 0, -- Precio manual en dólares (USD)
+  precio_promo_usd NUMERIC(10,2) DEFAULT 0, -- Precio promocional en dólares (USD)
   imagen TEXT, -- URL de la imagen en Supabase Storage
   link_archivos TEXT, -- Enlace a carpeta de Google Drive con moldes en PDF
   link_video TEXT, -- Enlace al video tutorial (YouTube/Drive)
   created_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
 );
+
+-- Migración idempotente para precios en USD
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS precio_usd NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS precio_promo_usd NUMERIC(10,2) DEFAULT 0;
 
 COMMENT ON TABLE public.productos IS 'Catálogo de moldes de costura descargables en formato PDF con enlaces a Drive y video tutorial';
 
@@ -33,19 +39,23 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
   cliente_email TEXT NOT NULL,
   cliente_telefono TEXT DEFAULT 'No especificado',
   total NUMERIC(10,2) NOT NULL DEFAULT 0,
+  moneda TEXT NOT NULL DEFAULT 'ARS', -- 'ARS' | 'USD'
+  metodo_pago TEXT NOT NULL DEFAULT 'mercadopago', -- 'mercadopago' | 'transferencia' | 'paypal'
   estado TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'completada', 'cancelada')),
   archivos_enviados BOOLEAN NOT NULL DEFAULT FALSE,
   fecha_envio_archivos TEXT,
-  comprobante_url TEXT, -- Enlace o ruta al comprobante de transferencia adjunto
-  numero_operacion TEXT, -- N° de operación bancaria ingresado por el cliente
+  comprobante_url TEXT, -- Enlace o ruta al comprobante de transferencia o pago adjunto
+  numero_operacion TEXT, -- N° de operación bancaria, Mercado Pago o ID de transacción PayPal
   created_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
 );
 
 -- Migración idempotente por si la tabla ya existía
 ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS comprobante_url TEXT;
 ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS numero_operacion TEXT;
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS moneda TEXT DEFAULT 'ARS';
+ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS metodo_pago TEXT DEFAULT 'mercadopago';
 
-COMMENT ON TABLE public.pedidos IS 'Órdenes de compra registradas tras confirmar pago por transferencia bancaria';
+COMMENT ON TABLE public.pedidos IS 'Órdenes de compra registradas tras confirmar pago por Mercado Pago, transferencia bancaria o PayPal';
 
 -- 4. TABLA: PEDIDO_ITEMS (DETALLE HISTÓRICO Y SNAPSHOT DE MOLDES ADQUIRIDOS)
 CREATE TABLE IF NOT EXISTS public.pedido_items (
@@ -292,11 +302,11 @@ CREATE POLICY "Gestión de configuración solo por admins aprobados"
     )
   );
 
--- Valor inicial por defecto para datos bancarios y canales de atención
+-- Valor inicial por defecto para datos bancarios, Mercado Pago, PayPal y canales de atención
 INSERT INTO public.tienda_config (clave, valor)
 VALUES (
   'datos_bancarios',
-  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4", "whatsapp": "+54 9 11 4455-8899", "instagram": "@cosecongiu"}'::jsonb
+  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4", "whatsapp": "+54 9 11 4455-8899", "instagram": "@cosecongiu", "mercado_pago_alias": "COSECONGIU.MP", "mercado_pago_link": "https://link.mercadopago.com.ar/cosecongiu", "paypal_email": "cosecongiu@gmail.com", "paypal_me": "cosecongiu"}'::jsonb
 )
 ON CONFLICT (clave) DO NOTHING;
 

@@ -16,6 +16,8 @@ const PRODUCTOS_POR_DEFECTO = [
     precio: 2500,
     enPromo: true,
     precioPromo: 1800,
+    precioUsd: 2.50,
+    precioPromoUsd: 1.80,
     icono: "scissors",
     imagen: null,
     linkArchivos: "https://drive.google.com/drive/folders/1SoleroVerano_PDF_Drive",
@@ -29,6 +31,8 @@ const PRODUCTOS_POR_DEFECTO = [
     precio: 2200,
     enPromo: false,
     precioPromo: 0,
+    precioUsd: 2.20,
+    precioPromoUsd: 0,
     icono: "layers",
     imagen: null,
     linkArchivos: "https://drive.google.com/drive/folders/1Palazzo_Elastic_PDF_Drive",
@@ -42,6 +46,8 @@ const PRODUCTOS_POR_DEFECTO = [
     precio: 2900,
     enPromo: true,
     precioPromo: 2400,
+    precioUsd: 2.90,
+    precioPromoUsd: 2.40,
     icono: "shirt",
     imagen: null,
     linkArchivos: "https://drive.google.com/drive/folders/1CamisaOversize_PDF_Drive",
@@ -55,6 +61,8 @@ const PRODUCTOS_POR_DEFECTO = [
     precio: 1500,
     enPromo: false,
     precioPromo: 0,
+    precioUsd: 1.50,
+    precioPromoUsd: 0,
     icono: "shopping-bag",
     imagen: null,
     linkArchivos: "https://drive.google.com/drive/folders/1ToteBag_Neceser_PDF_Drive",
@@ -76,7 +84,7 @@ const STORAGE_PEDIDOS = "tienda_moldes_pedidos";
 const STORAGE_ADMIN_AUTH = "cose_admin_auth";
 const STORAGE_DATOS_BANCO = "cose_datos_bancarios";
 
-// Datos bancarios y de contacto iniciales por defecto para cobro y atención al cliente
+// Datos bancarios, Mercado Pago, PayPal y de contacto iniciales por defecto para cobro y atención al cliente
 const DATOS_BANCARIOS_POR_DEFECTO = {
   banco: "Banco Nación / Mercado Pago",
   titular: "Cosé con Giu - Moldes Digitales",
@@ -84,12 +92,17 @@ const DATOS_BANCARIOS_POR_DEFECTO = {
   cbu: "0000003100012345678901",
   cuit: "27-38491204-4",
   whatsapp: "+54 9 11 4455-8899",
-  instagram: "@cosecongiu"
+  instagram: "@cosecongiu",
+  mercadoPagoAlias: "COSECONGIU.MP",
+  mercadoPagoLink: "https://link.mercadopago.com.ar/cosecongiu",
+  paypalEmail: "cosecongiu@gmail.com",
+  paypalMe: "cosecongiu"
 };
 
 let datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
 let archivoComprobanteSeleccionado = null;
 let archivoComprobanteDataUrl = null;
+let metodoPagoCheckout = "mercadopago"; // "mercadopago" | "transferencia" | "paypal"
 
 /**
  * ====================================================================
@@ -290,11 +303,18 @@ async function sincronizarConSupabaseSiAplica() {
       }
     }
 
-    // 3. Obtener configuración de cuenta bancaria desde Supabase
+    // 3. Obtener configuración de cuenta bancaria, Mercado Pago y PayPal desde Supabase
     if (typeof supabaseObtenerConfig === "function") {
       const configBanco = await supabaseObtenerConfig("datos_bancarios");
       if (configBanco && typeof configBanco === "object") {
-        datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO, ...configBanco };
+        datosBancarios = {
+          ...DATOS_BANCARIOS_POR_DEFECTO,
+          ...configBanco,
+          mercadoPagoAlias: configBanco.mercadoPagoAlias || configBanco.mercado_pago_alias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias,
+          mercadoPagoLink: configBanco.mercadoPagoLink || configBanco.mercado_pago_link || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink,
+          paypalEmail: configBanco.paypalEmail || configBanco.paypal_email || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail,
+          paypalMe: configBanco.paypalMe || configBanco.paypal_me || DATOS_BANCARIOS_POR_DEFECTO.paypalMe
+        };
         localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
         actualizarDatosBancariosUI();
       }
@@ -315,7 +335,20 @@ async function sincronizarConSupabaseSiAplica() {
 function cargarDatosDesdeLocalStorage() {
   const productosGuardados = localStorage.getItem(STORAGE_PRODUCTOS);
   if (productosGuardados) {
-    productos = JSON.parse(productosGuardados);
+    try {
+      const parsed = JSON.parse(productosGuardados);
+      // Migración suave: si los moldes en localStorage no tenían precio en USD, asignamos el valor correspondiente
+      productos = parsed.map(p => {
+        const def = PRODUCTOS_POR_DEFECTO.find(d => d.id === p.id);
+        return {
+          ...p,
+          precioUsd: (typeof p.precioUsd !== "undefined" && p.precioUsd !== null) ? Number(p.precioUsd) : (def ? def.precioUsd : 0),
+          precioPromoUsd: (typeof p.precioPromoUsd !== "undefined" && p.precioPromoUsd !== null) ? Number(p.precioPromoUsd) : (def ? def.precioPromoUsd : 0)
+        };
+      });
+    } catch (e) {
+      productos = [...PRODUCTOS_POR_DEFECTO];
+    }
   } else {
     productos = [...PRODUCTOS_POR_DEFECTO];
     guardarProductosEnStorage();
@@ -371,7 +404,14 @@ function cargarDatosBancarios() {
   if (guardados) {
     try {
       const parsed = JSON.parse(guardados);
-      datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO, ...parsed };
+      datosBancarios = {
+        ...DATOS_BANCARIOS_POR_DEFECTO,
+        ...parsed,
+        mercadoPagoAlias: parsed.mercadoPagoAlias || parsed.mercado_pago_alias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias,
+        mercadoPagoLink: parsed.mercadoPagoLink || parsed.mercado_pago_link || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink,
+        paypalEmail: parsed.paypalEmail || parsed.paypal_email || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail,
+        paypalMe: parsed.paypalMe || parsed.paypal_me || DATOS_BANCARIOS_POR_DEFECTO.paypalMe
+      };
     } catch (e) {
       datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
     }
@@ -392,12 +432,45 @@ function actualizarDatosBancariosUI() {
   const elemAlias = document.getElementById("checkout-banco-alias");
   const elemCbu = document.getElementById("checkout-banco-cbu");
   const elemCuit = document.getElementById("checkout-banco-cuit");
+  const elemPaypalEmail = document.getElementById("checkout-paypal-email");
+  const elemPaypalMe = document.getElementById("checkout-paypal-me-texto");
+  const rowPaypalMe = document.getElementById("row-checkout-paypal-me");
+  const btnAbrirPaypal = document.getElementById("btn-abrir-paypal-link");
+
+  // Mercado Pago en checkout
+  const elemMpAlias = document.getElementById("checkout-mp-alias");
+  const elemMpTitular = document.getElementById("checkout-mp-titular");
+  const wrapBtnMp = document.getElementById("wrap-btn-mp-link");
+  const btnAbrirMp = document.getElementById("btn-abrir-mp-link");
 
   if (elemBanco) elemBanco.textContent = datosBancarios.banco || DATOS_BANCARIOS_POR_DEFECTO.banco;
   if (elemTitular) elemTitular.textContent = datosBancarios.titular || DATOS_BANCARIOS_POR_DEFECTO.titular;
   if (elemAlias) elemAlias.textContent = datosBancarios.alias || DATOS_BANCARIOS_POR_DEFECTO.alias;
   if (elemCbu) elemCbu.textContent = datosBancarios.cbu || DATOS_BANCARIOS_POR_DEFECTO.cbu;
   if (elemCuit) elemCuit.textContent = datosBancarios.cuit || DATOS_BANCARIOS_POR_DEFECTO.cuit;
+
+  if (elemMpAlias) elemMpAlias.textContent = datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias;
+  if (elemMpTitular) elemMpTitular.textContent = datosBancarios.titular || DATOS_BANCARIOS_POR_DEFECTO.titular;
+
+  const mpLinkValido = (datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink || "").trim();
+  if (wrapBtnMp) wrapBtnMp.style.display = mpLinkValido ? "block" : "none";
+  if (btnAbrirMp && mpLinkValido) btnAbrirMp.href = mpLinkValido;
+
+  const mailPaypalValido = datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail;
+  if (elemPaypalEmail) elemPaypalEmail.textContent = mailPaypalValido;
+
+  const paypalMeValido = (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe || "").trim();
+  if (elemPaypalMe) elemPaypalMe.textContent = paypalMeValido.startsWith("http") ? paypalMeValido : `paypal.me/${paypalMeValido.replace("@", "")}`;
+  if (rowPaypalMe) rowPaypalMe.style.display = paypalMeValido ? "flex" : "none";
+
+  if (btnAbrirPaypal) {
+    if (paypalMeValido) {
+      const limpioUser = paypalMeValido.replace(/^https?:\/\/paypal\.me\//i, "").replace("@", "").trim();
+      btnAbrirPaypal.href = `https://paypal.me/${limpioUser}`;
+    } else {
+      btnAbrirPaypal.href = "https://www.paypal.com/myaccount/transfer/homepage/buy/preview";
+    }
+  }
 
   // 2. Inputs en el formulario de configuración bancaria y tienda del admin
   const inBanco = document.getElementById("admin-banco-nombre");
@@ -407,6 +480,10 @@ function actualizarDatosBancariosUI() {
   const inCuit = document.getElementById("admin-banco-cuit");
   const inWhatsapp = document.getElementById("admin-tienda-whatsapp");
   const inInstagram = document.getElementById("admin-tienda-instagram");
+  const inMpAlias = document.getElementById("admin-mp-alias");
+  const inMpLink = document.getElementById("admin-mp-link");
+  const inPaypalEmail = document.getElementById("admin-paypal-email");
+  const inPaypalMe = document.getElementById("admin-paypal-me");
 
   if (inBanco && (!inBanco.value || inBanco.value === DATOS_BANCARIOS_POR_DEFECTO.banco)) {
     inBanco.value = datosBancarios.banco;
@@ -423,11 +500,23 @@ function actualizarDatosBancariosUI() {
   if (inCuit && (!inCuit.value || inCuit.value === DATOS_BANCARIOS_POR_DEFECTO.cuit)) {
     inCuit.value = datosBancarios.cuit;
   }
+  if (inMpAlias && (!inMpAlias.value || inMpAlias.value === DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias)) {
+    inMpAlias.value = datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias;
+  }
+  if (inMpLink && (!inMpLink.value || inMpLink.value === DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink)) {
+    inMpLink.value = datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink;
+  }
   if (inWhatsapp && (!inWhatsapp.value || inWhatsapp.value === DATOS_BANCARIOS_POR_DEFECTO.whatsapp)) {
     inWhatsapp.value = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
   }
   if (inInstagram && (!inInstagram.value || inInstagram.value === DATOS_BANCARIOS_POR_DEFECTO.instagram)) {
     inInstagram.value = datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram;
+  }
+  if (inPaypalEmail && (!inPaypalEmail.value || inPaypalEmail.value === DATOS_BANCARIOS_POR_DEFECTO.paypalEmail)) {
+    inPaypalEmail.value = datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail;
+  }
+  if (inPaypalMe && (!inPaypalMe.value || inPaypalMe.value === DATOS_BANCARIOS_POR_DEFECTO.paypalMe)) {
+    inPaypalMe.value = datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe;
   }
 
   // 3. Enlaces dinámicos en el pie de página
@@ -458,6 +547,10 @@ async function guardarDatosBancariosDesdeAdmin() {
   const inCuit = document.getElementById("admin-banco-cuit");
   const inWhatsapp = document.getElementById("admin-tienda-whatsapp");
   const inInstagram = document.getElementById("admin-tienda-instagram");
+  const inMpAlias = document.getElementById("admin-mp-alias");
+  const inMpLink = document.getElementById("admin-mp-link");
+  const inPaypalEmail = document.getElementById("admin-paypal-email");
+  const inPaypalMe = document.getElementById("admin-paypal-me");
   const btnGuardar = document.getElementById("btn-guardar-banco");
 
   const banco = inBanco ? inBanco.value.trim() : "";
@@ -467,13 +560,22 @@ async function guardarDatosBancariosDesdeAdmin() {
   const cuit = inCuit ? inCuit.value.trim() : "";
   const whatsapp = inWhatsapp ? inWhatsapp.value.trim() : (datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp);
   const instagram = inInstagram ? inInstagram.value.trim() : (datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram);
+  const mercadoPagoAlias = inMpAlias ? inMpAlias.value.trim() : (datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias);
+  const mercadoPagoLink = inMpLink ? inMpLink.value.trim() : (datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink);
+  const paypalEmail = inPaypalEmail ? inPaypalEmail.value.trim() : (datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail);
+  const paypalMe = inPaypalMe ? inPaypalMe.value.trim() : (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe);
 
   if (!banco || !titular || !alias || !cbu || !cuit) {
     mostrarToast("Por favor completa todos los campos de la cuenta bancaria.");
     return;
   }
 
-  datosBancarios = { banco, titular, alias, cbu, cuit, whatsapp, instagram };
+  if (!paypalEmail || !paypalEmail.includes("@")) {
+    mostrarToast("Por favor ingresa un correo de PayPal válido.");
+    return;
+  }
+
+  datosBancarios = { banco, titular, alias, cbu, cuit, whatsapp, instagram, mercadoPagoAlias, mercadoPagoLink, paypalEmail, paypalMe };
   localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
   actualizarDatosBancariosUI();
 
@@ -527,6 +629,16 @@ async function copiarDatoBancario(tipo, btnElement) {
   } else if (tipo === "cbu") {
     texto = datosBancarios.cbu || DATOS_BANCARIOS_POR_DEFECTO.cbu;
     etiqueta = "CBU / CVU";
+  } else if (tipo === "mpAlias") {
+    texto = datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias;
+    etiqueta = "Alias de Mercado Pago";
+  } else if (tipo === "paypal") {
+    texto = datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail;
+    etiqueta = "Correo de PayPal";
+  } else if (tipo === "paypalMe") {
+    const rawMe = (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe || "").trim();
+    texto = rawMe.startsWith("http") ? rawMe : `https://paypal.me/${rawMe.replace("@", "")}`;
+    etiqueta = "Enlace PayPal.Me";
   }
 
   if (!texto) return;
@@ -584,6 +696,16 @@ async function manejarSeleccionComprobante(input) {
   const previaNombre = document.getElementById("previa-nombre");
   const previaTamano = document.getElementById("previa-tamano");
 
+  const dropzoneVacioMp = document.getElementById("dropzone-vacio-mp");
+  const dropzonePreviaMp = document.getElementById("dropzone-previa-mp");
+  const previaNombreMp = document.getElementById("previa-nombre-mp");
+  const previaTamanoMp = document.getElementById("previa-tamano-mp");
+
+  const dropzoneVacioPaypal = document.getElementById("dropzone-vacio-paypal");
+  const dropzonePreviaPaypal = document.getElementById("dropzone-previa-paypal");
+  const previaNombrePaypal = document.getElementById("previa-nombre-paypal");
+  const previaTamanoPaypal = document.getElementById("previa-tamano-paypal");
+
   // Si es imagen (JPG, PNG, WEBP), la optimizamos en el navegador para no saturar almacenamiento
   if (file.type && file.type.startsWith("image/")) {
     mostrarToast("Optimizando comprobante...");
@@ -591,15 +713,24 @@ async function manejarSeleccionComprobante(input) {
     archivoComprobanteSeleccionado = opt.file;
     archivoComprobanteDataUrl = opt.dataUrl;
 
+    const textoTamano = opt.porcentajeAhorro > 15
+      ? `(${(opt.pesoComprimido / 1024).toFixed(0)} KB - optimizado -${opt.porcentajeAhorro}%)`
+      : `(${(opt.pesoComprimido / 1024).toFixed(0)} KB)`;
+
     if (dropzoneVacio) dropzoneVacio.style.display = "none";
     if (dropzonePrevia) dropzonePrevia.style.display = "flex";
     if (previaNombre) previaNombre.textContent = opt.file.name;
-    if (previaTamano) {
-      const kbFinal = (opt.pesoComprimido / 1024).toFixed(0);
-      previaTamano.textContent = opt.porcentajeAhorro > 15
-        ? `(${kbFinal} KB - optimizado -${opt.porcentajeAhorro}%)`
-        : `(${kbFinal} KB)`;
-    }
+    if (previaTamano) previaTamano.textContent = textoTamano;
+
+    if (dropzoneVacioMp) dropzoneVacioMp.style.display = "none";
+    if (dropzonePreviaMp) dropzonePreviaMp.style.display = "flex";
+    if (previaNombreMp) previaNombreMp.textContent = opt.file.name;
+    if (previaTamanoMp) previaTamanoMp.textContent = textoTamano;
+
+    if (dropzoneVacioPaypal) dropzoneVacioPaypal.style.display = "none";
+    if (dropzonePreviaPaypal) dropzonePreviaPaypal.style.display = "flex";
+    if (previaNombrePaypal) previaNombrePaypal.textContent = opt.file.name;
+    if (previaTamanoPaypal) previaTamanoPaypal.textContent = textoTamano;
 
     actualizarIconosLucide();
     mostrarToast(`✓ Comprobante optimizado (${(opt.pesoComprimido / 1024).toFixed(0)} KB).`);
@@ -608,13 +739,23 @@ async function manejarSeleccionComprobante(input) {
     archivoComprobanteSeleccionado = file;
     archivoComprobanteDataUrl = null;
 
+    const kb = (file.size / 1024).toFixed(1);
+    const textoTamano = kb > 1024 ? `(${(kb / 1024).toFixed(2)} MB)` : `(${kb} KB)`;
+
     if (dropzoneVacio) dropzoneVacio.style.display = "none";
     if (dropzonePrevia) dropzonePrevia.style.display = "flex";
     if (previaNombre) previaNombre.textContent = file.name;
-    if (previaTamano) {
-      const kb = (file.size / 1024).toFixed(1);
-      previaTamano.textContent = kb > 1024 ? `(${(kb / 1024).toFixed(2)} MB)` : `(${kb} KB)`;
-    }
+    if (previaTamano) previaTamano.textContent = textoTamano;
+
+    if (dropzoneVacioMp) dropzoneVacioMp.style.display = "none";
+    if (dropzonePreviaMp) dropzonePreviaMp.style.display = "flex";
+    if (previaNombreMp) previaNombreMp.textContent = file.name;
+    if (previaTamanoMp) previaTamanoMp.textContent = textoTamano;
+
+    if (dropzoneVacioPaypal) dropzoneVacioPaypal.style.display = "none";
+    if (dropzonePreviaPaypal) dropzonePreviaPaypal.style.display = "flex";
+    if (previaNombrePaypal) previaNombrePaypal.textContent = file.name;
+    if (previaTamanoPaypal) previaTamanoPaypal.textContent = textoTamano;
 
     actualizarIconosLucide();
     mostrarToast("Documento de comprobante adjuntado correctamente.");
@@ -632,9 +773,17 @@ function quitarComprobante() {
 
   const dropzoneVacio = document.getElementById("dropzone-vacio");
   const dropzonePrevia = document.getElementById("dropzone-previa");
+  const dropzoneVacioMp = document.getElementById("dropzone-vacio-mp");
+  const dropzonePreviaMp = document.getElementById("dropzone-previa-mp");
+  const dropzoneVacioPaypal = document.getElementById("dropzone-vacio-paypal");
+  const dropzonePreviaPaypal = document.getElementById("dropzone-previa-paypal");
 
   if (dropzoneVacio) dropzoneVacio.style.display = "flex";
   if (dropzonePrevia) dropzonePrevia.style.display = "none";
+  if (dropzoneVacioMp) dropzoneVacioMp.style.display = "flex";
+  if (dropzonePreviaMp) dropzonePreviaMp.style.display = "none";
+  if (dropzoneVacioPaypal) dropzoneVacioPaypal.style.display = "flex";
+  if (dropzonePreviaPaypal) dropzonePreviaPaypal.style.display = "none";
   actualizarIconosLucide();
 }
 
@@ -1101,8 +1250,13 @@ function calcularMetricasAdmin() {
   const completados = pedidos.filter(p => p.estado === "completada").length;
   const pendientes = pedidos.filter(p => p.estado === "pendiente").length;
   const cancelados = pedidos.filter(p => p.estado === "cancelada").length;
-  const totalRecaudado = pedidos
-    .filter(p => p.estado === "completada")
+
+  const pedidosCompletados = pedidos.filter(p => p.estado === "completada");
+  const totalArs = pedidosCompletados
+    .filter(p => (p.moneda || "ARS") === "ARS")
+    .reduce((sum, p) => sum + (Number(p.total) || 0), 0);
+  const totalUsd = pedidosCompletados
+    .filter(p => p.moneda === "USD" || p.metodoPago === "paypal")
     .reduce((sum, p) => sum + (Number(p.total) || 0), 0);
 
   return {
@@ -1111,7 +1265,9 @@ function calcularMetricasAdmin() {
     completados,
     pendientes,
     cancelados,
-    totalRecaudado
+    totalArs,
+    totalUsd,
+    totalRecaudado: totalArs
   };
 }
 
@@ -1182,6 +1338,10 @@ function verDetalleProducto(productoId) {
   const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
   const tieneDescuento = producto.enPromo && producto.precioPromo > 0;
   const precioFinal = tieneDescuento ? producto.precioPromo : producto.precio;
+  const precioTransferencia = Math.round(precioFinal * 0.90 * 100) / 100;
+  const precioFinalUsd = (tieneDescuento && producto.precioPromoUsd > 0)
+    ? producto.precioPromoUsd
+    : (Number(producto.precioUsd) || 0);
 
   contenedor.innerHTML = `
     <div class="product-detail-visual">
@@ -1228,12 +1388,44 @@ function verDetalleProducto(productoId) {
       </div>
 
       <div class="product-price-box" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
-        ${tieneDescuento ? `
-          <span class="price-promo" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)}</span>
-          <span class="price-old" style="font-size: 1.15rem;">$${formatearPrecio(producto.precio)}</span>
-        ` : `
-          <span class="price-regular" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)}</span>
-        `}
+        <div style="display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
+          ${tieneDescuento ? `
+            <span class="price-promo" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)} <small style="font-size: 0.95rem; color: var(--text-muted);">ARS</small></span>
+            <span class="price-old" style="font-size: 1.15rem;">$${formatearPrecio(producto.precio)}</span>
+          ` : `
+            <span class="price-regular" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)} <small style="font-size: 0.95rem; color: var(--text-muted);">ARS</small></span>
+          `}
+        </div>
+
+        <!-- Precio con 10% OFF por Transferencia Bancaria -->
+        <div>
+          <span class="product-price-transfer-tag">
+            <i data-lucide="tag" class="ui-icon" style="width: 14px; height: 14px;"></i>
+            $${formatearPrecio(precioTransferencia)} ARS abonando por Transferencia (10% OFF)
+          </span>
+        </div>
+
+        ${precioFinalUsd > 0 ? `
+          <div style="margin-top: 0.35rem;">
+            <span class="price-usd-pill" style="font-size: 0.88rem; padding: 0.25rem 0.6rem;">
+              <i data-lucide="globe" class="ui-icon" style="width: 13px; height: 13px;"></i>
+              Exterior / PayPal: <strong>USD $${precioFinalUsd.toFixed(2)}</strong>
+              ${tieneDescuento && producto.precioUsd > 0 ? `<span style="text-decoration: line-through; opacity: 0.7; margin-left: 0.3rem;">$${Number(producto.precioUsd).toFixed(2)}</span>` : ''}
+            </span>
+          </div>
+        ` : ''}
+
+        <!-- Cuadro aclaratorio de plazos de entrega -->
+        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem; background: var(--bg-page); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45;">
+          <div style="display: flex; align-items: center; gap: 0.4rem; color: #0284c7; font-weight: 600; margin-bottom: 0.25rem;">
+            <i data-lucide="zap" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+            <span><strong>Mercado Pago:</strong> Acreditación y entrega inmediata.</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; color: #b45309; font-weight: 600;">
+            <i data-lucide="clock" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+            <span><strong>Transferencia (10% OFF):</strong> Acceso con demora de hasta 48 horas hábiles.</span>
+          </div>
+        </div>
       </div>
 
       <div class="product-detail-actions">
@@ -1375,6 +1567,10 @@ function renderCatalogo() {
 
   catalogoGrid.innerHTML = listaFiltrada.map(producto => {
     const precioFinal = producto.enPromo && producto.precioPromo > 0 ? producto.precioPromo : producto.precio;
+    const precioTransferencia = Math.round(precioFinal * 0.90 * 100) / 100;
+    const precioFinalUsd = (producto.enPromo && producto.precioPromoUsd > 0)
+      ? producto.precioPromoUsd
+      : (Number(producto.precioUsd) || 0);
     const tieneDescuento = producto.enPromo && producto.precioPromo > 0;
     const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
 
@@ -1412,6 +1608,14 @@ function renderCatalogo() {
           ` : `
             <span class="price-regular">$${formatearPrecio(precioFinal)}</span>
           `}
+          <div style="font-size: 0.76rem; color: #15803d; font-weight: 700; margin-top: 0.2rem;">
+            $${formatearPrecio(precioTransferencia)} con Transferencia (10% OFF)
+          </div>
+          ${precioFinalUsd > 0 ? `
+            <span class="price-usd-pill" title="Disponible para compra internacional en USD con PayPal">
+              <i data-lucide="globe" style="width: 12px; height: 12px;"></i> USD $${precioFinalUsd.toFixed(2)}
+            </span>
+          ` : ''}
         </div>
 
         <button class="btn btn-primary btn-block" onclick="agregarAlCarrito(${producto.id})">
@@ -1439,12 +1643,14 @@ function agregarAlCarrito(productoId) {
   if (itemExistente) {
     itemExistente.cantidad += 1;
   } else {
-    // Tomamos el precio vigente (promoción o regular)
+    // Tomamos el precio vigente (promoción o regular) en ARS y USD
     const precioEfectivo = producto.enPromo && producto.precioPromo > 0 ? producto.precioPromo : producto.precio;
+    const precioEfectivoUsd = producto.enPromo && producto.precioPromoUsd > 0 ? producto.precioPromoUsd : (Number(producto.precioUsd) || 0);
     carrito.push({
       id: producto.id,
       nombre: producto.nombre,
       precio: precioEfectivo,
+      precioUsd: precioEfectivoUsd,
       cantidad: 1
     });
   }
@@ -1478,7 +1684,17 @@ function eliminarDelCarrito(productoId) {
   mostrarToast("Molde eliminado del carrito.");
 }
 
-function calcularTotalCarrito() {
+function calcularTotalCarrito(moneda = "ARS") {
+  if (moneda === "USD") {
+    return carrito.reduce((acumulado, item) => {
+      let usd = item.precioUsd;
+      if (typeof usd === "undefined" || usd === null) {
+        const prod = productos.find(p => p.id === item.id);
+        usd = prod ? ((prod.enPromo && prod.precioPromoUsd > 0) ? prod.precioPromoUsd : (Number(prod.precioUsd) || 0)) : 0;
+      }
+      return acumulado + (usd * item.cantidad);
+    }, 0);
+  }
   return carrito.reduce((acumulado, item) => acumulado + (item.precio * item.cantidad), 0);
 }
 
@@ -1574,6 +1790,12 @@ function renderCarrito() {
         <button class="btn btn-secondary btn-block btn-sm" style="margin-top: 0.6rem;" onclick="cambiarVista('catalogo')">
           <i data-lucide="arrow-left" class="ui-icon"></i> Continuar viendo moldes
         </button>
+
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); line-height: 1.45;">
+          <div><strong style="color: #15803d;">🔥 10% DE DESCUENTO</strong> pagando por Transferencia Bancaria</div>
+          <div style="margin-top: 0.25rem;"><strong style="color: #0284c7;">⚡ Acreditación Inmediata</strong> con Mercado Pago</div>
+          <div style="margin-top: 0.25rem;"><strong style="color: #003087;">🌎 Compras desde el Exterior:</strong> Pago en USD con PayPal</div>
+        </div>
       </div>
     </div>
   `;
@@ -1583,9 +1805,149 @@ function renderCarrito() {
 
 /**
  * ====================================================================
- * 3. CHECKOUT SENCILLO (DATOS PARA TRANSFERENCIA)
+ * 3. CHECKOUT (MERCADO PAGO, TRANSFERENCIA 10% OFF O PAYPAL USD)
  * ====================================================================
  */
+
+/**
+ * Conmuta entre pago por Mercado Pago, Transferencia Bancaria (10% OFF) y PayPal (USD)
+ */
+function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
+  metodoPagoCheckout = metodo;
+
+  const tabMercadoPago = document.getElementById("tab-pago-mercadopago");
+  const tabTransferencia = document.getElementById("tab-pago-transferencia");
+  const tabPaypal = document.getElementById("tab-pago-paypal");
+
+  const secMercadoPago = document.getElementById("seccion-pago-mercadopago");
+  const secTransferencia = document.getElementById("seccion-transferencia-bancaria");
+  const secPaypal = document.getElementById("seccion-pago-paypal");
+
+  const alertMercadoPago = document.getElementById("alert-plazo-mercadopago");
+  const alertTransferencia = document.getElementById("alert-plazo-transferencia");
+  const alertPaypal = document.getElementById("alert-plazo-paypal");
+
+  const filaSubtotal = document.getElementById("checkout-fila-subtotal");
+  const subtotalMonto = document.getElementById("checkout-subtotal-monto");
+  const filaDescuento = document.getElementById("checkout-fila-descuento");
+  const descuentoMonto = document.getElementById("checkout-descuento-monto");
+
+  const tituloModal = document.getElementById("checkout-title");
+  const totalEtiqueta = document.getElementById("checkout-total-etiqueta");
+  const elemTotalMonto = document.getElementById("checkout-total-monto");
+  const btnConfirmarTexto = document.getElementById("btn-confirmar-texto");
+  const elemResumen = document.getElementById("checkout-resumen-items");
+  const btnAbrirPaypal = document.getElementById("btn-abrir-paypal-link");
+  const wrapBtnMp = document.getElementById("wrap-btn-mp-link");
+  const btnAbrirMp = document.getElementById("btn-abrir-mp-link");
+
+  const esMp = metodo === "mercadopago";
+  const esTransferencia = metodo === "transferencia";
+  const esPaypal = metodo === "paypal";
+
+  // Actualizar estados visuales de las pestañas
+  if (tabMercadoPago) {
+    tabMercadoPago.classList.toggle("active", esMp);
+    tabMercadoPago.setAttribute("aria-selected", esMp ? "true" : "false");
+  }
+  if (tabTransferencia) {
+    tabTransferencia.classList.toggle("active", esTransferencia);
+    tabTransferencia.setAttribute("aria-selected", esTransferencia ? "true" : "false");
+  }
+  if (tabPaypal) {
+    tabPaypal.classList.toggle("active", esPaypal);
+    tabPaypal.setAttribute("aria-selected", esPaypal ? "true" : "false");
+  }
+
+  // Visibilidad de secciones con datos de cobro
+  if (secMercadoPago) secMercadoPago.style.display = esMp ? "block" : "none";
+  if (secTransferencia) secTransferencia.style.display = esTransferencia ? "block" : "none";
+  if (secPaypal) secPaypal.style.display = esPaypal ? "block" : "none";
+
+  // Visibilidad de alertas dinámicas de plazos de entrega
+  if (alertMercadoPago) alertMercadoPago.style.display = esMp ? "block" : "none";
+  if (alertTransferencia) alertTransferencia.style.display = esTransferencia ? "block" : "none";
+  if (alertPaypal) alertPaypal.style.display = esPaypal ? "block" : "none";
+
+  // Configuración de títulos, desglose y montos según método seleccionado
+  if (esTransferencia) {
+    if (tituloModal) tituloModal.textContent = "Finalizar Compra - Transferencia Bancaria (10% OFF)";
+    if (totalEtiqueta) totalEtiqueta.textContent = "Total a transferir (10% OFF):";
+    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "He realizado la transferencia (10% OFF)";
+
+    const subtotalArs = calcularTotalCarrito("ARS");
+    const descuento = Math.round(subtotalArs * 0.10 * 100) / 100;
+    const totalConDescuento = subtotalArs - descuento;
+
+    if (filaSubtotal) filaSubtotal.style.display = "flex";
+    if (subtotalMonto) subtotalMonto.textContent = `$${formatearPrecio(subtotalArs)}`;
+    if (filaDescuento) filaDescuento.style.display = "flex";
+    if (descuentoMonto) descuentoMonto.textContent = `-$${formatearPrecio(descuento)} (10% OFF)`;
+    if (elemTotalMonto) elemTotalMonto.textContent = `$${formatearPrecio(totalConDescuento)}`;
+
+    if (elemResumen) {
+      elemResumen.innerHTML = carrito.map(item => {
+        const subItem = item.precio * item.cantidad;
+        const descItem = Math.round(subItem * 0.10 * 100) / 100;
+        return `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - <span style="text-decoration: line-through; opacity: 0.7;">$${formatearPrecio(subItem)}</span> <strong>$${formatearPrecio(subItem - descItem)}</strong>`;
+      }).join("<br>");
+    }
+  } else if (esPaypal) {
+    if (tituloModal) tituloModal.textContent = "Finalizar Compra - Pago con PayPal (USD)";
+    if (totalEtiqueta) totalEtiqueta.textContent = "Total a pagar en USD:";
+    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "He realizado el pago por PayPal";
+
+    if (filaSubtotal) filaSubtotal.style.display = "none";
+    if (filaDescuento) filaDescuento.style.display = "none";
+
+    const totalUsd = calcularTotalCarrito("USD");
+    if (elemTotalMonto) elemTotalMonto.textContent = `USD $${totalUsd.toFixed(2)}`;
+
+    if (elemResumen) {
+      elemResumen.innerHTML = carrito.map(item => {
+        const prod = productos.find(p => p.id === item.id) || {};
+        const usdUnitario = (prod.enPromo && prod.precioPromoUsd > 0)
+          ? prod.precioPromoUsd
+          : (Number(prod.precioUsd) || (item.precioUsd || 0));
+        return `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - USD $${(usdUnitario * item.cantidad).toFixed(2)}`;
+      }).join("<br>");
+    }
+
+    if (btnAbrirPaypal) {
+      const paypalMeValido = (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe || "").trim();
+      if (paypalMeValido) {
+        const limpioUser = paypalMeValido.replace(/^https?:\/\/paypal\.me\//i, "").replace("@", "").trim();
+        btnAbrirPaypal.href = `https://paypal.me/${limpioUser}/${totalUsd.toFixed(2)}`;
+      } else {
+        btnAbrirPaypal.href = "https://www.paypal.com/myaccount/transfer/homepage/buy/preview";
+      }
+    }
+  } else {
+    // Mercado Pago (por defecto)
+    if (tituloModal) tituloModal.textContent = "Finalizar Compra - Pago Rápido con Mercado Pago";
+    if (totalEtiqueta) totalEtiqueta.textContent = "Total a pagar:";
+    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "He realizado el pago por Mercado Pago";
+
+    if (filaSubtotal) filaSubtotal.style.display = "none";
+    if (filaDescuento) filaDescuento.style.display = "none";
+
+    const totalArs = calcularTotalCarrito("ARS");
+    if (elemTotalMonto) elemTotalMonto.textContent = `$${formatearPrecio(totalArs)}`;
+
+    if (elemResumen) {
+      elemResumen.innerHTML = carrito.map(item => {
+        return `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - $${formatearPrecio(item.precio * item.cantidad)}`;
+      }).join("<br>");
+    }
+
+    const mpLinkValido = (datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink || "").trim();
+    if (wrapBtnMp) wrapBtnMp.style.display = mpLinkValido ? "block" : "none";
+    if (btnAbrirMp && mpLinkValido) btnAbrirMp.href = mpLinkValido;
+  }
+
+  actualizarIconosLucide();
+}
+
 function abrirCheckout() {
   if (carrito.length === 0) {
     mostrarToast("El carrito está vacío.");
@@ -1596,14 +1958,12 @@ function abrirCheckout() {
   quitarComprobante();
   const numOpInput = document.getElementById("checkout-num-operacion");
   if (numOpInput) numOpInput.value = "";
+  const mpOpInput = document.getElementById("checkout-mp-num-operacion");
+  if (mpOpInput) mpOpInput.value = "";
+  const txidPaypalInput = document.getElementById("checkout-paypal-txid");
+  if (txidPaypalInput) txidPaypalInput.value = "";
 
-  const sumaTotal = calcularTotalCarrito();
-  const resumenItemsTexto = carrito
-    .map(item => `• ${escaparHTML(item.nombre)} (x${item.cantidad}) - $${formatearPrecio(item.precio * item.cantidad)}`)
-    .join("<br>");
-
-  document.getElementById("checkout-resumen-items").innerHTML = resumenItemsTexto;
-  document.getElementById("checkout-total-monto").textContent = `$${formatearPrecio(sumaTotal)}`;
+  seleccionarMetodoPagoCheckout(metodoPagoCheckout || "mercadopago");
 
   // Mostramos el modal
   const modal = document.getElementById("modal-checkout");
@@ -1632,11 +1992,25 @@ async function confirmarPedido() {
   const emailInput = document.getElementById("cliente-email");
   const telefonoInput = document.getElementById("cliente-telefono");
   const numOpInput = document.getElementById("checkout-num-operacion");
+  const mpOpInput = document.getElementById("checkout-mp-num-operacion");
+  const txidPaypalInput = document.getElementById("checkout-paypal-txid");
 
   const nombre = nombreInput ? nombreInput.value.trim() : "";
   const email = emailInput ? emailInput.value.trim() : "";
   const telefono = telefonoInput ? telefonoInput.value.trim() : "";
-  const numeroOperacion = numOpInput ? numOpInput.value.trim() : "";
+
+  const esPaypal = metodoPagoCheckout === "paypal";
+  const esTransferencia = metodoPagoCheckout === "transferencia";
+  const esMercadoPago = metodoPagoCheckout === "mercadopago";
+
+  let numeroOperacion = "";
+  if (esPaypal) {
+    numeroOperacion = txidPaypalInput ? txidPaypalInput.value.trim() : "";
+  } else if (esMercadoPago) {
+    numeroOperacion = mpOpInput ? mpOpInput.value.trim() : "";
+  } else {
+    numeroOperacion = numOpInput ? numOpInput.value.trim() : "";
+  }
 
   if (!nombre) {
     mostrarToast("Por favor ingresa tu Nombre y Apellido para recibir los moldes.");
@@ -1658,7 +2032,23 @@ async function confirmarPedido() {
     return;
   }
 
-  const sumaTotal = calcularTotalCarrito();
+  let moneda = "ARS";
+  let sumaTotal = 0;
+
+  if (esPaypal) {
+    moneda = "USD";
+    sumaTotal = calcularTotalCarrito("USD");
+  } else if (esTransferencia) {
+    moneda = "ARS";
+    const subtotal = calcularTotalCarrito("ARS");
+    const desc = Math.round(subtotal * 0.10 * 100) / 100;
+    sumaTotal = subtotal - desc;
+  } else {
+    // Mercado Pago
+    moneda = "ARS";
+    sumaTotal = calcularTotalCarrito("ARS");
+  }
+
   const fechaActual = obtenerFechaLocalHoraTexto(new Date());
   const codigoPedido = "ORD-" + Math.floor(1000 + Math.random() * 9000);
 
@@ -1699,16 +2089,26 @@ async function confirmarPedido() {
     },
     items: carrito.map(item => {
       const prodOriginal = productos.find(p => p.id === item.id) || {};
+      let itemPrecio = item.precio;
+      if (esPaypal) {
+        itemPrecio = (prodOriginal.enPromo && prodOriginal.precioPromoUsd > 0)
+          ? prodOriginal.precioPromoUsd
+          : (Number(prodOriginal.precioUsd) || (item.precioUsd || 0));
+      } else if (esTransferencia) {
+        itemPrecio = Math.round(item.precio * 0.90 * 100) / 100;
+      }
       return {
         id: item.id,
         nombre: item.nombre,
-        precio: item.precio,
+        precio: itemPrecio,
         cantidad: item.cantidad,
         linkArchivos: prodOriginal.linkArchivos || "",
         linkVideo: prodOriginal.linkVideo || ""
       };
     }),
     total: sumaTotal,
+    moneda: moneda,
+    metodoPago: metodoPagoCheckout,
     estado: "pendiente", // "pendiente" | "completada" | "cancelada"
     archivosEnviados: false,
     fechaEnvioArchivos: null,
@@ -1741,6 +2141,8 @@ async function confirmarPedido() {
   }
   quitarComprobante();
   if (numOpInput) numOpInput.value = "";
+  if (mpOpInput) mpOpInput.value = "";
+  if (txidPaypalInput) txidPaypalInput.value = "";
 
   cerrarCheckout();
 
@@ -1763,10 +2165,73 @@ function mostrarModalConfirmacion(pedido) {
   const contenedorBody = document.getElementById("confirmacion-modal-body");
   if (!modal || !contenedorBody) return;
 
-  const totalFormateado = formatearPrecio(pedido.total);
+  const esUsd = pedido.moneda === "USD" || pedido.metodoPago === "paypal";
+  const esTransferencia = pedido.metodoPago === "transferencia";
+  const esMercadoPago = pedido.metodoPago === "mercadopago";
+
+  let metodoTexto = "Mercado Pago";
+  let totalFormateado = `$${formatearPrecio(pedido.total)} ARS`;
+  let metodoBadgeHtml = '<span class="badge-metodo-pago mercadopago"><i data-lucide="credit-card" class="badge-icon"></i> Mercado Pago</span>';
+  let plazoHeroHtml = "";
+  let plazoEntregaFila = "Google Drive (inmediata / máx. 1 hora)";
+  let infoPlazoWa = "Quedo a la espera del acceso inmediato a Google Drive en mi Gmail.";
+
+  if (esUsd) {
+    metodoTexto = "PayPal (USD)";
+    totalFormateado = `USD $${Number(pedido.total).toFixed(2)}`;
+    metodoBadgeHtml = '<span class="badge-metodo-pago paypal"><i data-lucide="globe" class="badge-icon"></i> PayPal (USD)</span>';
+    plazoEntregaFila = "Google Drive (1 a 2 horas)";
+    plazoHeroHtml = `
+      <div class="alert-box alert-plazo-paypal" style="margin: 0.9rem 0; text-align: left;">
+        <div class="alert-plazo-header">
+          <i data-lucide="globe" class="ui-icon alert-plazo-icon" style="color: #0284c7;"></i>
+          <strong style="color: #0284c7;">Plazo de entrega internacional:</strong>
+        </div>
+        <p class="alert-plazo-texto" style="color: #075985;">
+          En un <strong>plazo de 1 a 2 horas</strong> tras verificar tu pago en PayPal, recibirás la invitación con acceso completo a Google Drive en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
+        </p>
+      </div>`;
+    infoPlazoWa = "Quedo a la espera del acceso a Google Drive en el plazo de 1 a 2 horas.";
+  } else if (esTransferencia) {
+    metodoTexto = "Transferencia Bancaria (10% OFF)";
+    totalFormateado = `$${formatearPrecio(pedido.total)} ARS (con 10% OFF)`;
+    metodoBadgeHtml = '<span class="badge-metodo-pago transferencia" style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"><i data-lucide="landmark" class="badge-icon"></i> Transferencia (10% OFF)</span>';
+    plazoEntregaFila = "Google Drive (demora de hasta 48 hs hábiles)";
+    plazoHeroHtml = `
+      <div class="alert-box alert-plazo-transferencia" style="margin: 0.9rem 0; text-align: left;">
+        <div class="alert-plazo-header">
+          <i data-lucide="clock" class="ui-icon alert-plazo-icon" style="color: #d97706;"></i>
+          <strong style="color: #b45309;">Plazo de verificación bancaria: hasta 48 horas hábiles</strong>
+        </div>
+        <p class="alert-plazo-texto" style="color: #78350f;">
+          Al haber abonado por transferencia bancaria con el <strong>10% de descuento</strong>, se requiere verificación manual de la acreditación bancaria. Por este motivo, el acceso a la carpeta de Google Drive con tus moldes y videos tiene una demora de <strong>hasta 48 horas hábiles</strong> (días hábiles de lunes a viernes). Te notificaremos a tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong> una vez acreditado.
+        </p>
+      </div>`;
+    infoPlazoWa = "Quedo a la espera de la verificación bancaria en el plazo de hasta 48 horas hábiles para recibir los moldes.";
+  } else {
+    // Mercado Pago
+    metodoTexto = "Mercado Pago";
+    totalFormateado = `$${formatearPrecio(pedido.total)} ARS`;
+    metodoBadgeHtml = '<span class="badge-metodo-pago mercadopago"><i data-lucide="credit-card" class="badge-icon"></i> Mercado Pago</span>';
+    plazoEntregaFila = "Google Drive (inmediata / máx. 1 hora)";
+    plazoHeroHtml = `
+      <div class="alert-box alert-plazo-inmediato" style="margin: 0.9rem 0; text-align: left;">
+        <div class="alert-plazo-header">
+          <i data-lucide="zap" class="ui-icon alert-plazo-icon" style="color: #16a34a;"></i>
+          <strong style="color: #15803d;">Acreditación y entrega inmediata:</strong>
+        </div>
+        <p class="alert-plazo-texto" style="color: #166534;">
+          Tu pago por Mercado Pago cuenta con <strong>acreditación inmediata</strong>. En un plazo de hasta 1 hora (habitualmente al instante) recibirás la invitación con acceso completo a Google Drive en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
+        </p>
+      </div>`;
+    infoPlazoWa = "Quedo a la espera del acceso inmediato a Google Drive en mi Gmail.";
+  }
+
   const itemsLista = pedido.items.map(i => `${i.nombre} (x${i.cantidad})`).join(", ");
   const tieneComprobante = Boolean(pedido.comprobanteUrl);
-  const infoOp = pedido.numeroOperacion ? `• N° de Operación: ${pedido.numeroOperacion}\n` : "";
+  const infoOp = pedido.numeroOperacion
+    ? (esUsd ? `• ID Transacción PayPal: ${pedido.numeroOperacion}\n` : (esMercadoPago ? `• N° Operación MP: ${pedido.numeroOperacion}\n` : `• N° de Operación: ${pedido.numeroOperacion}\n`))
+    : "";
   const infoComp = tieneComprobante
     ? `• Comprobante: Adjunto en la tienda web ✓\n`
     : `• Comprobante: Se adjunta en este mensaje\n`;
@@ -1774,14 +2239,15 @@ function mostrarModalConfirmacion(pedido) {
   const telefonoWa = (datosBancarios.whatsapp || "5491144558899").replace(/[^0-9]/g, "");
 
   const mensajeWhatsApp = encodeURIComponent(
-    `¡Hola Cosé con Giu! Acabo de registrar la transferencia bancaria para mi pedido ${pedido.codigo}.\n` +
+    `¡Hola Cosé con Giu! Acabo de registrar mi compra por ${metodoTexto} para el pedido ${pedido.codigo}.\n` +
     `• Nombre: ${pedido.cliente.nombre}\n` +
     `• Email Gmail: ${pedido.cliente.email}\n` +
     `• Moldes: ${itemsLista}\n` +
-    `• Monto: $${totalFormateado}\n` +
+    `• Monto: ${totalFormateado}\n` +
+    `• Medio de Pago: ${metodoTexto}\n` +
     infoOp +
     infoComp +
-    `\nQuedo a la espera del acceso a Google Drive en el plazo de 1 hora. ¡Muchas gracias!`
+    `\n${infoPlazoWa}`
   );
 
   contenedorBody.innerHTML = `
@@ -1796,21 +2262,16 @@ function mostrarModalConfirmacion(pedido) {
       </div>
     </div>
 
-    <!-- Alert destacado de entrega en 1 hora -->
-    <div class="alert-box alert-plazo-entrega" style="margin: 0.9rem 0; text-align: left;">
-      <div class="alert-plazo-header">
-        <i data-lucide="clock" class="ui-icon alert-plazo-icon" style="color: #0369a1;"></i>
-        <strong style="color: #0369a1;">Plazo de entrega de tus moldes:</strong>
-      </div>
-      <p class="alert-plazo-texto" style="color: #075985;">
-        En un <strong>plazo máximo de 1 hora</strong> tras verificar tu transferencia bancaria, recibirás la invitación con acceso completo a Google Drive directamente en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong> (horario de atención de 08:00 a 22:00 hs).
-      </p>
-    </div>
+    ${plazoHeroHtml}
 
     <div class="order-success-details">
       <div class="order-success-row">
-        <span>Total a transferir:</span>
-        <strong style="color: var(--primary); font-size: 1.05rem;">$${totalFormateado}</strong>
+        <span>Total abonado:</span>
+        <strong style="color: ${esUsd ? '#003087' : (esTransferencia ? '#15803d' : 'var(--primary)')}; font-size: 1.05rem;">${totalFormateado}</strong>
+      </div>
+      <div class="order-success-row">
+        <span>Medio de Pago:</span>
+        ${metodoBadgeHtml}
       </div>
       <div class="order-success-row">
         <span>Correo Gmail registrado:</span>
@@ -1818,7 +2279,7 @@ function mostrarModalConfirmacion(pedido) {
       </div>
       ${pedido.numeroOperacion ? `
       <div class="order-success-row">
-        <span>N° de Operación:</span>
+        <span>${esUsd ? 'ID Transacción PayPal:' : (esMercadoPago ? 'N° Operación MP:' : 'N° de Operación:')}</span>
         <strong style="font-family: monospace; color: var(--primary-dark);">${escaparHTML(pedido.numeroOperacion)}</strong>
       </div>` : ''}
       <div class="order-success-row">
@@ -1831,14 +2292,14 @@ function mostrarModalConfirmacion(pedido) {
       </div>
       <div class="order-success-row">
         <span>Entrega:</span>
-        <span>Google Drive (máx. 1 hora tras confirmar)</span>
+        <span>${plazoEntregaFila}</span>
       </div>
     </div>
 
     <div class="whatsapp-action-box">
       <h4 style="color: #166534; margin-bottom: 0.35rem; font-size: 1rem;"><i data-lucide="message-circle" class="ui-icon"></i> Envíanos un aviso por WhatsApp</h4>
       <p style="font-size: 0.85rem; color: #14532d; margin-bottom: 0.85rem;">
-        ${tieneComprobante ? 'Ya adjuntaste el comprobante, pero puedes notificarnos por WhatsApp para agilizar la entrega:' : 'Haz clic para avisarnos y adjuntar la captura de tu transferencia:'}
+        ${tieneComprobante ? 'Ya adjuntaste el comprobante, pero puedes notificarnos por WhatsApp para agilizar la entrega:' : 'Haz clic para avisarnos y adjuntar la captura de tu pago:'}
       </p>
       <a href="https://api.whatsapp.com/send?phone=${telefonoWa}&text=${mensajeWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Avisar por WhatsApp">
         <i data-lucide="message-circle" class="ui-icon"></i> Notificar Pago por WhatsApp
@@ -1932,14 +2393,20 @@ function toggleCampoPromo() {
   const selectPromo = document.getElementById("producto-promo");
   const grupoPrecioPromo = document.getElementById("grupo-precio-promo");
   const inputPrecioPromo = document.getElementById("producto-precio-promo");
+  const inputPrecioPromoUsd = document.getElementById("producto-precio-promo-usd");
 
-  if (selectPromo.value === "si") {
-    grupoPrecioPromo.style.display = "block";
-    inputPrecioPromo.required = true;
+  if (selectPromo && selectPromo.value === "si") {
+    if (grupoPrecioPromo) grupoPrecioPromo.style.display = "flex";
+    if (inputPrecioPromo) inputPrecioPromo.required = true;
   } else {
-    grupoPrecioPromo.style.display = "none";
-    inputPrecioPromo.required = false;
-    inputPrecioPromo.value = "";
+    if (grupoPrecioPromo) grupoPrecioPromo.style.display = "none";
+    if (inputPrecioPromo) {
+      inputPrecioPromo.required = false;
+      inputPrecioPromo.value = "";
+    }
+    if (inputPrecioPromoUsd) {
+      inputPrecioPromoUsd.value = "";
+    }
   }
 }
 
@@ -1951,15 +2418,17 @@ async function guardarProducto(evento) {
   const categoria = document.getElementById("producto-categoria") ? document.getElementById("producto-categoria").value : "Otros";
   const icono = document.getElementById("producto-icono") ? document.getElementById("producto-icono").value : "file-text";
   const precio = parseFloat(document.getElementById("producto-precio").value);
+  const precioUsd = parseFloat(document.getElementById("producto-precio-usd")?.value || 0);
   const esPromo = document.getElementById("producto-promo").value === "si";
-  const precioPromo = esPromo ? parseFloat(document.getElementById("producto-precio-promo").value || 0) : 0;
+  const precioPromo = esPromo ? parseFloat(document.getElementById("producto-precio-promo")?.value || 0) : 0;
+  const precioPromoUsd = esPromo ? parseFloat(document.getElementById("producto-precio-promo-usd")?.value || 0) : 0;
   const fileInput = document.getElementById("producto-imagen");
   const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
   const linkArchivos = document.getElementById("producto-link-archivos") ? document.getElementById("producto-link-archivos").value.trim() : "";
   const linkVideo = document.getElementById("producto-link-video") ? document.getElementById("producto-link-video").value.trim() : "";
 
   if (!nombre || isNaN(precio) || precio < 0) {
-    mostrarToast("Por favor ingresa datos válidos.");
+    mostrarToast("Por favor ingresa un precio en ARS válido.");
     return;
   }
 
@@ -1977,8 +2446,10 @@ async function guardarProducto(evento) {
         productos[index].categoria = categoria;
         productos[index].icono = icono;
         productos[index].precio = precio;
+        productos[index].precioUsd = isNaN(precioUsd) ? 0 : precioUsd;
         productos[index].enPromo = esPromo;
         productos[index].precioPromo = precioPromo;
+        productos[index].precioPromoUsd = isNaN(precioPromoUsd) ? 0 : precioPromoUsd;
         productos[index].linkArchivos = linkArchivos;
         productos[index].linkVideo = linkVideo;
         if (imagenData) productos[index].imagen = imagenData;
@@ -1995,8 +2466,10 @@ async function guardarProducto(evento) {
         categoria: categoria,
         icono: icono,
         precio: precio,
+        precioUsd: isNaN(precioUsd) ? 0 : precioUsd,
         enPromo: esPromo,
         precioPromo: precioPromo,
+        precioPromoUsd: isNaN(precioPromoUsd) ? 0 : precioPromoUsd,
         linkArchivos: linkArchivos,
         linkVideo: linkVideo,
         imagen: imagenData || null
@@ -2055,6 +2528,9 @@ function editarProducto(id) {
   document.getElementById("producto-nombre").value = producto.nombre;
   document.getElementById("producto-descripcion").value = producto.descripcion;
   document.getElementById("producto-precio").value = producto.precio;
+  if (document.getElementById("producto-precio-usd")) {
+    document.getElementById("producto-precio-usd").value = producto.precioUsd || "";
+  }
 
   if (document.getElementById("producto-categoria")) {
     document.getElementById("producto-categoria").value = producto.categoria || "Vestidos";
@@ -2077,7 +2553,12 @@ function editarProducto(id) {
   toggleCampoPromo();
 
   if (producto.enPromo) {
-    document.getElementById("producto-precio-promo").value = producto.precioPromo;
+    if (document.getElementById("producto-precio-promo")) {
+      document.getElementById("producto-precio-promo").value = producto.precioPromo || "";
+    }
+    if (document.getElementById("producto-precio-promo-usd")) {
+      document.getElementById("producto-precio-promo-usd").value = producto.precioPromoUsd || "";
+    }
   }
 
   document.getElementById("admin-form-titulo").textContent = "Editar Molde Existente";
@@ -2132,6 +2613,8 @@ async function eliminarProducto(id) {
 function resetearFormulario() {
   document.getElementById("form-producto").reset();
   document.getElementById("producto-id").value = "";
+  if (document.getElementById("producto-precio-usd")) document.getElementById("producto-precio-usd").value = "";
+  if (document.getElementById("producto-precio-promo-usd")) document.getElementById("producto-precio-promo-usd").value = "";
   document.getElementById("admin-form-titulo").textContent = "Agregar Nuevo Molde";
   document.getElementById("btn-guardar-producto").textContent = "Guardar Molde";
   document.getElementById("btn-cancelar-edicion").style.display = "none";
@@ -2188,7 +2671,14 @@ function renderMetricasAdmin() {
   }
 
   if (elTotalRecaudado) {
-    elTotalRecaudado.textContent = `$${formatearPrecio(metricas.totalRecaudado)}`;
+    if (metricas.totalUsd > 0) {
+      elTotalRecaudado.innerHTML = `
+        <span>$${formatearPrecio(metricas.totalArs)} <small style="font-size: 0.8rem; color: var(--text-muted);">ARS</small></span>
+        <span style="display: block; font-size: 0.95rem; color: #003087; margin-top: 0.15rem; font-weight: 700;">+ USD $${metricas.totalUsd.toFixed(2)}</span>
+      `;
+    } else {
+      elTotalRecaudado.textContent = `$${formatearPrecio(metricas.totalArs)}`;
+    }
   }
 }
 
@@ -2376,20 +2866,35 @@ function renderPedidosAdmin() {
 
     const totalUnidades = pedido.items.reduce((acc, item) => acc + (item.cantidad || 1), 0);
 
+    const esPaypal = pedido.metodoPago === "paypal" || pedido.moneda === "USD";
+    const esMp = pedido.metodoPago === "mercadopago";
+    const esTransferencia = pedido.metodoPago === "transferencia";
+    const totalDisplay = esPaypal ? `USD $${Number(pedido.total).toFixed(2)}` : `$${formatearPrecio(pedido.total)}`;
+    
+    let metodoBadge = "";
+    if (esPaypal) {
+      metodoBadge = '<span class="badge-metodo-pago paypal" title="Pago mediante PayPal"><i data-lucide="globe" class="badge-icon"></i> PayPal (USD)</span>';
+    } else if (esMp) {
+      metodoBadge = '<span class="badge-metodo-pago mercadopago" title="Pago mediante Mercado Pago"><i data-lucide="credit-card" class="badge-icon"></i> Mercado Pago</span>';
+    } else {
+      metodoBadge = '<span class="badge-metodo-pago transferencia" style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;" title="Pago por Transferencia Bancaria (10% OFF)"><i data-lucide="landmark" class="badge-icon"></i> Transferencia (10% OFF)</span>';
+    }
+
     return `
       <div class="order-expandable-card ${pedido.estado}" id="order-card-${pedido.id}">
         <!-- Cabecera de la tarjeta: siempre visible y clicable -->
         <div class="order-card-header" onclick="toggleDetallePedido(${pedido.id})" title="Haz clic para desplegar u ocultar detalles">
           <div class="order-card-meta">
             <span class="order-code-badge">${pedido.codigo || ('#' + pedido.id.toString().slice(-4))}</span>
+            ${metodoBadge}
             <span class="order-card-buyer">${escaparHTML(pedido.cliente.nombre)}</span>
             <span class="order-card-date"><i data-lucide="calendar" class="ui-icon"></i> ${pedido.fecha}</span>
-            ${pedido.numeroOperacion ? `<span class="badge-op-num" title="N° de Operación Bancaria">Op: ${escaparHTML(pedido.numeroOperacion)}</span>` : ''}
+            ${pedido.numeroOperacion ? `<span class="badge-op-num" title="${esPaypal ? 'ID Transacción PayPal' : (esMp ? 'N° Operación Mercado Pago' : 'N° de Operación Bancaria')}">${esPaypal ? 'ID' : (esMp ? 'MP' : 'Op')}: ${escaparHTML(pedido.numeroOperacion)}</span>` : ''}
             ${pedido.comprobanteUrl ? `<span class="badge-comprobante-pill" title="Comprobante de pago adjuntado"><i data-lucide="file-check" class="badge-icon"></i> Comprobante</span>` : ''}
           </div>
 
           <div class="order-card-amount-box">
-            <span class="order-card-total">$${formatearPrecio(pedido.total)}</span>
+            <span class="order-card-total" style="color: ${esPaypal ? '#003087' : 'inherit'};">${totalDisplay}</span>
             ${estadoPill}
             <button type="button" class="order-toggle-btn" onclick="event.stopPropagation(); toggleDetallePedido(${pedido.id});">
               ${estaExpandido ? 'Ocultar ▲' : 'Ver detalle ▼'}
@@ -2415,7 +2920,9 @@ function renderPedidosAdmin() {
                 ${pedido.items.map(item => `
                   <div style="padding: 0.35rem 0; border-bottom: 1px dashed rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
                     <span style="flex: 1; min-width: 0; word-break: break-word;">• <strong>${escaparHTML(item.nombre)}</strong> (x${item.cantidad})</span>
-                    <strong style="white-space: nowrap; margin-left: 0.5rem; flex-shrink: 0;">$${formatearPrecio(item.precio * item.cantidad)}</strong>
+                    <strong style="white-space: nowrap; margin-left: 0.5rem; flex-shrink: 0; color: ${esPaypal ? '#003087' : 'inherit'};">
+                      ${esPaypal ? `USD $${(item.precio * item.cantidad).toFixed(2)}` : `$${formatearPrecio(item.precio * item.cantidad)}`}
+                    </strong>
                   </div>
                 `).join("")}
 
@@ -2432,15 +2939,24 @@ function renderPedidosAdmin() {
             </div>
 
             <div class="order-detail-block order-detail-block-transfer">
-              <h5><i data-lucide="receipt" class="ui-icon"></i> Transferencia Bancaria</h5>
+              <h5><i data-lucide="${esPaypal ? 'globe' : (esMp ? 'credit-card' : 'receipt')}" class="ui-icon"></i> ${esPaypal ? 'Detalle de Pago PayPal' : (esMp ? 'Mercado Pago' : 'Transferencia Bancaria')}</h5>
               <div class="order-detail-content">
                 <div style="margin-bottom: 0.35rem;">
-                  <span style="color: var(--text-muted); font-size: 0.82rem;">N° de Operación:</span><br>
+                  <span style="color: var(--text-muted); font-size: 0.82rem;">${esPaypal ? 'ID Transacción PayPal:' : (esMp ? 'N° Operación MP:' : 'N° de Operación:')}</span><br>
                   ${pedido.numeroOperacion ? `<strong style="font-family: monospace; color: var(--primary-dark); font-size: 0.95rem;">${escaparHTML(pedido.numeroOperacion)}</strong>` : '<span style="color: var(--text-muted); font-size: 0.85rem;">No informado</span>'}
                 </div>
+                ${esTransferencia ? `
+                  <div style="margin-top: 0.35rem; font-size: 0.76rem; color: #b45309; background: #fffbeb; padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #fde68a; display: flex; align-items: center; gap: 0.3rem;">
+                    <i data-lucide="clock" class="ui-icon" style="width: 12px; height: 12px;"></i> Demora de hasta 48 hs hábiles
+                  </div>
+                ` : (esMp ? `
+                  <div style="margin-top: 0.35rem; font-size: 0.76rem; color: #0284c7; background: #f0f9ff; padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #bae6fd; display: flex; align-items: center; gap: 0.3rem;">
+                    <i data-lucide="zap" class="ui-icon" style="width: 12px; height: 12px;"></i> Acreditación inmediata
+                  </div>
+                ` : '')}
                 <div style="margin-top: 0.6rem;">
                   ${pedido.comprobanteUrl ? `
-                    <button type="button" class="btn-action btn-action-view-receipt" onclick="verComprobanteModal('${escaparHTML(pedido.comprobanteUrl)}', '${escaparHTML(pedido.codigo)}', '${escaparHTML(pedido.numeroOperacion || '')}', '${escaparHTML(pedido.cliente.nombre)}', '${formatearPrecio(pedido.total)}')" title="Ver comprobante adjunto">
+                    <button type="button" class="btn-action btn-action-view-receipt" onclick="verComprobanteModal('${escaparHTML(pedido.comprobanteUrl)}', '${escaparHTML(pedido.codigo)}', '${escaparHTML(pedido.numeroOperacion || '')}', '${escaparHTML(pedido.cliente.nombre)}', '${totalDisplay}')" title="Ver comprobante adjunto">
                       <i data-lucide="file-text" class="ui-icon"></i> Ver Comprobante
                     </button>
                   ` : `
@@ -2455,7 +2971,7 @@ function renderPedidosAdmin() {
 
           <div class="order-card-footer">
             <span style="font-size: 0.85rem; color: var(--text-muted);">
-              Total de la orden: <strong style="color: var(--text-main); font-size: 1.05rem;">$${formatearPrecio(pedido.total)}</strong>
+              Total de la orden: <strong style="color: ${esPaypal ? '#003087' : 'var(--text-main)'}; font-size: 1.05rem;">${totalDisplay}</strong>
             </span>
             <div class="actions-cell">
               ${accionesHtml}
@@ -2856,12 +3372,20 @@ function renderCatalogoAdmin() {
         <span class="product-category-badge">${escaparHTML(producto.categoria || 'Moldería')}</span>
       </td>
       <td>
-        ${producto.enPromo && producto.precioPromo > 0 ? `
-          <strong>$${formatearPrecio(producto.precioPromo)}</strong>
-          <span style="text-decoration: line-through; font-size: 0.8rem; color: var(--text-muted); display: block;">$${formatearPrecio(producto.precio)}</span>
-        ` : `
-          <strong>$${formatearPrecio(producto.precio)}</strong>
-        `}
+        <div>
+          ${producto.enPromo && producto.precioPromo > 0 ? `
+            <strong>$${formatearPrecio(producto.precioPromo)} <small style="font-size:0.75rem;color:var(--text-muted);">ARS</small></strong>
+            <span style="text-decoration: line-through; font-size: 0.8rem; color: var(--text-muted); display: block;">$${formatearPrecio(producto.precio)}</span>
+          ` : `
+            <strong>$${formatearPrecio(producto.precio)} <small style="font-size:0.75rem;color:var(--text-muted);">ARS</small></strong>
+          `}
+          <div style="font-size: 0.82rem; color: #003087; font-weight: 600; margin-top: 0.2rem;">
+            ${producto.enPromo && producto.precioPromoUsd > 0
+              ? `USD $${producto.precioPromoUsd.toFixed(2)} <span style="text-decoration: line-through; font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">$${(producto.precioUsd || 0).toFixed(2)}</span>`
+              : (producto.precioUsd > 0 ? `USD $${Number(producto.precioUsd).toFixed(2)}` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Sin USD</span>')
+            }
+          </div>
+        </div>
       </td>
       <td>
         <span class="promo-badge-pill ${producto.enPromo ? 'si' : 'no'}">
