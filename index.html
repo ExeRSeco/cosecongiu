@@ -653,23 +653,25 @@
           </div>
 
           <form id="form-datos-cliente" onsubmit="event.preventDefault(); confirmarPedido();" class="checkout-form-compact">
-            <div class="form-group" style="margin-bottom: 0.75rem;">
+            <div class="form-group" style="margin-bottom: 0.65rem;">
               <label for="cliente-nombre">Nombre y Apellido *</label>
               <input type="text" id="cliente-nombre" required placeholder="Ej: María Rossi" autocomplete="name">
             </div>
 
-            <div class="form-row" style="margin-bottom: 0;">
+            <div class="form-row" style="margin-bottom: 0.4rem;">
               <div class="form-group" style="margin-bottom: 0;">
                 <label for="cliente-email">Correo Gmail *</label>
                 <input type="email" id="cliente-email" required placeholder="maria.costura@gmail.com" autocomplete="email">
-                <small class="field-subhint"><i data-lucide="info" class="ui-icon-xs"></i> Cuenta @gmail.com para habilitarte Google Drive</small>
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
                 <label for="cliente-telefono">WhatsApp (opcional)</label>
                 <input type="tel" id="cliente-telefono" placeholder="+54 9 11 1234-5678" autocomplete="tel">
-                <small class="field-subhint">Para contacto ante dudas con tu pedido</small>
               </div>
+            </div>
+            <div class="field-subhint">
+              <i data-lucide="info" class="ui-icon-xs"></i>
+              <span>Cuenta @gmail.com obligatoria para darte acceso a las carpetas de Google Drive.</span>
             </div>
           </form>
         </div>
@@ -687,39 +689,21 @@
           <div class="metodo-pago-selector">
             <div class="metodo-pago-tabs" role="tablist">
               <button type="button" id="tab-pago-mercadopago" class="tab-pago active" role="tab" aria-selected="true" onclick="seleccionarMetodoPagoCheckout('mercadopago')">
-                <span class="tab-indicator"></span>
-                <span class="tab-icon-wrap">💳</span>
-                <span class="tab-text">
-                  <span class="tab-title-row">
-                    <strong>Mercado Pago</strong>
-                    <span class="pill-badge pill-mp">⚡ Inmediato</span>
-                  </span>
-                  <small>Tarjetas o dinero en cuenta</small>
-                </span>
+                <span class="tab-icon">💳</span>
+                <strong class="tab-name">Mercado Pago</strong>
+                <span class="pill-badge pill-mp">⚡ Inmediato</span>
               </button>
 
               <button type="button" id="tab-pago-transferencia" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('transferencia')">
-                <span class="tab-indicator"></span>
-                <span class="tab-icon-wrap">🏦</span>
-                <span class="tab-text">
-                  <span class="tab-title-row">
-                    <strong>Transferencia</strong>
-                    <span class="pill-badge pill-transf">🔥 10% OFF</span>
-                  </span>
-                  <small>CBU / CVU / Alias bancario</small>
-                </span>
+                <span class="tab-icon">🏦</span>
+                <strong class="tab-name">Transferencia</strong>
+                <span class="pill-badge pill-transf">🔥 10% OFF</span>
               </button>
 
               <button type="button" id="tab-pago-paypal" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('paypal')">
-                <span class="tab-indicator"></span>
-                <span class="tab-icon-wrap">🌎</span>
-                <span class="tab-text">
-                  <span class="tab-title-row">
-                    <strong>PayPal</strong>
-                    <span class="pill-badge pill-paypal">Exterior</span>
-                  </span>
-                  <small>Dólares (USD)</small>
-                </span>
+                <span class="tab-icon">🌎</span>
+                <strong class="tab-name">PayPal</strong>
+                <span class="pill-badge pill-paypal">USD</span>
               </button>
             </div>
           </div>
