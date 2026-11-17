@@ -821,6 +821,43 @@ async function supabaseActualizarEstadoPedido(pedidoId, nuevoEstado, archivosEnv
 }
 
 /**
+ * Marca un pedido como completado tras la aprobación de pago en Mercado Pago
+ * Utiliza la función RPC con SECURITY DEFINER para que funcione incluso para visitantes anónimos
+ */
+async function supabaseMarcarPedidoCompletadoMP(codigo, numeroOperacion = null) {
+  const client = obtenerClienteSupabase();
+  if (!client || !codigo) return false;
+
+  try {
+    // 1. Intentamos invocar la función RPC segura
+    const { error: rpcError } = await client.rpc("marcar_pedido_completado_mp", {
+      p_codigo: String(codigo),
+      p_numero_operacion: numeroOperacion ? String(numeroOperacion) : null
+    });
+
+    if (!rpcError) {
+      console.log(`[Supabase] ✓ Pedido ${codigo} completado vía RPC marcar_pedido_completado_mp.`);
+      return true;
+    }
+
+    // 2. Fallback a update directo si la RPC no estuviese creada
+    console.warn("[Supabase] Fallback a update directo tras respuesta RPC:", rpcError.message);
+    const { error: updateError } = await client
+      .from("pedidos")
+      .update({
+        estado: "completada",
+        numero_operacion: numeroOperacion ? String(numeroOperacion) : null
+      })
+      .eq("codigo", codigo);
+
+    return !updateError;
+  } catch (err) {
+    console.warn("[Supabase] Error al marcar pedido completado:", err);
+    return false;
+  }
+}
+
+/**
  * Elimina un pedido y sus ítems en cascada en Supabase
  */
 async function supabaseEliminarPedido(pedidoId) {

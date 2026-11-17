@@ -93,7 +93,7 @@ CREATE INDEX IF NOT EXISTS idx_pedido_items_pedido_id ON public.pedido_items(ped
 CREATE INDEX IF NOT EXISTS idx_productos_categoria ON public.productos(categoria);
 CREATE INDEX IF NOT EXISTS idx_administradores_email ON public.administradores(email);
 
--- 7. FUNCIÓN DE SEGURIDAD (PREVIENE RECURSIÓN INFINITA EN RLS)
+-- 7. FUNCIONES DE SEGURIDAD (PREVIENE RECURSIÓN INFINITA EN RLS Y PERMITE CONFIRMACIÓN DE PAGOS)
 CREATE OR REPLACE FUNCTION public.es_admin_aprobado()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -106,6 +106,24 @@ AS $$
     WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
   );
 $$;
+
+-- Función segura para marcar pedidos como completados tras aprobación en pasarelas (Mercado Pago / Webhook)
+CREATE OR REPLACE FUNCTION public.marcar_pedido_completado_mp(p_codigo TEXT, p_numero_operacion TEXT DEFAULT NULL)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.pedidos
+  SET estado = 'completada',
+      numero_operacion = COALESCE(p_numero_operacion, numero_operacion)
+  WHERE codigo = p_codigo;
+  RETURN FOUND;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.marcar_pedido_completado_mp(TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- 8. POLÍTICAS DE SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
 ALTER TABLE public.productos ENABLE ROW LEVEL SECURITY;

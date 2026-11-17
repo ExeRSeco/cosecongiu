@@ -2228,7 +2228,11 @@ async function procesarRetornoMercadoPago() {
 
       if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
         try {
-          await supabaseActualizarEstadoPedido(pedido.id, "completada");
+          if (typeof supabaseMarcarPedidoCompletadoMP === "function") {
+            await supabaseMarcarPedidoCompletadoMP(pedido.codigo, paymentId);
+          } else {
+            await supabaseActualizarEstadoPedido(pedido.id, "completada");
+          }
         } catch (e) {
           console.warn("[Supabase] Error actualizando pedido aprobado de MP:", e);
         }

@@ -7,10 +7,10 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Siempre responder con HTTP 200 a Mercado Pago para confirmar recepción inmediata
+  // Credenciales activas con soporte para Service Role Key o Anon Key
   const mpAccessToken = process.env.MP_ACCESS_TOKEN || "APP_USR-6717638260928914-111710-8cb0aaaee1beee31563d0746b65aa3e3-422418037";
   const supabaseUrl = process.env.SUPABASE_URL || "https://obvboktbdbahgbvemlid.supabase.co";
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9idmJva3RiZGJhaGdidmVtbGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjAyMzMsImV4cCI6MjEwODc5NjIzM30.QJLpImAxgOQpOoObR8sATEninUZqPDYwLpo8FxKK9jU";
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9idmJva3RiZGJhaGdidmVtbGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjAyMzMsImV4cCI6MjEwODc5NjIzM30.QJLpImAxgOQpOoObR8sATEninUZqPDYwLpo8FxKK9jU";
 
   try {
     const query = req.query || {};
@@ -41,24 +41,51 @@ module.exports = async (req, res) => {
         if (pago.status === "approved" && pago.external_reference) {
           const codigoPedido = pago.external_reference;
 
-          const patchRes = await fetch(`${supabaseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              "apikey": supabaseAnonKey,
-              "Authorization": `Bearer ${supabaseAnonKey}`,
-              "Prefer": "return=minimal"
-            },
-            body: JSON.stringify({
-              estado: "completada",
-              numero_operacion: String(pago.id)
-            })
-          });
+          // Intentar primero mediante RPC con SECURITY DEFINER (bypass seguro de RLS)
+          let actualizado = false;
+          try {
+            const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/marcar_pedido_completado_mp`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`
+              },
+              body: JSON.stringify({
+                p_codigo: codigoPedido,
+                p_numero_operacion: String(pago.id)
+              })
+            });
 
-          if (patchRes.ok) {
-            console.log(`[Webhook MP] ✓ Pedido ${codigoPedido} marcado como 'completada' en Supabase.`);
-          } else {
-            console.warn(`[Webhook MP] No se pudo actualizar en Supabase:`, await patchRes.text());
+            if (rpcRes.ok) {
+              actualizado = true;
+              console.log(`[Webhook MP] ✓ Pedido ${codigoPedido} marcado como 'completada' en Supabase via RPC.`);
+            }
+          } catch (rpcErr) {
+            console.warn("[Webhook MP] Error al invocar RPC:", rpcErr);
+          }
+
+          // Fallback por PATCH directo (por ejemplo si se usa Service Role Key)
+          if (!actualizado) {
+            const patchRes = await fetch(`${supabaseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`,
+                "Prefer": "return=minimal"
+              },
+              body: JSON.stringify({
+                estado: "completada",
+                numero_operacion: String(pago.id)
+              })
+            });
+
+            if (patchRes.ok) {
+              console.log(`[Webhook MP] ✓ Pedido ${codigoPedido} marcado como 'completada' en Supabase via PATCH.`);
+            } else {
+              console.warn(`[Webhook MP] No se pudo actualizar en Supabase:`, await patchRes.text());
+            }
           }
         }
       } else {
