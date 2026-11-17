@@ -93,7 +93,21 @@ CREATE INDEX IF NOT EXISTS idx_pedido_items_pedido_id ON public.pedido_items(ped
 CREATE INDEX IF NOT EXISTS idx_productos_categoria ON public.productos(categoria);
 CREATE INDEX IF NOT EXISTS idx_administradores_email ON public.administradores(email);
 
--- 7. POLÍTICAS DE SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
+-- 7. FUNCIÓN DE SEGURIDAD (PREVIENE RECURSIÓN INFINITA EN RLS)
+CREATE OR REPLACE FUNCTION public.es_admin_aprobado()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.administradores
+    WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+  );
+$$;
+
+-- 8. POLÍTICAS DE SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
 ALTER TABLE public.productos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pedidos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pedido_items ENABLE ROW LEVEL SECURITY;
@@ -125,20 +139,8 @@ CREATE POLICY "Catálogo accesible para lectura pública"
 -- Modificación (crear, editar, borrar) restringida estrictamente a administradores aprobados
 CREATE POLICY "Administración de productos solo por admins aprobados"
   ON public.productos FOR ALL
-  USING (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  )
-  WITH CHECK (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  );
+  USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
+  WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
 -- B) POLÍTICAS PARA PEDIDOS:
 -- Clientes pueden registrar pedidos al completar el checkout
@@ -149,20 +151,8 @@ CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
 -- Lectura, actualización y eliminación de pedidos restringida solo a administradores aprobados
 CREATE POLICY "Gestión de pedidos solo por admins aprobados"
   ON public.pedidos FOR ALL
-  USING (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  )
-  WITH CHECK (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  );
+  USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
+  WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
 -- C) POLÍTICAS PARA PEDIDO_ITEMS:
 -- Clientes pueden registrar ítems comprados desde el checkout
@@ -173,46 +163,20 @@ CREATE POLICY "Inserción de ítems de pedido desde checkout"
 -- Consulta y gestión de ítems de compra restringida a administradores aprobados
 CREATE POLICY "Gestión de ítems solo por admins aprobados"
   ON public.pedido_items FOR ALL
-  USING (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  )
-  WITH CHECK (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  );
+  USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
+  WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
 -- D) POLÍTICAS PARA ADMINISTRADORES:
 -- Consulta de administradores solo para usuarios autenticados
 CREATE POLICY "Lectura de administradores"
   ON public.administradores FOR SELECT
-  USING (
-    auth.role() = 'authenticated'
-  );
+  USING (auth.role() = 'authenticated');
 
--- Gestión y creación de administradores restringida exclusivamente a admins aprobados
+-- Gestión y creación de administradores restringida exclusivamente a admins aprobados (sin recursión)
 CREATE POLICY "Gestión completa de administradores"
   ON public.administradores FOR ALL
-  USING (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  )
-  WITH CHECK (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  );
+  USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
+  WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
 -- 8. TRIGGER DE AUTORREGISTRO EN ADMINISTRADORES
 CREATE OR REPLACE FUNCTION public.handle_nuevo_usuario_admin()
@@ -251,18 +215,12 @@ CREATE POLICY "Subida y edición de fotos solo por admins aprobados"
   USING (
     bucket_id = 'moldes-imagenes' AND
     auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
+    public.es_admin_aprobado()
   )
   WITH CHECK (
     bucket_id = 'moldes-imagenes' AND
     auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
+    public.es_admin_aprobado()
   );
 
 -- 10. TABLA: TIENDA_CONFIG (CONFIGURACIÓN GLOBAL: DATOS BANCARIOS Y AVISOS)
@@ -287,20 +245,8 @@ CREATE POLICY "Lectura pública de configuración de la tienda"
 -- Modificación restringida estrictamente a administradores aprobados
 CREATE POLICY "Gestión de configuración solo por admins aprobados"
   ON public.tienda_config FOR ALL
-  USING (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  )
-  WITH CHECK (
-    auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
-  );
+  USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
+  WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
 -- Valor inicial por defecto para datos bancarios, Mercado Pago, PayPal y canales de atención
 INSERT INTO public.tienda_config (clave, valor)
@@ -335,16 +281,10 @@ CREATE POLICY "Gestión de comprobantes por admins aprobados"
   USING (
     bucket_id = 'comprobantes-transferencia' AND
     auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
+    public.es_admin_aprobado()
   )
   WITH CHECK (
     bucket_id = 'comprobantes-transferencia' AND
     auth.role() = 'authenticated' AND
-    EXISTS (
-      SELECT 1 FROM public.administradores
-      WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-    )
+    public.es_admin_aprobado()
   );
