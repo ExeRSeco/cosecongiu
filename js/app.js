@@ -323,9 +323,16 @@ async function sincronizarConSupabaseSiAplica() {
     if (typeof supabaseObtenerConfig === "function") {
       const configBanco = await supabaseObtenerConfig("datos_bancarios");
       if (configBanco && typeof configBanco === "object") {
+        let waRemoto = (configBanco.whatsapp || "").trim();
+        // Si el número remoto en Supabase es el placeholder anterior de prueba o está vacío, forzamos el nuevo número oficial
+        if (!waRemoto || waRemoto.includes("4455-8899") || waRemoto.includes("1144558899")) {
+          waRemoto = DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
+        }
+
         datosBancarios = {
           ...DATOS_BANCARIOS_POR_DEFECTO,
           ...configBanco,
+          whatsapp: waRemoto,
           mercadoPagoAlias: configBanco.mercadoPagoAlias || configBanco.mercado_pago_alias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias,
           mercadoPagoLink: configBanco.mercadoPagoLink || configBanco.mercado_pago_link || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink,
           paypalEmail: configBanco.paypalEmail || configBanco.paypal_email || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail,
@@ -333,6 +340,11 @@ async function sincronizarConSupabaseSiAplica() {
         };
         localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
         actualizarDatosBancariosUI();
+
+        // Si el usuario es administrador aprobado y Supabase aún tenía el valor antiguo, lo sincronizamos automáticamente
+        if (configBanco.whatsapp !== waRemoto && typeof estaAdminLogueado === "function" && estaAdminLogueado() && typeof supabaseGuardarConfig === "function") {
+          supabaseGuardarConfig("datos_bancarios", datosBancarios);
+        }
       }
     }
 
@@ -517,47 +529,59 @@ function actualizarDatosBancariosUI() {
   const inPaypalEmail = document.getElementById("admin-paypal-email");
   const inPaypalMe = document.getElementById("admin-paypal-me");
 
-  if (inBanco && (!inBanco.value || inBanco.value === DATOS_BANCARIOS_POR_DEFECTO.banco)) {
+  if (inBanco && document.activeElement !== inBanco) {
     inBanco.value = datosBancarios.banco;
   }
-  if (inTitular && (!inTitular.value || inTitular.value === DATOS_BANCARIOS_POR_DEFECTO.titular)) {
+  if (inTitular && document.activeElement !== inTitular) {
     inTitular.value = datosBancarios.titular;
   }
-  if (inAlias && (!inAlias.value || inAlias.value === DATOS_BANCARIOS_POR_DEFECTO.alias)) {
+  if (inAlias && document.activeElement !== inAlias) {
     inAlias.value = datosBancarios.alias;
   }
-  if (inCbu && (!inCbu.value || inCbu.value === DATOS_BANCARIOS_POR_DEFECTO.cbu)) {
+  if (inCbu && document.activeElement !== inCbu) {
     inCbu.value = datosBancarios.cbu;
   }
-  if (inCuit && (!inCuit.value || inCuit.value === DATOS_BANCARIOS_POR_DEFECTO.cuit)) {
+  if (inCuit && document.activeElement !== inCuit) {
     inCuit.value = datosBancarios.cuit;
   }
-  if (inMpAlias && (!inMpAlias.value || inMpAlias.value === DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias)) {
+  if (inMpAlias && document.activeElement !== inMpAlias) {
     inMpAlias.value = datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias;
   }
-  if (inMpLink && (!inMpLink.value || inMpLink.value === DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink)) {
+  if (inMpLink && document.activeElement !== inMpLink) {
     inMpLink.value = datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink;
   }
-  if (inWhatsapp && (!inWhatsapp.value || inWhatsapp.value === DATOS_BANCARIOS_POR_DEFECTO.whatsapp)) {
+  if (inWhatsapp && document.activeElement !== inWhatsapp) {
     inWhatsapp.value = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
   }
-  if (inInstagram && (!inInstagram.value || inInstagram.value === DATOS_BANCARIOS_POR_DEFECTO.instagram)) {
+  if (inInstagram && document.activeElement !== inInstagram) {
     inInstagram.value = datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram;
   }
-  if (inPaypalEmail && (!inPaypalEmail.value || inPaypalEmail.value === DATOS_BANCARIOS_POR_DEFECTO.paypalEmail)) {
+  if (inPaypalEmail && document.activeElement !== inPaypalEmail) {
     inPaypalEmail.value = datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail;
   }
-  if (inPaypalMe && (!inPaypalMe.value || inPaypalMe.value === DATOS_BANCARIOS_POR_DEFECTO.paypalMe)) {
+  if (inPaypalMe && document.activeElement !== inPaypalMe) {
     inPaypalMe.value = datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe;
   }
 
-  // 3. Enlaces dinámicos en el pie de página
+  // 3. Enlaces dinámicos en el pie de página y botón flotante de WhatsApp
   const footerTextoWa = document.getElementById("footer-texto-whatsapp");
+  const footerBtnWa = document.getElementById("footer-btn-whatsapp");
+  const btnWaFlotante = document.getElementById("btn-whatsapp-flotante");
   const footerTextoIg = document.getElementById("footer-texto-instagram");
   const footerBtnIg = document.getElementById("footer-btn-instagram");
 
+  const waTelDisplay = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
+  const waTelLimpio = normalizarNumeroWhatsApp(waTelDisplay);
+  const waUrl = `https://api.whatsapp.com/send?phone=${waTelLimpio}&text=${encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta sobre los patrones...")}`;
+
   if (footerTextoWa) {
-    footerTextoWa.textContent = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
+    footerTextoWa.textContent = waTelDisplay;
+  }
+  if (footerBtnWa) {
+    footerBtnWa.href = waUrl;
+  }
+  if (btnWaFlotante) {
+    btnWaFlotante.href = waUrl;
   }
   if (footerTextoIg) {
     footerTextoIg.textContent = datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram;
