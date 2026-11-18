@@ -179,7 +179,7 @@ module.exports = async (req, res) => {
       items: items || [],
       metodoPago: metodoPago || "mercadopago",
       total: total || 0,
-      urlTienda: urlTienda || req.headers.origin || "https://cosecongiu.com"
+      urlTienda: urlTienda || (req.headers && req.headers.origin) || "https://cosecongiu.com"
     });
 
     // Verificación de credenciales de Gmail SMTP

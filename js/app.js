@@ -3456,12 +3456,11 @@ function generarEnlaceCorreoEntrega(pedido) {
   // Generamos la lista de enlaces por cada molde comprado
   const lineasMoldes = pedido.items.map((item, idx) => {
     const prodEnCatalogo = productos.find(p => p.id === item.id) || {};
-    const linkDrive = (item.linkArchivos || prodEnCatalogo.linkArchivos || ENLACE_DRIVE_GENERAL).trim();
     const linkVideo = (item.linkVideo || prodEnCatalogo.linkVideo || ENLACE_VIDEO_GENERAL).trim();
 
     return `${idx + 1}. ${item.nombre} (x${item.cantidad || 1})\n` +
-           `   • Archivos PDF para imprimir (Google Drive): ${linkDrive}\n` +
-           `   • Video Tutorial paso a paso: ${linkVideo}`;
+           `   • Descarga directa en la tienda con tu código ${codigo}\n` +
+           `   • Video Tutorial paso a paso (YouTube): ${linkVideo}`;
   }).join("\n\n");
 
   const asunto = `Entrega de Moldes Digitales y Video Tutorial - Pedido ${codigo} | Cosé con Giu`;

@@ -107,7 +107,7 @@
           <div class="hero-chips-row">
             <span class="hero-chip"><i data-lucide="printer" class="ui-icon-xs"></i> Impresión A4 hogareña</span>
             <span class="hero-chip"><i data-lucide="video" class="ui-icon-xs"></i> Video tutorial incluido</span>
-            <span class="hero-chip"><i data-lucide="zap" class="ui-icon-xs"></i> Acceso en Google Drive</span>
+            <span class="hero-chip"><i data-lucide="download" class="ui-icon-xs"></i> Descarga Directa en la Web</span>
           </div>
         </div>
       </div>
@@ -155,8 +155,8 @@
         <div class="benefits-grid">
           <div class="benefit-card">
             <div class="benefit-icon"><i data-lucide="download" class="ui-icon"></i></div>
-            <h4>Entrega Rápida en 1 Hora</h4>
-            <p>Acceso directo a Google Drive en tu Gmail una vez verificada tu transferencia.</p>
+            <h4>Descarga Directa e Inmediata</h4>
+            <p>Descarga tus moldes en PDF desde la web al instante y recibe una copia en tu Gmail.</p>
           </div>
           <div class="benefit-card">
             <div class="benefit-icon"><i data-lucide="printer" class="ui-icon"></i></div>
@@ -553,7 +553,7 @@
                 </div>
               </div>
 
-              <!-- Archivos del Molde: Subida a Storage + Enlace alternativo Drive + Video YouTube -->
+              <!-- Archivos del Molde: Subida a Storage Privado + Video YouTube -->
               <div class="form-group" style="background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
                 <label for="producto-archivo-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
                   <i data-lucide="file-up" class="ui-icon-xs"></i> Archivo del Molde para Descarga Directa (PDF o ZIP):
@@ -565,18 +565,14 @@
                 <div id="producto-archivo-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
               </div>
 
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="producto-link-archivos">Enlace alternativo (Google Drive / Nube externa):</label>
-                  <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/..." autocomplete="off">
-                  <small style="color: var(--text-muted); font-size: 0.78rem;">Opcional: puedes dejarlo como respaldo o si el archivo supera los 50 MB.</small>
-                </div>
-
-                <div class="form-group">
-                  <label for="producto-link-video">Video Tutorial en YouTube (Paso a paso):</label>
-                  <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
-                  <small style="color: var(--text-muted); font-size: 0.78rem;">Se le comparte al cliente al aprobarse el pago o descargar gratis.</small>
-                </div>
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="producto-link-video" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                  <i data-lucide="video" class="ui-icon-xs"></i> Video Tutorial en YouTube (Paso a paso):
+                </label>
+                <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                  Enlace al video de YouTube. Se comparte automáticamente al cliente al aprobarse el pago o descargar gratis.
+                </small>
               </div>
 
               <div class="form-buttons">
@@ -763,7 +759,7 @@
             <span class="step-badge">1</span>
             <div class="step-info">
               <h4 class="step-title">¿A dónde te enviamos los moldes?</h4>
-              <p class="step-desc">Se habilitará el acceso a la carpeta de Google Drive con este correo.</p>
+              <p class="step-desc">Te enviaremos los enlaces de descarga directa y tutoriales a este correo.</p>
             </div>
           </div>
 
@@ -788,7 +784,7 @@
             </div>
             <div class="field-subhint">
               <i data-lucide="info" class="ui-icon-xs"></i>
-              <span>Cuenta @gmail.com obligatoria para darte acceso a las carpetas de Google Drive.</span>
+              <span>Cuenta @gmail.com obligatoria para recibir tus descargas oficiales y soporte.</span>
             </div>
           </form>
         </div>

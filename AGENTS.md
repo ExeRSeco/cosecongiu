@@ -64,8 +64,8 @@ Tienda de moldes/
      - Tarjetas métricas superiores: *Producto Más Vendido*, *Total de Pedidos* e *Ingresos Confirmados*.
      - Buscador global admin (`#admin-busqueda`) y filtro por fecha dual (`#filtro-pedidos-fecha-rapida` + `#filtro-pedidos-fecha-input`).
      - Botón de estado de conexión a Supabase (`#btn-status-supabase`), distintivo de identidad del administrador activo (`#admin-user-badge`) y modal de configuración (`#modal-config-supabase`).
-     - Listado de ventas en tarjetas expandibles tipo acordeón (`#lista-admin-pedidos`) con código de color en el borde izquierdo según estado (`pendiente`: ámbar, `completada`: verde, `cancelada`: rojo) y botón de entrega de archivos de Google Drive y video tutorial por email (`.btn-action-send-files`), con estado deshabilitado tras el envío y opción de reenvío.
-     - Formulario de alta/edición de moldes con campos para `producto-link-archivos` (Google Drive), `producto-link-video` (YouTube/Drive), campo de categoría y tabla de gestión del catálogo con nombres clickeables hacia `#view-producto`.
+     - Listado de ventas en tarjetas expandibles tipo acordeón (`#lista-admin-pedidos`) con código de color en el borde izquierdo según estado (`pendiente`: ámbar, `completada`: verde, `cancelada`: rojo) y botón de aprobación de transferencias y envío automático de correo (`.btn-action-send-files`), con estado deshabilitado tras el envío y opción de reenvío.
+     - Formulario de alta/edición de moldes con subida directa de archivos PDF/ZIP a Supabase Storage privado (`producto-archivo-file`), enlace a video tutorial (`producto-link-video`), casilla de molde gratuito (`producto-es-gratuito`), campo de categoría y tabla de gestión del catálogo con nombres clickeables hacia `#view-producto`.
      - Botón `.btn-logout-admin` via `cerrarSesionAdmin()`.
    - `#modal-checkout`: Ventana modal que captura los datos del comprador (*Nombre*, correo **solo @gmail.com**, *WhatsApp*) antes de confirmar la transferencia.
    - `#modal-confirmacion-pedido`: Confirmación de pedido con botón directo a WhatsApp y descarga de guía de muestra en PDF.
