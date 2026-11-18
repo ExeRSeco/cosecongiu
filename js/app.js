@@ -1335,7 +1335,29 @@ async function iniciarSesionAdmin() {
     return;
   }
 
-  const tieneArroba = usuario.includes("@");
+  // 1. Acceso directo de administración (admin o cosecongiu@gmail.com con clave giu2026)
+  const esAdminDirecto = (usuario.toLowerCase() === "admin" || usuario.toLowerCase() === "cosecongiu@gmail.com" || usuario.toLowerCase() === "admin@cosecongiu.com") && password === "giu2026";
+  if (esAdminDirecto) {
+    guardarSesionAdmin({
+      metodo: "directo",
+      email: "cosecongiu@gmail.com"
+    });
+    mostrarErrorLoginAdmin("");
+    if (document.getElementById("form-admin-login")) {
+      document.getElementById("form-admin-login").reset();
+    }
+    mostrarToast("¡Bienvenida, Giu! Sesión de administración iniciada.");
+    actualizarUIAdminSesion();
+    cambiarVista("admin");
+    return;
+  }
+
+  // Si usuario es 'admin', mapear al correo oficial de la tienda
+  let emailAuth = usuario;
+  if (emailAuth.toLowerCase() === "admin") {
+    emailAuth = "cosecongiu@gmail.com";
+  }
+
   const supabaseActivo = typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado();
 
   // Bloqueo visual de carga
@@ -1345,25 +1367,25 @@ async function iniciarSesionAdmin() {
   }
 
   try {
-    if (!tieneArroba) {
-      mostrarErrorLoginAdmin("Por favor ingresa tu correo electrónico registrado de administración.");
+    if (!emailAuth.includes("@")) {
+      mostrarErrorLoginAdmin("Ingresa tu correo oficial o el usuario 'admin'.");
       return;
     }
 
     if (!supabaseActivo) {
-      mostrarErrorLoginAdmin("El servicio Supabase no está conectado. Revisa las variables de entorno o configura tus credenciales.");
+      mostrarErrorLoginAdmin("Supabase no está conectado y las credenciales directas no coinciden. Usa usuario: admin y clave: giu2026.");
       return;
     }
 
-    const resAuth = await supabaseIniciarSesion(usuario, password);
+    const resAuth = await supabaseIniciarSesion(emailAuth, password);
     if (resAuth && resAuth.exito) {
-      const emailAdmin = resAuth.usuario?.email || usuario;
+      const emailAdmin = resAuth.usuario?.email || emailAuth;
 
       // Comprobación de aceptación manual en la tabla administradores de Supabase
       if (typeof supabaseVerificarAdminAprobado === "function") {
         const check = await supabaseVerificarAdminAprobado(emailAdmin);
-        if (check.verificado && !check.aprobado) {
-          // Se revoca la sesión activa de inmediato
+        // La cuenta principal cosecongiu@gmail.com nunca es bloqueada por falta de aprobación
+        if (check.verificado && !check.aprobado && emailAdmin.toLowerCase() !== "cosecongiu@gmail.com") {
           await supabaseCerrarSesion();
           borrarSesionAdmin();
           actualizarUIAdminSesion();

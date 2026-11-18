@@ -90,6 +90,11 @@ CREATE TABLE IF NOT EXISTS public.administradores (
 
 COMMENT ON TABLE public.administradores IS 'Registro de administradores y control de aprobación manual de cuentas';
 
+-- Administrador principal autorizado por defecto
+INSERT INTO public.administradores (email, rol, aprobado, notas)
+VALUES ('cosecongiu@gmail.com', 'superadmin', true, 'Administrador principal oficial')
+ON CONFLICT (email) DO UPDATE SET aprobado = true;
+
 -- 6. ÍNDICES DE RENDIMIENTO PARA BÚSQUEDAS RÁPIDAS
 CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON public.pedidos(estado);
 CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON public.pedidos(created_at DESC);
