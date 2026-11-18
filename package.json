@@ -1,0 +1,10 @@
+{
+  "name": "cosecongiu-tienda",
+  "version": "1.0.0",
+  "description": "Tienda de Moldes Digitales - Cosé con Giu",
+  "private": true,
+  "scripts": {},
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  }
+}

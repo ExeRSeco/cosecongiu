@@ -15,7 +15,7 @@ const STORAGE_SUPABASE_CUSTOM = "tienda_supabase_custom_config";
 
 // 1. CREDENCIALES ACTIVAS DE TU PROYECTO SUPABASE
 const SUPABASE_CONFIG_DEFAULT = {
-  url: "https://obvboktbdbahgbvemlid.supabase.co",
+  url: "https://ohvboktbdhahgbvemlid.supabase.co",
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9idmJva3RiZGJhaGdidmVtbGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjAyMzMsImV4cCI6MjEwODc5NjIzM30.QJLpImAxgOQpOoObR8sATEninUZqPDYwLpo8FxKK9jU"
 };
 
@@ -536,6 +536,75 @@ async function supabaseSubirComprobanteTransferencia(archivo, codigoPedido = "pe
 }
 
 /**
+ * Sube un archivo de moldería (PDF, ZIP, etc.) al bucket privado "moldes-archivos"
+ * Solo permitido para administradores aprobados.
+ */
+async function supabaseSubirArchivoMolde(archivo, nombreMolde = "molde") {
+  const client = obtenerClienteSupabase();
+  if (!client || !archivo) return null;
+
+  try {
+    const extension = (archivo.name.split(".").pop() || "pdf").toLowerCase();
+    const nombreLimpio = (nombreMolde || archivo.name).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
+    const nombreUnico = `patron_${Date.now()}_${nombreLimpio}.${extension}`;
+
+    const { data, error } = await client.storage
+      .from("moldes-archivos")
+      .upload(nombreUnico, archivo, {
+        cacheControl: "3600",
+        contentType: archivo.type || (extension === "pdf" ? "application/pdf" : "application/zip"),
+        upsert: true
+      });
+
+    if (error) {
+      console.error("[Supabase Storage] Error al subir archivo de moldería:", error);
+      return null;
+    }
+
+    return nombreUnico;
+  } catch (err) {
+    console.error("[Supabase Storage] Excepción al subir archivo de molde:", err);
+    return null;
+  }
+}
+
+/**
+ * Genera una URL firmada de descarga temporal para un molde del bucket privado "moldes-archivos"
+ */
+async function supabaseObtenerUrlDescargaMolde(archivoUrlOPath, segundosValidez = 86400) {
+  if (!archivoUrlOPath || typeof archivoUrlOPath !== "string") return null;
+
+  // Si ya es un enlace externo completo (ej. Google Drive), se devuelve directo
+  if (archivoUrlOPath.startsWith("http://") || archivoUrlOPath.startsWith("https://")) {
+    return archivoUrlOPath;
+  }
+
+  const client = obtenerClienteSupabase();
+  if (!client) return null;
+
+  try {
+    let ruta = archivoUrlOPath.split("?")[0].trim();
+    if (ruta.includes("/moldes-archivos/")) {
+      ruta = ruta.split("/moldes-archivos/").pop();
+    }
+
+    const { data, error } = await client.storage
+      .from("moldes-archivos")
+      .createSignedUrl(ruta, segundosValidez);
+
+    if (error || !data || !data.signedUrl) {
+      console.warn("[Supabase Storage] No se pudo generar URL firmada para molde:", error);
+      return null;
+    }
+
+    return data.signedUrl;
+  } catch (err) {
+    console.warn("[Supabase Storage] Error solicitando URL de descarga:", err);
+    return null;
+  }
+}
+
+/**
  * Obtiene una URL accesible para previsualizar un comprobante bancario.
  * Si es un archivo en el bucket privado de Supabase y el administrador está logueado, genera una URL firmada segura.
  */
@@ -592,7 +661,7 @@ async function supabaseObtenerProductos() {
 
   try {
     const esAdmin = typeof estaAdminLogueado === "function" && estaAdminLogueado();
-    const colsPublicas = "id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, created_at";
+    const colsPublicas = "id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, es_gratuito, created_at";
     const columnas = esAdmin ? "*" : colsPublicas;
 
     let res = await client
@@ -628,6 +697,8 @@ async function supabaseObtenerProductos() {
       precioUsd: Number(p.precio_usd || 0),
       precioPromoUsd: Number(p.precio_promo_usd || 0),
       imagen: p.imagen || null,
+      archivoUrl: p.archivo_url || null,
+      esGratuito: Boolean(p.es_gratuito),
       linkArchivos: p.link_archivos || "",
       linkVideo: p.link_video || ""
     }));
@@ -655,6 +726,8 @@ async function supabaseGuardarProducto(producto) {
     precio_usd: Number(producto.precioUsd || 0),
     precio_promo_usd: Number(producto.precioPromoUsd || 0),
     imagen: producto.imagen,
+    archivo_url: producto.archivoUrl || null,
+    es_gratuito: Boolean(producto.esGratuito),
     link_archivos: producto.linkArchivos,
     link_video: producto.linkVideo
   };
@@ -928,6 +1001,73 @@ async function supabaseEliminarPedido(pedidoId) {
     return true;
   } catch (err) {
     console.error("[Supabase] Error al eliminar pedido:", err);
+    return false;
+  }
+}
+
+/**
+ * Consulta de forma segura las descargas autorizadas de un pedido completado (RPC).
+ * Si contiene archivos en el bucket privado, genera URLs firmadas temporales para cada uno.
+ */
+async function supabaseObtenerDescargasPedido(codigo, email) {
+  const client = obtenerClienteSupabase();
+  if (!client || !codigo || !email) return null;
+
+  try {
+    const { data, error } = await client.rpc("obtener_descargas_pedido", {
+      p_codigo: codigo.trim(),
+      p_email: email.trim().toLowerCase()
+    });
+
+    if (error) {
+      console.error("[Supabase] Error al consultar descargas de pedido:", error);
+      return null;
+    }
+
+    if (!data || !data.encontrado) {
+      return data || { encontrado: false, estado: "inexistente" };
+    }
+
+    // Si el pedido está completado y tiene ítems, resolvemos las URLs de descarga
+    if (data.estado === "completada" && Array.isArray(data.items)) {
+      for (const item of data.items) {
+        if (item.archivo_url) {
+          const urlFirmada = await supabaseObtenerUrlDescargaMolde(item.archivo_url, 86400);
+          item.linkDescarga = urlFirmada || item.link_archivos || "";
+        } else {
+          item.linkDescarga = item.link_archivos || "";
+        }
+      }
+    }
+
+    return data;
+  } catch (err) {
+    console.error("[Supabase] Excepción en obtener_descargas_pedido:", err);
+    return null;
+  }
+}
+
+/**
+ * Aprueba una transferencia bancaria desde el panel de administración usando la RPC de seguridad
+ */
+async function supabaseAprobarPedidoTransferencia(codigo) {
+  const client = obtenerClienteSupabase();
+  if (!client || !codigo) return false;
+
+  try {
+    const { data, error } = await client.rpc("aprobar_pedido_transferencia", {
+      p_codigo: codigo.trim()
+    });
+
+    if (error) {
+      console.error("[Supabase] Error al aprobar pedido por transferencia:", error);
+      // Fallback a actualización directa si es admin
+      return await supabaseActualizarEstadoPedido(codigo, "completada");
+    }
+
+    return Boolean(data);
+  } catch (err) {
+    console.error("[Supabase] Excepción al aprobar transferencia:", err);
     return false;
   }
 }

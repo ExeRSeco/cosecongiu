@@ -63,7 +63,7 @@ module.exports = async (req, res) => {
 
   // Credenciales activas exclusivamente desde variables de entorno seguras
   const mpAccessToken = process.env.MP_ACCESS_TOKEN;
-  const supabaseUrl = process.env.SUPABASE_URL || "https://obvboktbdbahgbvemlid.supabase.co";
+  const supabaseUrl = process.env.SUPABASE_URL || "https://ohvboktbdhahgbvemlid.supabase.co";
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!mpAccessToken) {

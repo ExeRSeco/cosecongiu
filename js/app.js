@@ -20,6 +20,8 @@ const PRODUCTOS_POR_DEFECTO = [
     precioPromoUsd: 1.80,
     icono: "scissors",
     imagen: null,
+    archivoUrl: null,
+    esGratuito: false,
     linkArchivos: "https://drive.google.com/drive/folders/1SoleroVerano_PDF_Drive",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-vestido-solero"
   },
@@ -35,6 +37,8 @@ const PRODUCTOS_POR_DEFECTO = [
     precioPromoUsd: 0,
     icono: "layers",
     imagen: null,
+    archivoUrl: null,
+    esGratuito: false,
     linkArchivos: "https://drive.google.com/drive/folders/1Palazzo_Elastic_PDF_Drive",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-pantalon-palazzo"
   },
@@ -50,6 +54,8 @@ const PRODUCTOS_POR_DEFECTO = [
     precioPromoUsd: 2.40,
     icono: "shirt",
     imagen: null,
+    archivoUrl: null,
+    esGratuito: false,
     linkArchivos: "https://drive.google.com/drive/folders/1CamisaOversize_PDF_Drive",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-camisa-oversize"
   },
@@ -65,8 +71,27 @@ const PRODUCTOS_POR_DEFECTO = [
     precioPromoUsd: 0,
     icono: "shopping-bag",
     imagen: null,
+    archivoUrl: null,
+    esGratuito: false,
     linkArchivos: "https://drive.google.com/drive/folders/1ToteBag_Neceser_PDF_Drive",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-totebag-neceser"
+  },
+  {
+    id: 5,
+    nombre: "Molde Antifaz para Dormir & Scrunchie (Freebie)",
+    descripcion: "Patrón gratuito en PDF listo para imprimir en casa. ¡Ideal para aprovechar retazos de tela!",
+    categoria: "Bolsos y Accesorios",
+    precio: 0,
+    enPromo: false,
+    precioPromo: 0,
+    precioUsd: 0,
+    precioPromoUsd: 0,
+    icono: "sparkles",
+    imagen: null,
+    archivoUrl: null,
+    esGratuito: true,
+    linkArchivos: "https://drive.google.com/drive/folders/1AntifazScrunchie_Freebie_PDF",
+    linkVideo: "https://www.youtube.com/watch?v=tutorial-antifaz-scrunchie"
   }
 ];
 
@@ -369,15 +394,26 @@ function cargarDatosDesdeLocalStorage() {
   if (productosGuardados) {
     try {
       const parsed = JSON.parse(productosGuardados);
-      // Migración suave: si los moldes en localStorage no tenían precio en USD, asignamos el valor correspondiente
+      // Migración suave: asegurar campos para USD, archivo privado y moldes gratuitos
       productos = parsed.map(p => {
         const def = PRODUCTOS_POR_DEFECTO.find(d => d.id === p.id);
         return {
           ...p,
+          archivoUrl: p.archivoUrl || (def ? def.archivoUrl : null),
+          esGratuito: Boolean(p.esGratuito || p.precio === 0 || (def && def.esGratuito)),
           precioUsd: (typeof p.precioUsd !== "undefined" && p.precioUsd !== null) ? Number(p.precioUsd) : (def ? def.precioUsd : 0),
           precioPromoUsd: (typeof p.precioPromoUsd !== "undefined" && p.precioPromoUsd !== null) ? Number(p.precioPromoUsd) : (def ? def.precioPromoUsd : 0)
         };
       });
+
+      // Si falta el molde gratuito de muestra, lo agregamos
+      if (!productos.some(p => p.esGratuito)) {
+        const freebie = PRODUCTOS_POR_DEFECTO.find(d => d.esGratuito);
+        if (freebie) {
+          productos.push({ ...freebie });
+          guardarProductosEnStorage();
+        }
+      }
     } catch (e) {
       productos = [...PRODUCTOS_POR_DEFECTO];
     }
@@ -1524,14 +1560,15 @@ function verDetalleProducto(productoId) {
 
   const topProducto = obtenerProductoMasVendido();
   const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
-  const tieneDescuento = producto.enPromo && producto.precioPromo > 0;
-  const precioFinal = tieneDescuento ? producto.precioPromo : producto.precio;
-  const precioTransferencia = Math.round(precioFinal * 0.90 * 100) / 100;
+  const esGratis = Boolean(producto.esGratuito || producto.precio === 0);
+  const tieneDescuento = !esGratis && producto.enPromo && producto.precioPromo > 0;
+  const precioFinal = esGratis ? 0 : (tieneDescuento ? producto.precioPromo : producto.precio);
+  const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90 * 100) / 100;
 
   contenedor.innerHTML = `
     <div class="product-detail-visual">
       ${esMasVendido ? '<span class="product-badge-bestseller" style="position: absolute; top: 1.25rem; left: 1.25rem;"><i data-lucide="sparkles" class="badge-icon"></i> Más Vendido</span>' : ''}
-      ${tieneDescuento ? '<span class="product-badge-promo" style="position: absolute; top: 1.25rem; right: 1.25rem;"><i data-lucide="tag" class="badge-icon"></i> ¡Oferta!</span>' : ''}
+      ${esGratis ? '<span class="product-badge-free" style="position: absolute; top: 1.25rem; right: 1.25rem;"><i data-lucide="gift" class="badge-icon"></i> ¡Gratis!</span>' : (tieneDescuento ? '<span class="product-badge-promo" style="position: absolute; top: 1.25rem; right: 1.25rem;"><i data-lucide="tag" class="badge-icon"></i> ¡Oferta!</span>' : '')}
       ${producto.imagen ? `<div class="product-image-wrap"><img src="${producto.imagen}" alt="${escaparHTML(producto.nombre)}"></div>` : `<div class="product-detail-icon">${renderIconoMolde(producto.icono)}</div>`}
       <span class="product-category-badge" style="font-size: 0.85rem; padding: 0.2rem 0.6rem; background: #ffffff; border-radius: 999px; border: 1px solid var(--border);">
         ${escaparHTML(producto.categoria || 'Moldería')}
@@ -1546,6 +1583,11 @@ function verDetalleProducto(productoId) {
         <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.8rem; padding: 0.3rem 0.65rem;">
           <i data-lucide="zap" class="ui-icon"></i> Entrega Digital
         </span>
+        ${esGratis ? `
+          <span class="badge" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 0.8rem; padding: 0.3rem 0.65rem;">
+            <i data-lucide="gift" class="ui-icon"></i> Descarga Libre
+          </span>
+        ` : ''}
       </div>
 
       <h2 class="product-detail-title">${escaparHTML(producto.nombre)}</h2>
@@ -1573,40 +1615,55 @@ function verDetalleProducto(productoId) {
       </div>
 
       <div class="product-price-box" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
-        <div style="display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
-          ${tieneDescuento ? `
-            <span class="price-promo" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)} <small style="font-size: 0.95rem; color: var(--text-muted);">ARS</small></span>
-            <span class="price-old" style="font-size: 1.15rem;">$${formatearPrecio(producto.precio)}</span>
-          ` : `
-            <span class="price-regular" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)} <small style="font-size: 0.95rem; color: var(--text-muted);">ARS</small></span>
-          `}
-        </div>
-
-        <!-- Precio con 10% OFF por Transferencia Bancaria -->
-        <div>
-          <span class="product-price-transfer-tag">
-            <i data-lucide="tag" class="ui-icon" style="width: 14px; height: 14px;"></i>
-            $${formatearPrecio(precioTransferencia)} ARS abonando por Transferencia (10% OFF)
-          </span>
-        </div>
-
-        <!-- Cuadro aclaratorio de plazos de entrega -->
-        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem; background: var(--bg-page); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45;">
-          <div style="display: flex; align-items: center; gap: 0.4rem; color: #0284c7; font-weight: 600; margin-bottom: 0.25rem;">
-            <i data-lucide="zap" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
-            <span><strong>Mercado Pago:</strong> Acreditación y entrega inmediata.</span>
+        ${esGratis ? `
+          <div style="margin-bottom: 0.5rem;">
+            <span class="price-free" style="font-size: 2.2rem; font-weight: 800; color: #15803d; letter-spacing: -0.5px;">¡100% GRATIS!</span>
+            <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.88rem;">
+              Descarga este molde de inmediato completando tu nombre y tu Gmail.
+            </p>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.4rem; color: #b45309; font-weight: 600;">
-            <i data-lucide="clock" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
-            <span><strong>Transferencia (10% OFF):</strong> Acceso con demora de hasta 48 horas hábiles.</span>
+        ` : `
+          <div style="display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
+            ${tieneDescuento ? `
+              <span class="price-promo" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)} <small style="font-size: 0.95rem; color: var(--text-muted);">ARS</small></span>
+              <span class="price-old" style="font-size: 1.15rem;">$${formatearPrecio(producto.precio)}</span>
+            ` : `
+              <span class="price-regular" style="font-size: 1.9rem;">$${formatearPrecio(precioFinal)} <small style="font-size: 0.95rem; color: var(--text-muted);">ARS</small></span>
+            `}
           </div>
-        </div>
+
+          <!-- Precio con 10% OFF por Transferencia Bancaria -->
+          <div>
+            <span class="product-price-transfer-tag">
+              <i data-lucide="tag" class="ui-icon" style="width: 14px; height: 14px;"></i>
+              $${formatearPrecio(precioTransferencia)} ARS abonando por Transferencia (10% OFF)
+            </span>
+          </div>
+
+          <!-- Cuadro aclaratorio de plazos de entrega -->
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem; background: var(--bg-page); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45;">
+            <div style="display: flex; align-items: center; gap: 0.4rem; color: #0284c7; font-weight: 600; margin-bottom: 0.25rem;">
+              <i data-lucide="zap" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+              <span><strong>Mercado Pago:</strong> Acreditación y entrega inmediata.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem; color: #b45309; font-weight: 600;">
+              <i data-lucide="clock" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+              <span><strong>Transferencia (10% OFF):</strong> Acceso con demora de hasta 48 horas hábiles.</span>
+            </div>
+          </div>
+        `}
       </div>
 
       <div class="product-detail-actions">
-        <button class="btn btn-primary" style="font-size: 1.05rem; padding: 0.85rem 1.75rem; flex: 1;" onclick="agregarAlCarrito(${producto.id})">
-          <i data-lucide="shopping-bag" class="ui-icon"></i> Agregar al carrito
-        </button>
+        ${esGratis ? `
+          <button class="btn btn-free-download" style="font-size: 1.05rem; padding: 0.85rem 1.75rem; flex: 1;" onclick="abrirModalMoldeGratis(${producto.id})">
+            <i data-lucide="gift" class="ui-icon"></i> Descargar Gratis Ahora
+          </button>
+        ` : `
+          <button class="btn btn-primary" style="font-size: 1.05rem; padding: 0.85rem 1.75rem; flex: 1;" onclick="agregarAlCarrito(${producto.id})">
+            <i data-lucide="shopping-bag" class="ui-icon"></i> Agregar al carrito
+          </button>
+        `}
         <button class="btn btn-secondary" style="font-size: 0.95rem; padding: 0.85rem 1.25rem;" onclick="cambiarVista('catalogo')">
           <i data-lucide="arrow-left" class="ui-icon"></i> Volver
         </button>
@@ -1741,16 +1798,17 @@ function renderCatalogo() {
   }
 
   catalogoGrid.innerHTML = listaFiltrada.map(producto => {
-    const precioFinal = producto.enPromo && producto.precioPromo > 0 ? producto.precioPromo : producto.precio;
-    const precioTransferencia = Math.round(precioFinal * 0.90 * 100) / 100;
-    const tieneDescuento = producto.enPromo && producto.precioPromo > 0;
+    const esGratis = Boolean(producto.esGratuito || producto.precio === 0);
+    const precioFinal = esGratis ? 0 : (producto.enPromo && producto.precioPromo > 0 ? producto.precioPromo : producto.precio);
+    const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90 * 100) / 100;
+    const tieneDescuento = !esGratis && producto.enPromo && producto.precioPromo > 0;
     const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
 
     return `
-      <article class="product-card ${esMasVendido ? 'card-bestseller' : ''}">
+      <article class="product-card ${esMasVendido ? 'card-bestseller' : ''} ${esGratis ? 'card-freebie' : ''}">
         <div class="product-badges-container">
           ${esMasVendido ? `<span class="product-badge-bestseller" title="¡El más vendido de la tienda con ${topProducto.unidades} compras entregadas!"><i data-lucide="sparkles" class="badge-icon"></i> Más Vendido (${topProducto.unidades})</span>` : ''}
-          ${tieneDescuento ? '<span class="product-badge-promo"><i data-lucide="tag" class="badge-icon"></i> ¡Oferta!</span>' : ''}
+          ${esGratis ? '<span class="product-badge-free"><i data-lucide="gift" class="badge-icon"></i> ¡Gratis!</span>' : (tieneDescuento ? '<span class="product-badge-promo"><i data-lucide="tag" class="badge-icon"></i> ¡Oferta!</span>' : '')}
         </div>
         
         ${producto.imagen ? `
@@ -1774,22 +1832,37 @@ function renderCatalogo() {
         <p class="product-desc">${escaparHTML(producto.descripcion)}</p>
 
         <div class="product-price-box">
-          <div class="product-price-row">
-            ${tieneDescuento ? `
-              <span class="price-promo">$${formatearPrecio(precioFinal)}</span>
-              <span class="price-old">$${formatearPrecio(producto.precio)}</span>
-            ` : `
-              <span class="price-regular">$${formatearPrecio(precioFinal)}</span>
-            `}
-          </div>
-          <div class="price-transfer-pill">
-            <i data-lucide="percent" class="ui-icon-xs"></i> $${formatearPrecio(precioTransferencia)} con Transferencia (10% OFF)
-          </div>
+          ${esGratis ? `
+            <div class="product-price-row">
+              <span class="price-free" style="font-size: 1.45rem; font-weight: 800; color: #15803d;">¡GRATIS!</span>
+            </div>
+            <div class="price-free-subtext" style="font-size: 0.78rem; color: #166534; font-weight: 600;">
+              <i data-lucide="sparkles" class="ui-icon-xs"></i> Descarga libre en PDF + Video
+            </div>
+          ` : `
+            <div class="product-price-row">
+              ${tieneDescuento ? `
+                <span class="price-promo">$${formatearPrecio(precioFinal)}</span>
+                <span class="price-old">$${formatearPrecio(producto.precio)}</span>
+              ` : `
+                <span class="price-regular">$${formatearPrecio(precioFinal)}</span>
+              `}
+            </div>
+            <div class="price-transfer-pill">
+              <i data-lucide="percent" class="ui-icon-xs"></i> $${formatearPrecio(precioTransferencia)} con Transferencia (10% OFF)
+            </div>
+          `}
         </div>
 
-        <button class="btn btn-primary btn-block" onclick="agregarAlCarrito(${producto.id})">
-          <i data-lucide="shopping-bag" class="ui-icon"></i> Agregar al carrito
-        </button>
+        ${esGratis ? `
+          <button class="btn btn-free-download btn-block" onclick="abrirModalMoldeGratis(${producto.id})">
+            <i data-lucide="gift" class="ui-icon"></i> Obtener Gratis
+          </button>
+        ` : `
+          <button class="btn btn-primary btn-block" onclick="agregarAlCarrito(${producto.id})">
+            <i data-lucide="shopping-bag" class="ui-icon"></i> Agregar al carrito
+          </button>
+        `}
       </article>
     `;
   }).join("");
@@ -2620,6 +2693,34 @@ function toggleCampoPromo() {
   }
 }
 
+/**
+ * Conmuta la visibilidad de los precios cuando un molde es marcado como gratuito (Freebie)
+ */
+function alternarCamposMoldeGratuito(esGratuito) {
+  const bloquePrecios = document.getElementById("bloque-precios-molde");
+  const bloquePromo = document.getElementById("bloque-promo-molde");
+  const grupoPrecioPromo = document.getElementById("grupo-precio-promo");
+  const inPrecio = document.getElementById("producto-precio");
+
+  if (esGratuito) {
+    if (bloquePrecios) bloquePrecios.style.display = "none";
+    if (bloquePromo) bloquePromo.style.display = "none";
+    if (grupoPrecioPromo) grupoPrecioPromo.style.display = "none";
+    if (inPrecio) {
+      inPrecio.required = false;
+      inPrecio.value = "0";
+    }
+  } else {
+    if (bloquePrecios) bloquePrecios.style.display = "flex";
+    if (bloquePromo) bloquePromo.style.display = "block";
+    if (inPrecio) {
+      inPrecio.required = true;
+      if (inPrecio.value === "0") inPrecio.value = "";
+    }
+    toggleCampoPromo();
+  }
+}
+
 async function guardarProducto(evento) {
   evento.preventDefault();
   const idInput = document.getElementById("producto-id").value;
@@ -2627,19 +2728,45 @@ async function guardarProducto(evento) {
   const descripcion = document.getElementById("producto-descripcion").value.trim();
   const categoria = document.getElementById("producto-categoria") ? document.getElementById("producto-categoria").value : "Otros";
   const icono = document.getElementById("producto-icono") ? document.getElementById("producto-icono").value : "file-text";
-  const precio = parseFloat(document.getElementById("producto-precio").value);
-  const precioUsd = parseFloat(document.getElementById("producto-precio-usd")?.value || 0);
-  const esPromo = document.getElementById("producto-promo").value === "si";
+  const checkGratuito = document.getElementById("producto-es-gratuito");
+  const esGratuito = checkGratuito ? checkGratuito.checked : false;
+
+  const precioRaw = parseFloat(document.getElementById("producto-precio").value);
+  const precio = esGratuito ? 0 : (isNaN(precioRaw) ? 0 : precioRaw);
+  const precioUsd = esGratuito ? 0 : parseFloat(document.getElementById("producto-precio-usd")?.value || 0);
+  const esPromo = !esGratuito && (document.getElementById("producto-promo")?.value === "si");
   const precioPromo = esPromo ? parseFloat(document.getElementById("producto-precio-promo")?.value || 0) : 0;
   const precioPromoUsd = esPromo ? parseFloat(document.getElementById("producto-precio-promo-usd")?.value || 0) : 0;
+  
   const fileInput = document.getElementById("producto-imagen");
   const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+  const archivoMoldeInput = document.getElementById("producto-archivo-file");
+  const archivoMoldeFile = archivoMoldeInput && archivoMoldeInput.files && archivoMoldeInput.files[0] ? archivoMoldeInput.files[0] : null;
+
   const linkArchivos = document.getElementById("producto-link-archivos") ? document.getElementById("producto-link-archivos").value.trim() : "";
   const linkVideo = document.getElementById("producto-link-video") ? document.getElementById("producto-link-video").value.trim() : "";
 
-  if (!nombre || isNaN(precio) || precio < 0) {
+  if (!nombre) {
+    mostrarToast("Por favor ingresa el nombre del molde.");
+    return;
+  }
+
+  if (!esGratuito && (isNaN(precio) || precio < 0)) {
     mostrarToast("Por favor ingresa un precio en ARS válido.");
     return;
+  }
+
+  // Subir archivo PDF a Supabase Storage privado si se seleccionó uno
+  let nuevoArchivoUrl = null;
+  if (archivoMoldeFile) {
+    mostrarToast("Subiendo archivo de moldería a Supabase Storage...");
+    if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseSubirArchivoMolde === "function") {
+      nuevoArchivoUrl = await supabaseSubirArchivoMolde(archivoMoldeFile, nombre);
+    }
+    if (!nuevoArchivoUrl) {
+      nuevoArchivoUrl = archivoMoldeFile.name;
+    }
   }
 
   // Función interna para persistir producto una vez resuelta la imagen
@@ -2660,8 +2787,10 @@ async function guardarProducto(evento) {
         productos[index].enPromo = esPromo;
         productos[index].precioPromo = precioPromo;
         productos[index].precioPromoUsd = isNaN(precioPromoUsd) ? 0 : precioPromoUsd;
+        productos[index].esGratuito = esGratuito;
         productos[index].linkArchivos = linkArchivos;
         productos[index].linkVideo = linkVideo;
+        if (nuevoArchivoUrl) productos[index].archivoUrl = nuevoArchivoUrl;
         if (imagenData) productos[index].imagen = imagenData;
         productoGuardado = productos[index];
         mostrarToast("Molde actualizado con éxito.");
@@ -2680,6 +2809,8 @@ async function guardarProducto(evento) {
         enPromo: esPromo,
         precioPromo: precioPromo,
         precioPromoUsd: isNaN(precioPromoUsd) ? 0 : precioPromoUsd,
+        esGratuito: esGratuito,
+        archivoUrl: nuevoArchivoUrl || null,
         linkArchivos: linkArchivos,
         linkVideo: linkVideo,
         imagen: imagenData || null
@@ -2759,6 +2890,23 @@ function editarProducto(id) {
     document.getElementById("producto-link-video").value = producto.linkVideo || "";
   }
 
+  const checkGratis = document.getElementById("producto-es-gratuito");
+  if (checkGratis) {
+    checkGratis.checked = Boolean(producto.esGratuito || producto.precio === 0);
+    alternarCamposMoldeGratuito(checkGratis.checked);
+  }
+
+  const infoArchivo = document.getElementById("producto-archivo-info");
+  if (infoArchivo) {
+    if (producto.archivoUrl) {
+      infoArchivo.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> Archivo privado cargado: <code>${escaparHTML(producto.archivoUrl)}</code>`;
+      infoArchivo.style.display = "block";
+    } else {
+      infoArchivo.style.display = "none";
+      infoArchivo.textContent = "";
+    }
+  }
+
   const selectPromo = document.getElementById("producto-promo");
   selectPromo.value = producto.enPromo ? "si" : "no";
   toggleCampoPromo();
@@ -2834,6 +2982,20 @@ function resetearFormulario() {
   }
   if (document.getElementById("producto-icono")) {
     document.getElementById("producto-icono").value = "scissors";
+  }
+  const checkGratis = document.getElementById("producto-es-gratuito");
+  if (checkGratis) {
+    checkGratis.checked = false;
+    alternarCamposMoldeGratuito(false);
+  }
+  const fileMolde = document.getElementById("producto-archivo-file");
+  if (fileMolde) {
+    try { fileMolde.value = null; } catch (e) { /* ignore */ }
+  }
+  const infoArchivo = document.getElementById("producto-archivo-info");
+  if (infoArchivo) {
+    infoArchivo.style.display = "none";
+    infoArchivo.textContent = "";
   }
   toggleCampoPromo();
   // Limpiar input file y vista previa
@@ -3032,8 +3194,8 @@ function renderPedidosAdmin() {
     let accionesHtml = "";
     if (pedido.estado === "pendiente") {
       accionesHtml = `
-        <button class="btn-action btn-action-complete" onclick="cambiarEstadoPedido(${pedido.id}, 'completada')" title="Confirmar transferencia y marcar molde entregado">
-          <i data-lucide="check-circle-2" class="ui-icon"></i> Completar (Entregar)
+        <button class="btn-action btn-action-complete" onclick="aprobarTransferenciaYEnviarArchivos(${pedido.id})" title="Confirmar transferencia bancaria, habilitar descargas y enviar correo automático">
+          <i data-lucide="check-circle-2" class="ui-icon"></i> ✓ Aprobar y Enviar Moldes
         </button>
         <button class="btn-action btn-action-cancel" onclick="cambiarEstadoPedido(${pedido.id}, 'cancelada')" title="Cancelar pedido por falta de transferencia">
           <i data-lucide="x-circle" class="ui-icon"></i> Cancelar
@@ -3675,3 +3837,488 @@ function mostrarToast(mensaje) {
     toast.classList.remove("show");
   }, 2500);
 }
+
+/**
+ * ====================================================================
+ * 5. SISTEMA DE DESCARGA DIRECTA, MOLDES GRATIS Y ENVÍO DE EMAIL GMAIL
+ * ====================================================================
+ */
+
+/**
+ * Abre el modal express para descargar un molde 100% gratuito
+ */
+function abrirModalMoldeGratis(productoId) {
+  const producto = productos.find(p => p.id === productoId);
+  if (!producto) return;
+
+  const modal = document.getElementById("modal-molde-gratis");
+  const inId = document.getElementById("molde-gratis-id");
+  const preview = document.getElementById("molde-gratis-preview");
+  const resultado = document.getElementById("molde-gratis-resultado");
+  const btnSubmit = document.getElementById("btn-submit-molde-gratis");
+  const inNombre = document.getElementById("molde-gratis-nombre");
+  const inEmail = document.getElementById("molde-gratis-email");
+
+  if (inId) inId.value = producto.id;
+  if (resultado) {
+    resultado.style.display = "none";
+    resultado.innerHTML = "";
+  }
+  if (btnSubmit) {
+    btnSubmit.style.display = "inline-flex";
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = `<i data-lucide="download" class="ui-icon"></i> Obtener Molde Gratis Ahora`;
+  }
+  if (inNombre) inNombre.value = "";
+  if (inEmail) inEmail.value = "";
+
+  if (preview) {
+    preview.innerHTML = `
+      ${producto.imagen ? `
+        <img src="${producto.imagen}" alt="${escaparHTML(producto.nombre)}" style="width: 58px; height: 58px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);">
+      ` : `
+        <div style="width: 55px; height: 55px; border-radius: 8px; background: #dcfce7; display: flex; align-items: center; justify-content: center; color: #15803d; flex-shrink: 0;">
+          ${renderIconoMolde(producto.icono || 'gift')}
+        </div>
+      `}
+      <div>
+        <h4 style="margin: 0 0 0.25rem 0; font-size: 0.98rem; color: #15803d;">${escaparHTML(producto.nombre)}</h4>
+        <span class="badge" style="background: #15803d; color: #ffffff; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.55rem;">100% Gratuito</span>
+      </div>
+    `;
+  }
+
+  if (modal) {
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+    actualizarIconosLucide();
+  }
+  if (inNombre) inNombre.focus();
+}
+
+function cerrarModalMoldeGratis() {
+  const modal = document.getElementById("modal-molde-gratis");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
+}
+
+/**
+ * Registra la adquisición del molde gratuito, despacha el correo y muestra los links de descarga directa
+ */
+async function confirmarDescargaGratis() {
+  const idInput = document.getElementById("molde-gratis-id");
+  const nombreInput = document.getElementById("molde-gratis-nombre");
+  const emailInput = document.getElementById("molde-gratis-email");
+  const btnSubmit = document.getElementById("btn-submit-molde-gratis");
+  const resultado = document.getElementById("molde-gratis-resultado");
+
+  const prodId = parseInt(idInput ? idInput.value : 0, 10);
+  const producto = productos.find(p => p.id === prodId);
+  const nombre = nombreInput ? nombreInput.value.trim() : "";
+  const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+
+  if (!producto) {
+    mostrarToast("No se encontró el molde seleccionado.");
+    return;
+  }
+  if (!nombre) {
+    mostrarToast("Por favor ingresa tu Nombre y Apellido.");
+    if (nombreInput) nombreInput.focus();
+    return;
+  }
+  if (!esCorreoGmail(email)) {
+    mostrarToast("Usá un correo @gmail.com para enviarte los archivos.");
+    if (emailInput) emailInput.focus();
+    return;
+  }
+
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = `<i data-lucide="loader" class="ui-icon is-spinning"></i> Preparando tu descarga...`;
+    actualizarIconosLucide();
+  }
+
+  const codigoPedido = "ORD-FREE-" + Math.floor(1000 + Math.random() * 9000);
+  const fechaActual = obtenerFechaLocalHoraTexto(new Date());
+
+  // Resolver link de descarga directa (firmado si está en storage privado, o enlace alternativo)
+  let linkDescargaDirecta = producto.linkArchivos || "#";
+  if (producto.archivoUrl && typeof supabaseObtenerUrlDescargaMolde === "function") {
+    const urlFirmada = await supabaseObtenerUrlDescargaMolde(producto.archivoUrl, 86400);
+    if (urlFirmada) linkDescargaDirecta = urlFirmada;
+  }
+
+  const nuevoPedido = {
+    id: Date.now(),
+    codigo: codigoPedido,
+    fecha: fechaActual,
+    cliente: {
+      nombre: nombre,
+      email: email,
+      telefono: "Descarga Gratuita"
+    },
+    items: [{
+      id: producto.id,
+      nombre: producto.nombre,
+      precio: 0,
+      cantidad: 1,
+      archivoUrl: producto.archivoUrl || null,
+      linkArchivos: producto.linkArchivos || "",
+      linkVideo: producto.linkVideo || "",
+      linkDescarga: linkDescargaDirecta,
+      esGratuito: true
+    }],
+    total: 0,
+    moneda: "ARS",
+    metodoPago: "gratuito",
+    estado: "completada",
+    archivosEnviados: true,
+    fechaEnvioArchivos: fechaActual,
+    comprobanteUrl: null,
+    numeroOperacion: "GRATIS"
+  };
+
+  pedidos.unshift(nuevoPedido);
+  guardarPedidosEnStorage();
+
+  // Guardar en Supabase si está activo
+  if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseCrearPedido === "function") {
+    try {
+      await supabaseCrearPedido(nuevoPedido);
+    } catch (e) {
+      console.warn("[Supabase] Error registrando descarga gratis:", e);
+    }
+  }
+
+  // Disparar envío automático de email con Gmail SMTP
+  enviarCorreoConfirmacion(nuevoPedido);
+
+  // Mostrar la zona de descarga inmediata en el modal
+  if (btnSubmit) btnSubmit.style.display = "none";
+  if (resultado) {
+    resultado.style.display = "block";
+    resultado.innerHTML = `
+      <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 1.25rem; text-align: center;">
+        <i data-lucide="check-circle" style="width: 2.8rem; height: 2.8rem; color: #16a34a; margin-bottom: 0.5rem;"></i>
+        <h4 style="margin: 0 0 0.4rem 0; color: #15803d; font-size: 1.15rem;">¡Listo, ${escaparHTML(nombre)}!</h4>
+        <p style="margin: 0 0 0.9rem 0; color: #166534; font-size: 0.9rem; line-height: 1.45;">
+          También te enviamos una copia a <strong>${escaparHTML(email)}</strong>. Podés descargar tus archivos directamente aquí:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.75rem;">
+          ${linkDescargaDirecta && linkDescargaDirecta !== "#" ? `
+            <a href="${linkDescargaDirecta}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size: 0.95rem; justify-content: center; padding: 0.75rem 1rem;">
+              <i data-lucide="download" class="ui-icon"></i> Descargar Patrón en PDF
+            </a>
+          ` : `
+            <div style="padding: 0.6rem; background: #ffffff; border-radius: 6px; font-size: 0.85rem; color: #15803d;">
+              Patrón enviado a tu correo ✓
+            </div>
+          `}
+          ${producto.linkVideo ? `
+            <a href="${producto.linkVideo}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.92rem; justify-content: center; color: #dc2626; border-color: #fca5a5;">
+              <i data-lucide="youtube" class="ui-icon"></i> Ver Video Tutorial en YouTube
+            </a>
+          ` : ''}
+        </div>
+      </div>
+    `;
+    actualizarIconosLucide();
+  }
+
+  renderAdmin();
+  mostrarToast("¡Molde gratuito listo para descargar!");
+}
+
+/**
+ * Dispara el envío de correo automático utilizando la API serverless de Gmail SMTP
+ */
+async function enviarCorreoConfirmacion(pedido) {
+  if (!pedido || !pedido.cliente || !pedido.cliente.email) return;
+
+  try {
+    const res = await fetch("/api/enviar-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        codigoPedido: pedido.codigo,
+        cliente: pedido.cliente,
+        items: pedido.items,
+        metodoPago: pedido.metodoPago,
+        total: pedido.total,
+        urlTienda: window.location.origin
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log(`[Email] Correo enviado exitosamente para pedido ${pedido.codigo} a ${pedido.cliente.email}`, data);
+    } else {
+      const errorData = await res.json().catch(() => ({}));
+      console.warn("[Email] Advertencia al despachar correo:", errorData);
+    }
+  } catch (err) {
+    console.warn("[Email] No se pudo conectar con el endpoint serverless de email:", err);
+  }
+}
+
+/**
+ * Abre el modal de consulta y descarga de pedidos previos ("Mis Descargas")
+ */
+function abrirModalMisDescargas() {
+  const modal = document.getElementById("modal-mis-descargas");
+  if (modal) {
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+    actualizarIconosLucide();
+    const inCodigo = document.getElementById("input-descargas-codigo");
+    if (inCodigo) inCodigo.focus();
+  }
+}
+
+function cerrarModalMisDescargas() {
+  const modal = document.getElementById("modal-mis-descargas");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
+}
+
+/**
+ * Consulta de descargas autorizadas desde el modal del cliente
+ */
+async function consultarDescargasDesdeModal() {
+  const inCodigo = document.getElementById("input-descargas-codigo");
+  const inEmail = document.getElementById("input-descargas-email");
+  const btn = document.getElementById("btn-consultar-descargas");
+  const contenedor = document.getElementById("contenedor-resultado-descargas");
+
+  const codigo = inCodigo ? inCodigo.value.trim().toUpperCase() : "";
+  const email = inEmail ? inEmail.value.trim().toLowerCase() : "";
+
+  if (!codigo || !email) {
+    mostrarToast("Por favor ingresa tu código de pedido y tu correo.");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader" class="ui-icon is-spinning"></i> Buscando...`;
+    actualizarIconosLucide();
+  }
+
+  try {
+    let resultadoDescargas = null;
+
+    // 1. Consultar a través de Supabase RPC segura si está activo
+    if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseObtenerDescargasPedido === "function") {
+      resultadoDescargas = await supabaseObtenerDescargasPedido(codigo, email);
+    }
+
+    // 2. Fallback a búsqueda en almacenamiento local si no está Supabase o no arrojó resultado
+    if (!resultadoDescargas || !resultadoDescargas.encontrado) {
+      const pedidoLocal = pedidos.find(p => 
+        String(p.codigo || "").trim().toUpperCase() === codigo &&
+        String(p.cliente?.email || "").trim().toLowerCase() === email
+      );
+
+      if (pedidoLocal) {
+        resultadoDescargas = {
+          encontrado: true,
+          estado: pedidoLocal.estado,
+          codigo: pedidoLocal.codigo,
+          cliente_nombre: pedidoLocal.cliente?.nombre || "Cliente",
+          metodo_pago: pedidoLocal.metodoPago,
+          items: pedidoLocal.items.map(item => ({
+            id: item.id,
+            nombre: item.nombre,
+            archivo_url: item.archivoUrl,
+            link_archivos: item.linkArchivos,
+            link_video: item.linkVideo,
+            linkDescarga: item.linkDescarga || item.linkArchivos || "#"
+          }))
+        };
+      }
+    }
+
+    if (!contenedor) return;
+
+    if (!resultadoDescargas || !resultadoDescargas.encontrado) {
+      contenedor.innerHTML = `
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1.25rem; text-align: center; color: #991b1b;">
+          <i data-lucide="alert-circle" style="width: 2.2rem; height: 2.2rem; color: #dc2626; margin-bottom: 0.35rem;"></i>
+          <h4 style="margin: 0 0 0.35rem 0;">No encontramos ese pedido</h4>
+          <p style="margin: 0; font-size: 0.88rem; line-height: 1.45;">
+            Verifica que el código (ej. <strong>ORD-1234</strong>) y el correo coincidan exactamente con los datos de tu compra.
+          </p>
+        </div>
+      `;
+      actualizarIconosLucide();
+      return;
+    }
+
+    if (resultadoDescargas.estado === "pendiente") {
+      contenedor.innerHTML = `
+        <div style="background: #fef9e8; border: 1.5px solid #f6e3a4; border-radius: 10px; padding: 1.25rem; text-align: center;">
+          <i data-lucide="clock" style="width: 2.5rem; height: 2.5rem; color: #d97706; margin-bottom: 0.4rem;"></i>
+          <h4 style="margin: 0 0 0.4rem 0; color: #b45309; font-size: 1.1rem;">Verificación Bancaria en Proceso</h4>
+          <p style="margin: 0 0 0.85rem 0; color: #78350f; font-size: 0.88rem; line-height: 1.5;">
+            Tu pedido <strong>${escaparHTML(resultadoDescargas.codigo)}</strong> fue registrado correctamente. Giu está verificando la acreditación de tu transferencia bancaria.
+          </p>
+          <div style="padding: 0.75rem; background: #ffffff; border-radius: 6px; font-size: 0.82rem; color: var(--text-muted);">
+            En cuanto se confirme el pago (máximo 48 hs hábiles), esta misma pantalla se actualizará automáticamente con tus enlaces de descarga y te llegará un correo de aviso.
+          </div>
+        </div>
+      `;
+      actualizarIconosLucide();
+      return;
+    }
+
+    if (resultadoDescargas.estado === "cancelada") {
+      contenedor.innerHTML = `
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1.25rem; text-align: center; color: #991b1b;">
+          <i data-lucide="x-circle" style="width: 2.2rem; height: 2.2rem; color: #dc2626; margin-bottom: 0.35rem;"></i>
+          <h4 style="margin: 0 0 0.35rem 0;">Pedido Cancelado</h4>
+          <p style="margin: 0; font-size: 0.88rem;">Este pedido fue cancelado. Si consideras que se trata de un error, contáctanos por WhatsApp.</p>
+        </div>
+      `;
+      actualizarIconosLucide();
+      return;
+    }
+
+    // Pedido COMPLETADO: renderizar tarjetas de descarga
+    const items = resultadoDescargas.items || [];
+    const itemsHtml = items.map(item => {
+      const linkPdf = item.linkDescarga || item.link_archivos || "";
+      const linkVid = item.link_video || "";
+
+      return `
+        <div class="download-item-card" style="background: #ffffff; border: 1.5px solid #ebdcfc; border-radius: 10px; padding: 1rem 1.15rem; margin-bottom: 0.85rem; box-shadow: 0 2px 6px rgba(132, 94, 194, 0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.65rem;">
+            <div>
+              <h4 style="margin: 0 0 0.2rem 0; color: var(--primary-dark); font-size: 1.05rem;">
+                ✂️ ${escaparHTML(item.nombre)}
+              </h4>
+              <span class="badge" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 0.75rem;">
+                Acceso Permanente
+              </span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.75rem;">
+            ${linkPdf ? `
+              <a href="${linkPdf}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
+                <i data-lucide="download" class="ui-icon"></i> Descargar Patrón (PDF)
+              </a>
+            ` : `
+              <span style="font-size: 0.82rem; color: var(--text-muted); background: var(--bg-page); padding: 0.4rem 0.75rem; border-radius: 6px;">
+                PDF en preparación
+              </span>
+            `}
+
+            ${linkVid ? `
+              <a href="${linkVid}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.6rem 1.1rem; color: #dc2626; border-color: #fca5a5;">
+                <i data-lucide="youtube" class="ui-icon"></i> Ver Video Tutorial
+              </a>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    contenedor.innerHTML = `
+      <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.88rem; color: #15803d; font-weight: 600;">
+          ✓ Pedido verificado: <strong>${escaparHTML(resultadoDescargas.codigo)}</strong>
+        </span>
+        <span class="badge" style="background: #15803d; color: #ffffff;">Pago Aprobado</span>
+      </div>
+      ${itemsHtml}
+    `;
+    actualizarIconosLucide();
+
+  } catch (err) {
+    console.error("Error al consultar descargas:", err);
+    mostrarToast("Error al consultar el pedido. Intenta nuevamente.");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="search" class="ui-icon"></i> Consultar Descargas`;
+      actualizarIconosLucide();
+    }
+  }
+}
+
+/**
+ * Aprueba una transferencia bancaria desde el panel admin, habilita descargas y dispara email
+ */
+async function aprobarTransferenciaYEnviarArchivos(pedidoId) {
+  const pedido = pedidos.find(p => p.id === pedidoId || p.codigo === pedidoId);
+  if (!pedido) return;
+
+  const confirmar = confirm(`¿Confirmas la recepción de la transferencia del pedido ${pedido.codigo} de ${pedido.cliente.nombre}?\n\nAl confirmar:\n1. El pedido pasará a Completada.\n2. Se enviará el correo automático con los enlaces de descarga directa y video tutorial.\n3. El cliente podrá descargar los archivos en la web.`);
+  if (!confirmar) return;
+
+  pedido.estado = "completada";
+  pedido.archivosEnviados = true;
+  pedido.fechaEnvioArchivos = obtenerFechaLocalHoraTexto(new Date());
+
+  guardarPedidosEnStorage();
+
+  // Sincronizar en Supabase con RPC segura
+  if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
+    try {
+      if (typeof supabaseAprobarPedidoTransferencia === "function") {
+        await supabaseAprobarPedidoTransferencia(pedido.codigo);
+      } else {
+        await supabaseActualizarEstadoPedido(pedido.id, "completada", true, pedido.fechaEnvioArchivos);
+      }
+    } catch (e) {
+      console.warn("[Supabase] Error al aprobar pedido:", e);
+    }
+  }
+
+  // Disparar envío automático de email con Gmail SMTP
+  enviarCorreoConfirmacion(pedido);
+
+  renderPedidosAdmin();
+  renderAdmin();
+  renderCatalogo();
+
+  mostrarToast(`✓ ¡Transferencia aprobada! Moldes enviados a ${pedido.cliente.email}.`);
+
+  // Opcional: avisar por WhatsApp con el link directo a "Mis Descargas"
+  if (pedido.cliente.telefono && pedido.cliente.telefono !== "No especificado" && !pedido.cliente.telefono.includes("Descarga")) {
+    const waLimpio = normalizarNumeroWhatsApp(pedido.cliente.telefono);
+    const urlDescarga = `${window.location.origin}?descarga=${encodeURIComponent(pedido.codigo)}&email=${encodeURIComponent(pedido.cliente.email)}`;
+    const msg = encodeURIComponent(`¡Hola ${pedido.cliente.nombre}! Te confirmamos que tu transferencia para el pedido ${pedido.codigo} fue aprobada con éxito ✓. Ya te enviamos tus patrones al correo y podés descargarlos directamente desde aquí: ${urlDescarga}`);
+
+    setTimeout(() => {
+      const abrirWa = confirm(`¿Deseas abrir WhatsApp para avisarle también a ${pedido.cliente.nombre}?`);
+      if (abrirWa) {
+        window.open(`https://api.whatsapp.com/send?phone=${waLimpio}&text=${msg}`, "_blank");
+      }
+    }, 350);
+  }
+}
+
+// Escuchar parámetros en la URL (?descarga=ORD-XXXX&email=...) al cargar la página
+window.addEventListener("DOMContentLoaded", () => {
+  if (typeof window !== "undefined" && window.location.search) {
+    const params = new URLSearchParams(window.location.search);
+    const codDescarga = params.get("descarga");
+    const emailDescarga = params.get("email");
+
+    if (codDescarga) {
+      setTimeout(() => {
+        abrirModalMisDescargas();
+        const inCod = document.getElementById("input-descargas-codigo");
+        const inMail = document.getElementById("input-descargas-email");
+        if (inCod) inCod.value = codDescarga;
+        if (inMail && emailDescarga) inMail.value = emailDescarga;
+        consultarDescargasDesdeModal();
+      }, 500);
+    }
+  }
+});

@@ -19,14 +19,18 @@ CREATE TABLE IF NOT EXISTS public.productos (
   precio_usd NUMERIC(10,2) DEFAULT 0, -- Precio manual en dólares (USD)
   precio_promo_usd NUMERIC(10,2) DEFAULT 0, -- Precio promocional en dólares (USD)
   imagen TEXT, -- URL de la imagen en Supabase Storage
-  link_archivos TEXT, -- Enlace a carpeta de Google Drive con moldes en PDF
+  archivo_url TEXT, -- Nombre o ruta del archivo PDF de moldería en Supabase Storage (bucket privado 'moldes-archivos')
+  es_gratuito BOOLEAN NOT NULL DEFAULT FALSE, -- Indica si el molde es de descarga gratuita (Freebie)
+  link_archivos TEXT, -- Enlace alternativo a carpeta de Google Drive con moldes en PDF
   link_video TEXT, -- Enlace al video tutorial (YouTube/Drive)
   created_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Migración idempotente para precios en USD
+-- Migración idempotente para precios en USD, archivo privado y moldes gratuitos
 ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS precio_usd NUMERIC(10,2) DEFAULT 0;
 ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS precio_promo_usd NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS archivo_url TEXT;
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS es_gratuito BOOLEAN DEFAULT FALSE;
 
 COMMENT ON TABLE public.productos IS 'Catálogo de moldes de costura descargables en formato PDF con enlaces a Drive y video tutorial';
 
@@ -160,21 +164,20 @@ CREATE POLICY "Administración de productos solo por admins aprobados"
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
--- PRIVACIDAD DE ENLACES DE DESCARGA (GOOGLE DRIVE Y VIDEOS TUTORIALES):
+-- PRIVACIDAD DE ENLACES DE DESCARGA (PDFS EN STORAGE, GOOGLE DRIVE Y VIDEOS TUTORIALES):
 -- Los visitantes anónimos solo pueden consultar las columnas de visualización del catálogo.
--- Se revoca la lectura pública de las columnas privadas para evitar descargas sin compra previa.
+-- Se revoca la lectura pública de las columnas privadas (archivo_url, link_archivos, link_video) para evitar descargas sin compra previa.
 REVOKE SELECT ON public.productos FROM anon;
-GRANT SELECT (id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, created_at) ON public.productos TO anon;
+GRANT SELECT (id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, es_gratuito, created_at) ON public.productos TO anon;
 GRANT SELECT ON public.productos TO authenticated, service_role;
 
 -- B) POLÍTICAS PARA PEDIDOS:
--- Clientes pueden registrar pedidos al completar el checkout (forzando estado inicial pendiente y total positivo)
+-- Clientes pueden registrar pedidos al completar el checkout (admite pedidos normales o moldes gratuitos con total = 0)
 CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
   ON public.pedidos FOR INSERT
   WITH CHECK (
-    estado = 'pendiente' AND
-    archivos_enviados = false AND
-    total > 0
+    (metodo_pago = 'gratuito' AND total = 0) OR
+    (estado = 'pendiente' AND archivos_enviados = false AND total >= 0)
   );
 
 -- Lectura, actualización y eliminación de pedidos restringida solo a administradores aprobados
@@ -329,3 +332,122 @@ CREATE POLICY "Gestión de comprobantes por admins aprobados"
     auth.role() = 'authenticated' AND
     public.es_admin_aprobado()
   );
+
+-- 12. CONFIGURACIÓN DEL BUCKET PRIVADO DE MOLDES Y PATRONES PDF (SUPABASE STORAGE)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('moldes-archivos', 'moldes-archivos', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
+
+DROP POLICY IF EXISTS "Subida y edición de moldes solo por admins aprobados" ON storage.objects;
+DROP POLICY IF EXISTS "Lectura de moldes en storage por admins aprobados" ON storage.objects;
+
+-- Subida y modificación de archivos PDF restringida exclusivamente a administradores aprobados
+CREATE POLICY "Subida y edición de moldes solo por admins aprobados"
+  ON storage.objects FOR ALL
+  USING (
+    bucket_id = 'moldes-archivos' AND
+    auth.role() = 'authenticated' AND
+    public.es_admin_aprobado()
+  )
+  WITH CHECK (
+    bucket_id = 'moldes-archivos' AND
+    auth.role() = 'authenticated' AND
+    public.es_admin_aprobado()
+  );
+
+-- Lectura directa de storage reservada para administradores (los clientes descargan vía Signed URLs temporales)
+CREATE POLICY "Lectura de moldes en storage por admins aprobados"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'moldes-archivos' AND
+    auth.role() = 'authenticated' AND
+    public.es_admin_aprobado()
+  );
+
+-- 13. FUNCIÓN RPC PARA OBTENER DESCARGAS SEGURAS DE UN PEDIDO COMPLETADO
+CREATE OR REPLACE FUNCTION public.obtener_descargas_pedido(p_codigo TEXT, p_email TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pedido RECORD;
+  v_items JSONB;
+BEGIN
+  -- Buscar pedido por código y email (sin importar mayúsculas)
+  SELECT * INTO v_pedido
+  FROM public.pedidos
+  WHERE LOWER(codigo) = LOWER(TRIM(p_codigo))
+    AND LOWER(cliente_email) = LOWER(TRIM(p_email));
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'encontrado', false,
+      'estado', 'inexistente',
+      'mensaje', 'No se encontró un pedido con ese código y correo.'
+    );
+  END IF;
+
+  IF v_pedido.estado != 'completada' THEN
+    RETURN jsonb_build_object(
+      'encontrado', true,
+      'estado', v_pedido.estado,
+      'codigo', v_pedido.codigo,
+      'mensaje', CASE 
+        WHEN v_pedido.estado = 'pendiente' THEN 'Tu transferencia bancaria está en proceso de verificación por Giu. En cuanto se confirme la acreditación, tus moldes aparecerán listos para descargar aquí.'
+        ELSE 'El pedido se encuentra cancelado.'
+      END,
+      'items', '[]'::jsonb
+    );
+  END IF;
+
+  -- Si el pedido está completado, obtenemos los ítems y sus enlaces de descarga
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'id', pi.producto_id,
+      'nombre', pi.nombre,
+      'archivo_url', pr.archivo_url,
+      'link_archivos', pr.link_archivos,
+      'link_video', pr.link_video,
+      'es_gratuito', COALESCE(pr.es_gratuito, false)
+    )
+  ) INTO v_items
+  FROM public.pedido_items pi
+  LEFT JOIN public.productos pr ON pr.id = pi.producto_id
+  WHERE pi.pedido_id = v_pedido.id;
+
+  RETURN jsonb_build_object(
+    'encontrado', true,
+    'estado', 'completada',
+    'codigo', v_pedido.codigo,
+    'cliente_nombre', v_pedido.cliente_nombre,
+    'metodo_pago', v_pedido.metodo_pago,
+    'items', COALESCE(v_items, '[]'::jsonb)
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.obtener_descargas_pedido(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- 14. FUNCIÓN RPC PARA APROBAR TRANSFERENCIAS BANCARIAS DESDE EL ADMIN
+CREATE OR REPLACE FUNCTION public.aprobar_pedido_transferencia(p_codigo TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.es_admin_aprobado() THEN
+    RAISE EXCEPTION 'Acceso denegado: solo administradores aprobados pueden confirmar pagos.';
+  END IF;
+
+  UPDATE public.pedidos
+  SET estado = 'completada'
+  WHERE codigo = p_codigo;
+
+  RETURN FOUND;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.aprobar_pedido_transferencia(TEXT) TO authenticated, service_role;

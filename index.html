@@ -75,6 +75,10 @@
         <a href="#seccion-faq" class="nav-link-btn" onclick="cambiarVista('catalogo')">
           <i data-lucide="help-circle" class="ui-icon-xs"></i> Preguntas
         </a>
+        <button id="btn-nav-descargas" class="nav-btn nav-btn-descargas" onclick="abrirModalMisDescargas()"
+          title="Descargar moldes adquiridos previamente">
+          <i data-lucide="download-cloud" class="ui-icon"></i> <span class="nav-descargas-text">Mis Descargas</span>
+        </button>
         <button id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')">
           <i data-lucide="shopping-bag" class="ui-icon"></i> Carrito <span id="cart-badge" class="badge">0</span>
         </button>
@@ -509,7 +513,15 @@
                 </div>
               </div>
 
-              <div class="form-row">
+              <!-- Casilla de Molde Gratuito (Lead Magnet) -->
+              <div class="form-group" style="margin-bottom: 0.85rem; padding: 0.65rem 0.85rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                <label style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; margin: 0; font-weight: 600; color: #15803d;">
+                  <input type="checkbox" id="producto-es-gratuito" onchange="alternarCamposMoldeGratuito(this.checked)" style="width: 1.15rem; height: 1.15rem; cursor: pointer;">
+                  <span>🎁 Marcar como Molde Gratuito (Freebie para descarga libre)</span>
+                </label>
+              </div>
+
+              <div class="form-row" id="bloque-precios-molde">
                 <div class="form-group">
                   <label for="producto-precio">Precio normal en Pesos ARS ($) *:</label>
                   <input type="number" id="producto-precio" required min="0" step="0.01" placeholder="Ej: 2500">
@@ -521,7 +533,7 @@
                 </div>
               </div>
 
-              <div class="form-group">
+              <div class="form-group" id="bloque-promo-molde">
                 <label for="producto-promo">¿Tiene promoción activa?</label>
                 <select id="producto-promo" onchange="toggleCampoPromo()">
                   <option value="no">Sin promoción</option>
@@ -541,18 +553,29 @@
                 </div>
               </div>
 
-              <!-- Enlaces digitales: Archivos en Drive y Video Tutorial -->
+              <!-- Archivos del Molde: Subida a Storage + Enlace alternativo Drive + Video YouTube -->
+              <div class="form-group" style="background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
+                <label for="producto-archivo-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                  <i data-lucide="file-up" class="ui-icon-xs"></i> Archivo del Molde para Descarga Directa (PDF o ZIP):
+                </label>
+                <input type="file" id="producto-archivo-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
+                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
+                  🔒 Se guarda en el almacenamiento privado seguro de Supabase. El cliente podrá descargarlo al instante tras completar el pago o registro gratuito.
+                </small>
+                <div id="producto-archivo-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
+              </div>
+
               <div class="form-row">
                 <div class="form-group">
-                  <label for="producto-link-archivos">Enlace de archivos PDF (Google Drive):</label>
-                  <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/drive/folders/..."
-                    autocomplete="off">
+                  <label for="producto-link-archivos">Enlace alternativo (Google Drive / Nube externa):</label>
+                  <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/..." autocomplete="off">
+                  <small style="color: var(--text-muted); font-size: 0.78rem;">Opcional: puedes dejarlo como respaldo o si el archivo supera los 50 MB.</small>
                 </div>
 
                 <div class="form-group">
-                  <label for="producto-link-video">Enlace de video tutorial (YouTube/Drive):</label>
-                  <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..."
-                    autocomplete="off">
+                  <label for="producto-link-video">Video Tutorial en YouTube (Paso a paso):</label>
+                  <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                  <small style="color: var(--text-muted); font-size: 0.78rem;">Se le comparte al cliente al aprobarse el pago o descargar gratis.</small>
                 </div>
               </div>
 
@@ -962,6 +985,113 @@
     </div>
   </div>
 
+  <!-- 5.1. MODAL: MIS DESCARGAS Y RASTREADOR DE PEDIDOS -->
+  <div id="modal-mis-descargas" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+    style="display: none;" onclick="if(event.target === this) cerrarModalMisDescargas();">
+    <div class="modal-box" role="document" style="max-width: 620px;">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin: 0; color: var(--primary-dark); display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="download-cloud" class="ui-icon"></i> Mis Descargas Digitales
+          </h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.84rem; color: var(--text-muted);">
+            Consulta el estado de tu compra y descarga tus patrones en PDF y videos tutoriales.
+          </p>
+        </div>
+        <button class="modal-close-btn" onclick="cerrarModalMisDescargas()" title="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Formulario de Consulta -->
+        <form id="form-consulta-descargas" onsubmit="event.preventDefault(); consultarDescargasDesdeModal();"
+          style="background: var(--bg-page); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.25rem;">
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="input-descargas-codigo">Código de Pedido *</label>
+              <input type="text" id="input-descargas-codigo" placeholder="Ej: ORD-1234" required autocomplete="off"
+                style="text-transform: uppercase;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="input-descargas-email">Correo @gmail.com *</label>
+              <input type="email" id="input-descargas-email" placeholder="tu-correo@gmail.com" required autocomplete="off">
+            </div>
+          </div>
+          <div style="margin-top: 0.85rem; display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn btn-primary" id="btn-consultar-descargas">
+              <i data-lucide="search" class="ui-icon"></i> Consultar Descargas
+            </button>
+          </div>
+        </form>
+
+        <!-- Contenedor Dinámico de Resultados de Descargas -->
+        <div id="contenedor-resultado-descargas">
+          <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
+            <i data-lucide="file-text" style="width: 2.8rem; height: 2.8rem; stroke-width: 1.5; color: var(--primary); opacity: 0.5; margin-bottom: 0.5rem;"></i>
+            <p style="margin: 0; font-size: 0.92rem;">
+              Ingresa el código que recibiste al comprar (ej. <strong>ORD-1234</strong>) y tu Gmail para desbloquear tus archivos.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="cerrarModalMisDescargas()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5.2. MODAL: OBTENCIÓN RÁPIDA DE MOLDE GRATUITO (FREEBIE) -->
+  <div id="modal-molde-gratis" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+    style="display: none;" onclick="if(event.target === this) cerrarModalMoldeGratis();">
+    <div class="modal-box" role="document" style="max-width: 520px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-bottom: 1px solid #bbf7d0;">
+        <div>
+          <h3 style="margin: 0; color: #15803d; display: flex; align-items: center; gap: 0.45rem;">
+            <i data-lucide="gift" class="ui-icon"></i> ¡Descarga tu Molde Gratis!
+          </h3>
+          <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: #166534;">
+            Completa tus datos para enviarte el patrón en PDF y el video tutorial a tu correo.
+          </p>
+        </div>
+        <button class="modal-close-btn" onclick="cerrarModalMoldeGratis()" title="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem;">
+        <!-- Previa del molde gratuito -->
+        <div id="molde-gratis-preview" style="display: flex; align-items: center; gap: 1rem; background: var(--bg-page); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.25rem;">
+          <!-- Generado dinámicamente -->
+        </div>
+
+        <form id="form-molde-gratis" onsubmit="event.preventDefault(); confirmarDescargaGratis();">
+          <input type="hidden" id="molde-gratis-id">
+          
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="molde-gratis-nombre">Nombre y Apellido *</label>
+            <input type="text" id="molde-gratis-nombre" placeholder="Ej: María González" required autocomplete="name">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label for="molde-gratis-email">Correo @gmail.com *</label>
+            <input type="email" id="molde-gratis-email" placeholder="ejemplo@gmail.com" required autocomplete="email">
+            <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 0.25rem;">
+              Te enviaremos los enlaces de descarga y el tutorial directamente a tu casilla.
+            </small>
+          </div>
+
+          <div id="molde-gratis-resultado" style="display: none; margin-top: 1rem;">
+            <!-- Contenedor de descarga inmediata tras enviar -->
+          </div>
+
+          <div class="form-buttons" style="margin-top: 1.25rem;">
+            <button type="submit" class="btn btn-primary btn-block" id="btn-submit-molde-gratis" style="font-size: 1rem; padding: 0.75rem 1.25rem;">
+              <i data-lucide="download" class="ui-icon"></i> Obtener Molde Gratis Ahora
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- 6. MODAL: CONFIGURACIÓN DE BASE DE DATOS SUPABASE (PRODUCCIÓN) -->
   <div id="modal-config-supabase" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
     style="display: none;" onclick="if(event.target === this) cerrarModalConfigSupabase();">
@@ -995,11 +1125,11 @@
           </div>
 
           <div class="form-group" style="margin-top: 1rem;">
-            <label for="input-supabase-anon">Project API Key (anon / public) *</label>
-            <input type="password" id="input-supabase-anon" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            <label for="input-supabase-anon">Project API Key (Publishable key / anon public) *</label>
+            <input type="password" id="input-supabase-anon" placeholder="sb_publishable_... o eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
               autocomplete="off" required>
             <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
-              Encuéntrala en: <em>Settings → API → Project API Keys → anon / public</em>
+              Encuéntrala en: <em>Settings → API Keys → Publishable key (sb_publishable_...) o en "View legacy API keys"</em>
             </small>
           </div>
 

@@ -1,28 +1,26 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 18/11/2026 — Checkout simplificado (Mercado Pago + Transferencia bancaria 10% OFF; eliminación total de PayPal y link manual MP).
+Última actualización: 18/11/2026 — Descargas directas, moldes gratis, bucket privado `moldes-archivos` y automatización Gmail SMTP.
 
 ## Estado actual
-- Medios de pago simplificados exclusivamente a nivel nacional (ARS):
-  - Mercado Pago: Pasarela oficial Checkout Pro (/api/crear-preferencia) con tarjetas y saldo en cuenta.
-  - Transferencia Bancaria: Datos bancarios (CBU/CVU/Alias) con 10% OFF automático y carga de comprobante.
-  - Eliminada opción PayPal (USD) y link manual de cobro de MP para evitar confusiones y ventas internacionales prematuras.
-- Canales de contacto oficiales:
-  - WhatsApp oficial: `+54 9 381 358-1558` (normalización automática para enlaces de chat: `5493813581558`).
-- Blindaje integral de seguridad implementado:
-  - Enlaces de descarga (Google Drive / Video) restringidos solo a administradores aprobados.
-  - RLS reforzado en `pedidos` y `pedido_items`.
-  - Bucket `comprobantes-transferencia` privado con URLs firmadas temporales.
-  - Validación de precios server-side en `api/crear-preferencia.js` contra Supabase.
-  - Rate limiting por IP y validación HMAC-SHA256 en webhooks MP.
+- Descarga directa y entrega de moldes:
+  - Bucket privado Supabase `moldes-archivos` (PDF/ZIP): solo descargable con URLs firmadas (24h) tras validación estricta de orden pagada/aprobada (`obtener_descargas_pedido`).
+  - Videos tutoriales: exclusivos en YouTube (enlaces entregados al comprador).
+  - Moldes gratuitos (Freebies): flujo express 1-click (Nombre + Gmail), $0, descarga inmediata en pantalla y correo automático.
+  - Transferencias: Giu aprueba el pago en panel admin con 1 clic ("Aprobar y Enviar Moldes"), lo cual actualiza Supabase, genera links y dispara email.
+  - Notificaciones por correo: función serverless `/api/enviar-email` con Gmail SMTP directo (Nodemailer).
+  - Modal "Mis Descargas" en el header para que clientes consulten sus moldes en cualquier momento con código y Gmail.
+- Pasarelas y medios de pago (ARS): Mercado Pago Checkout Pro oficial y Transferencia con 10% OFF. WhatsApp oficial: `+54 9 381 358-1558`.
 
 ## Decisiones y por qué
-- Eliminación de PayPal y precios USD: La tienda opera 100% en el mercado argentino. Se simplificó la UX removiendo campos en dólares, tabs y pills.
-- Eliminación de link manual de MP: Canaliza las compras por la pasarela automatizada oficial o transferencia directa con 10% OFF.
+- Descargas protegidas: No se exponen URLs públicas de patrones en el frontend; se generan URLs firmadas tras validar el pedido en PostgreSQL.
+- Gmail SMTP directo: Solución gratuita nativa para enviar correos sin costo mensual ni límites agresivos de tiers free.
 
 ## Aprendizajes y errores a evitar
-- En Supabase Dashboard (Settings -> API Keys), la clave a utilizar en el frontend es la **Publishable key** (`sb_publishable_...` o la clásica `anonKey`), NUNCA la **Secret key** (`sb_secret_...` / `service_role`).
+- Supabase Dashboard (Settings -> API Keys): Usar siempre la **Publishable key** (`sb_publishable_...`) o la clásica `anonKey` (en "View legacy API keys"). NUNCA la **Secret key** (`sb_secret_...`) en el frontend o navegador.
+- Project URL del proyecto `cosecongiu`: `https://ohvboktbdhahgbvemlid.supabase.co` (con 'h', no 'b').
 
 ## Próximos pasos
-- Ejecutar `sql/supabase-schema.sql` en el SQL Editor de Supabase si se desean sincronizar los valores por defecto en la nube.
+- Ejecutar `sql/supabase-schema.sql` en el SQL Editor de Supabase para inicializar el bucket `moldes-archivos` y las funciones RPC.
+- Configurar `GMAIL_USER` y `GMAIL_APP_PASSWORD` en las variables de entorno de Vercel.
