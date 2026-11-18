@@ -1,31 +1,29 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 18/11/2026 — Limpieza de secretos, validación server-side y sanitización XSS.
+Última actualización: 18/11/2026 — Blindaje integral de seguridad (RLS, URLs firmadas, webhook HMAC, rate limiting y DB price cross-check).
 
 ## Estado actual
-- Seguridad y Sanitización:
-  - Eliminación total de credenciales y tokens hardcodeados en `api/crear-preferencia.js` y `api/webhook-mercadopago.js`.
-  - Requisito estricto de variables de entorno seguras (`MP_ACCESS_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY`).
-  - Validación defensiva de ítems, cantidades (1-50) y montos positivos antes de invocar la API de Mercado Pago.
-  - Sanitización HTML estricta en `escaparHTML` (soporte completo de comillas simples y dobles) y eliminación de inyecciones de strings en `onclick`.
-- Gestión dinámica de categorías en Panel Admin:
-  - Formulario de alta rápida con validación anti-duplicados y lista con conteo de moldes y eliminación individual.
-  - Reasignación defensiva automática a "Otros" al eliminar una categoría en uso.
-  - Sincronización en localStorage y Supabase (clave `categorias_moldes`).
-- Estética Boutique estilo Tiendanube:
-  - Fuente Plus Jakarta Sans, Hero boutique, tarjetas alineadas, badges flotantes.
-  - Checkout profesionalizado en 2 pasos sin desbordes horizontales.
-  - Íconos oficiales vectoriales en SVG (WhatsApp, Instagram, YouTube).
+- Blindaje integral de seguridad implementado:
+  - Enlaces de descarga (Google Drive / Video) restringidos: solo accesibles por admins aprobados (RLS y privilegios por columna).
+  - RLS reforzado en `pedidos` (forzando estado inicial `pendiente` y total > 0) y en `pedido_items` (montos y cantidades válidos).
+  - Bucket `comprobantes-transferencia` privado con URLs firmadas temporales (`createSignedUrl`) para previsualización admin.
+  - Validación de precios server-side en `api/crear-preferencia.js` contra la tabla `productos` de Supabase (previene tampering).
+  - Rate limiting por IP en `/api/crear-preferencia` (máx. 20 peticiones/min) contra spam de bots.
+  - Validación criptográfica de firmas HMAC-SHA256 (`x-signature`) con `crypto.timingSafeEqual` en webhook de Mercado Pago.
+  - Cero secretos hardcodeados y sanitización XSS estricta en todo el frontend.
+- Gestión dinámica de categorías en Panel Admin (agregar/eliminar con reasignación defensiva a "Otros").
+- Estética Boutique estilo Tiendanube con Checkout en 2 pasos sin desbordes.
 
 ## Decisiones y por qué
-- Exclusión de tokens en código fuente: Previene fugas de credenciales en repositorios y asegura cumplimiento de estándares de seguridad en pasarelas de pago.
-- `escaparHTML` con reemplazo de caracteres `'` y `"`: Evita vulnerabilidades XSS en atributos HTML o contextos de manipulación del DOM.
-- Eventos usando `getAttribute('data-categoria')`: Evita interpolar variables directamente en código inline JS dentro del HTML.
+- Ocultar links de descarga del catálogo público: Evita que usuarios sin pagar descarguen PDFs de Drive mediante DevTools o consultas a Supabase.
+- Bucket de comprobantes privado: Protege la información bancaria y datos personales de compradores.
+- Verificación de precios en BD: Garantiza que nadie pueda pagar un molde a un precio manipulado en el cliente.
+- Timing-safe HMAC en Webhook: Evita ataques de temporización e impersonación de eventos de pago de Mercado Pago.
 
 ## Aprendizajes y errores a evitar
-- Nunca dejar tokens o secrets de producción como fallback en serverless functions (`process.env.VAR || "TOKEN"`).
-- Mantener siempre la paleta oficial (`#845ec2`, `#c7a138`) para consistencia de marca.
+- Los buckets de storage con datos personales nunca deben ser públicos.
+- Ejecutar el esquema SQL en Supabase tras modificar `sql/supabase-schema.sql` para aplicar las nuevas políticas RLS.
 
 ## Próximos pasos
-- Carga de fotos de moldes reales y enlaces a Google Drive por parte del administrador.
+- Ejecutar `sql/supabase-schema.sql` en el SQL Editor de Supabase para activar las nuevas políticas RLS y de almacenamiento.

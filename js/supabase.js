@@ -528,10 +528,49 @@ async function supabaseSubirComprobanteTransferencia(archivo, codigoPedido = "pe
       .from("comprobantes-transferencia")
       .getPublicUrl(nombreUnico);
 
-    return publicData && publicData.publicUrl ? publicData.publicUrl : null;
+    return publicData && publicData.publicUrl ? publicData.publicUrl : nombreUnico;
   } catch (err) {
     console.error("[Supabase Storage] Excepción al subir comprobante:", err);
     return null;
+  }
+}
+
+/**
+ * Obtiene una URL accesible para previsualizar un comprobante bancario.
+ * Si es un archivo en el bucket privado de Supabase y el administrador está logueado, genera una URL firmada segura.
+ */
+async function supabaseObtenerUrlComprobante(urlOPath) {
+  if (!urlOPath || typeof urlOPath !== "string") return null;
+
+  // Si es un data URL (base64) o un enlace externo ajeno a nuestro storage, se devuelve directo
+  if (urlOPath.startsWith("data:") || (!urlOPath.includes("comprobantes-transferencia") && !urlOPath.startsWith("comp_"))) {
+    return urlOPath;
+  }
+
+  const client = obtenerClienteSupabase();
+  if (!client) return urlOPath;
+
+  try {
+    let ruta = urlOPath;
+    if (ruta.includes("/comprobantes-transferencia/")) {
+      ruta = ruta.split("/comprobantes-transferencia/").pop();
+    }
+    ruta = ruta.split("?")[0].trim();
+
+    // Generamos URL firmada con 1 hora de validez (3600 segundos)
+    const { data, error } = await client.storage
+      .from("comprobantes-transferencia")
+      .createSignedUrl(ruta, 3600);
+
+    if (error || !data || !data.signedUrl) {
+      console.warn("[Supabase Storage] No se pudo generar URL firmada para comprobante:", error);
+      return urlOPath;
+    }
+
+    return data.signedUrl;
+  } catch (err) {
+    console.warn("[Supabase Storage] Error al solicitar URL firmada:", err);
+    return urlOPath;
   }
 }
 
@@ -543,6 +582,7 @@ async function supabaseSubirComprobanteTransferencia(archivo, codigoPedido = "pe
 
 /**
  * Obtiene todos los moldes desde Supabase (con fallback a null)
+ * Oculta defensivamente los enlaces de descarga directa (Google Drive y videos) si no hay sesión de admin activa.
  */
 async function supabaseObtenerProductos() {
   const client = obtenerClienteSupabase();
@@ -551,15 +591,29 @@ async function supabaseObtenerProductos() {
   }
 
   try {
-    const { data, error } = await client
+    const esAdmin = typeof estaAdminLogueado === "function" && estaAdminLogueado();
+    const colsPublicas = "id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, created_at";
+    const columnas = esAdmin ? "*" : colsPublicas;
+
+    let res = await client
       .from("productos")
-      .select("*")
+      .select(columnas)
       .order("id", { ascending: true });
 
-    if (error) {
-      console.error("[Supabase] Error al consultar productos:", error);
+    // Si hubo error con '*' (por ejemplo si la sesión de admin expiró en el servidor), reintentamos con las columnas públicas
+    if (res.error && esAdmin) {
+      res = await client
+        .from("productos")
+        .select(colsPublicas)
+        .order("id", { ascending: true });
+    }
+
+    if (res.error) {
+      console.error("[Supabase] Error al consultar productos:", res.error);
       return null;
     }
+
+    const data = res.data;
 
     // Mapeamos de snake_case (BD) a camelCase (UI)
     return (data || []).map(p => ({

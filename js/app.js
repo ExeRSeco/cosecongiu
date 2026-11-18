@@ -3343,7 +3343,7 @@ function renderPedidosAdmin() {
 /**
  * Despliega el modal visor con la imagen o documento del comprobante bancario
  */
-function verComprobanteModal(url, codigo, numOperacion, clienteNombre, total) {
+async function verComprobanteModal(url, codigo, numOperacion, clienteNombre, total) {
   const modal = document.getElementById("modal-visor-comprobante");
   const contenedorBody = document.getElementById("visor-comprobante-body");
   const btnEnlace = document.getElementById("visor-comprobante-enlace");
@@ -3355,7 +3355,17 @@ function verComprobanteModal(url, codigo, numOperacion, clienteNombre, total) {
     titulo.innerHTML = `<i data-lucide="receipt" class="ui-icon"></i> Comprobante de Pedido ${escaparHTML(codigo)}`;
   }
 
-  const esPdf = (url || "").toLowerCase().includes(".pdf") || (url || "").startsWith("data:application/pdf");
+  // Si el comprobante está alojado en el bucket privado de Supabase, generamos una URL firmada con tiempo limitado
+  let urlSegura = url;
+  if (typeof supabaseObtenerUrlComprobante === "function") {
+    try {
+      urlSegura = (await supabaseObtenerUrlComprobante(url)) || url;
+    } catch (e) {
+      console.warn("[Visor Comprobante] Fallback a URL original:", e);
+    }
+  }
+
+  const esPdf = (urlSegura || "").toLowerCase().includes(".pdf") || (urlSegura || "").startsWith("data:application/pdf");
 
   let visorHtml = "";
   if (esPdf) {
@@ -3366,7 +3376,7 @@ function verComprobanteModal(url, codigo, numOperacion, clienteNombre, total) {
         <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
           El comprador adjuntó su comprobante bancario en formato PDF.
         </p>
-        <a href="${url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" download="comprobante_${codigo}.pdf">
+        <a href="${escaparHTML(urlSegura)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" download="comprobante_${escaparHTML(codigo)}.pdf">
           <i data-lucide="download" class="ui-icon"></i> Descargar o Abrir PDF
         </a>
       </div>
@@ -3374,7 +3384,7 @@ function verComprobanteModal(url, codigo, numOperacion, clienteNombre, total) {
   } else {
     visorHtml = `
       <div class="visor-imagen-container">
-        <img src="${url}" alt="Comprobante de transferencia ${escaparHTML(codigo)}" class="visor-imagen-preview">
+        <img src="${escaparHTML(urlSegura)}" alt="Comprobante de transferencia ${escaparHTML(codigo)}" class="visor-imagen-preview">
       </div>
     `;
   }
@@ -3389,7 +3399,7 @@ function verComprobanteModal(url, codigo, numOperacion, clienteNombre, total) {
   `;
 
   if (btnEnlace) {
-    btnEnlace.href = url;
+    btnEnlace.href = urlSegura;
     btnEnlace.style.display = "inline-flex";
   }
 

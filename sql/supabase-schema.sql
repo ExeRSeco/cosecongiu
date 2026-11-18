@@ -160,11 +160,22 @@ CREATE POLICY "Administración de productos solo por admins aprobados"
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
+-- PRIVACIDAD DE ENLACES DE DESCARGA (GOOGLE DRIVE Y VIDEOS TUTORIALES):
+-- Los visitantes anónimos solo pueden consultar las columnas de visualización del catálogo.
+-- Se revoca la lectura pública de las columnas privadas para evitar descargas sin compra previa.
+REVOKE SELECT ON public.productos FROM anon;
+GRANT SELECT (id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, created_at) ON public.productos TO anon;
+GRANT SELECT ON public.productos TO authenticated, service_role;
+
 -- B) POLÍTICAS PARA PEDIDOS:
--- Clientes pueden registrar pedidos al completar el checkout
+-- Clientes pueden registrar pedidos al completar el checkout (forzando estado inicial pendiente y total positivo)
 CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
   ON public.pedidos FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    estado = 'pendiente' AND
+    archivos_enviados = false AND
+    total > 0
+  );
 
 -- Lectura, actualización y eliminación de pedidos restringida solo a administradores aprobados
 CREATE POLICY "Gestión de pedidos solo por admins aprobados"
@@ -173,10 +184,13 @@ CREATE POLICY "Gestión de pedidos solo por admins aprobados"
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
 -- C) POLÍTICAS PARA PEDIDO_ITEMS:
--- Clientes pueden registrar ítems comprados desde el checkout
+-- Clientes pueden registrar ítems comprados desde el checkout con validación de montos
 CREATE POLICY "Inserción de ítems de pedido desde checkout"
   ON public.pedido_items FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    precio >= 0 AND
+    cantidad > 0
+  );
 
 -- Consulta y gestión de ítems de compra restringida a administradores aprobados
 CREATE POLICY "Gestión de ítems solo por admins aprobados"
@@ -274,13 +288,14 @@ VALUES (
 )
 ON CONFLICT (clave) DO NOTHING;
 
--- 11. CONFIGURACIÓN DEL BUCKET DE COMPROBANTES DE TRANSFERENCIA (SUPABASE STORAGE)
+-- 11. CONFIGURACIÓN DEL BUCKET DE COMPROBANTES DE TRANSFERENCIA (SUPABASE STORAGE PRIVADO)
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('comprobantes-transferencia', 'comprobantes-transferencia', true)
-ON CONFLICT (id) DO UPDATE SET public = true;
+VALUES ('comprobantes-transferencia', 'comprobantes-transferencia', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
 DROP POLICY IF EXISTS "Subida de comprobantes desde checkout" ON storage.objects;
 DROP POLICY IF EXISTS "Lectura pública de comprobantes de transferencia" ON storage.objects;
+DROP POLICY IF EXISTS "Lectura de comprobantes solo por admins aprobados" ON storage.objects;
 DROP POLICY IF EXISTS "Gestión de comprobantes por admins aprobados" ON storage.objects;
 
 -- Clientes pueden subir comprobantes al confirmar su compra
@@ -288,10 +303,14 @@ CREATE POLICY "Subida de comprobantes desde checkout"
   ON storage.objects FOR INSERT
   WITH CHECK (bucket_id = 'comprobantes-transferencia');
 
--- Lectura pública de comprobantes (permite previsualización por el comprador y el admin)
-CREATE POLICY "Lectura pública de comprobantes de transferencia"
+-- Lectura confidencial de comprobantes bancarios restringida únicamente a administradores aprobados
+CREATE POLICY "Lectura de comprobantes solo por admins aprobados"
   ON storage.objects FOR SELECT
-  USING (bucket_id = 'comprobantes-transferencia');
+  USING (
+    bucket_id = 'comprobantes-transferencia' AND
+    auth.role() = 'authenticated' AND
+    public.es_admin_aprobado()
+  );
 
 -- Administradores aprobados pueden gestionar o depurar comprobantes
 CREATE POLICY "Gestión de comprobantes por admins aprobados"

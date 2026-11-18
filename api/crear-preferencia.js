@@ -1,4 +1,23 @@
 // Vercel Serverless Function: Creación de Preferencia de Pago en Mercado Pago
+// Protección: Rate limiting por IP y validación de precios oficial contra base de datos Supabase
+
+const IP_RATE_LIMIT = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
+const MAX_REQUESTS_PER_WINDOW = 20; // Máximo 20 preferencias por IP por minuto
+
+function verificarRateLimit(ip) {
+  if (!ip || ip === "ip-desconocida") return true;
+  const ahora = Date.now();
+  const registro = IP_RATE_LIMIT.get(ip) || [];
+  const recientes = registro.filter(t => ahora - t < RATE_LIMIT_WINDOW_MS);
+  if (recientes.length >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  recientes.push(ahora);
+  IP_RATE_LIMIT.set(ip, recientes);
+  return true;
+}
+
 module.exports = async (req, res) => {
   // Configuración de cabeceras CORS
   res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -16,6 +35,13 @@ module.exports = async (req, res) => {
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido. Utiliza POST." });
+  }
+
+  // Rate Limiting anti-abuso
+  const forwarded = req.headers["x-forwarded-for"];
+  const clientIp = forwarded ? forwarded.split(",")[0].trim() : (req.socket?.remoteAddress || "ip-desconocida");
+  if (!verificarRateLimit(clientIp)) {
+    return res.status(429).json({ error: "Demasiadas solicitudes. Por favor espera un momento antes de volver a intentar." });
   }
 
   try {
@@ -60,6 +86,51 @@ module.exports = async (req, res) => {
         unit_price: Math.round(precioUnitario * 100) / 100,
         currency_id: "ARS"
       });
+    }
+
+    // Validación y recálculo estricto contra Supabase para prevenir manipulación del precio en el cliente
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const idsNumericos = preferenceItems
+          .map(i => i.id)
+          .filter(id => !isNaN(Number(id)) && Number(id) > 0);
+
+        if (idsNumericos.length > 0) {
+          const idsQuery = idsNumericos.join(",");
+          const resProd = await fetch(`${supabaseUrl}/rest/v1/productos?id=in.(${idsQuery})&select=id,nombre,precio,en_promo,precio_promo`, {
+            headers: {
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`
+            }
+          });
+
+          if (resProd.ok) {
+            const dbProducts = await resProd.json();
+            const dbMap = new Map();
+            (dbProducts || []).forEach(p => dbMap.set(String(p.id), p));
+
+            for (const item of preferenceItems) {
+              const prodDb = dbMap.get(String(item.id));
+              if (prodDb) {
+                const precioOficial = (prodDb.en_promo && Number(prodDb.precio_promo) > 0)
+                  ? Number(prodDb.precio_promo)
+                  : Number(prodDb.precio);
+
+                // Si el cliente envía un precio menor al oficial de la base de datos, forzamos el oficial
+                if (item.unit_price < precioOficial) {
+                  console.warn(`[Crear Preferencia] Discrepancia de precio detectada para molde ID ${item.id} ("${item.title}"): cliente=$${item.unit_price}, oficial=$${precioOficial}. Se aplica el precio oficial.`);
+                  item.unit_price = precioOficial;
+                }
+              }
+            }
+          }
+        }
+      } catch (errSupabase) {
+        console.warn("[Crear Preferencia] Aviso: No se pudo verificar precios en tiempo real con Supabase:", errSupabase.message);
+      }
     }
 
     const payerEmail = (cliente && cliente.email && cliente.email.includes("@")) 
