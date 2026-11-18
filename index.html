@@ -408,111 +408,148 @@
 
       <!-- SECCIÓN DE GESTIÓN DE CATÁLOGO (FORMULARIO Y TABLA) -->
       <div class="admin-layout">
-        <!-- Formulario para agregar / editar molde -->
-        <div class="card admin-form-card">
-          <h3 id="admin-form-titulo">Agregar Nuevo Molde</h3>
-          <form id="form-producto" onsubmit="guardarProducto(event)">
-            <input type="hidden" id="producto-id" value="">
+        <!-- Columna Lateral: Formulario de moldes + Gestión de Categorías -->
+        <div class="admin-sidebar-col">
+          <!-- Formulario para agregar / editar molde -->
+          <div class="card admin-form-card">
+            <h3 id="admin-form-titulo">Agregar Nuevo Molde</h3>
+            <form id="form-producto" onsubmit="guardarProducto(event)">
+              <input type="hidden" id="producto-id" value="">
 
-            <div class="form-group">
-              <label for="producto-nombre">Nombre del molde o producto:</label>
-              <input type="text" id="producto-nombre" required placeholder="Ej: Vestido Solero Verano Talles S-XL">
-            </div>
-
-            <div class="form-row">
               <div class="form-group">
-                <label for="producto-categoria">Categoría:</label>
-                <select id="producto-categoria" required>
-                  <option value="Vestidos">Vestidos</option>
-                  <option value="Pantalones">Pantalones</option>
-                  <option value="Camisas">Camisas</option>
-                  <option value="Bolsos y Accesorios">Bolsos y Accesorios</option>
-                  <option value="Otros">Otros</option>
+                <label for="producto-nombre">Nombre del molde o producto:</label>
+                <input type="text" id="producto-nombre" required placeholder="Ej: Vestido Solero Verano Talles S-XL">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                    <label for="producto-categoria" style="margin-bottom: 0;">Categoría:</label>
+                    <a href="#admin-seccion-categorias" class="link-manage-cats" onclick="document.getElementById('nueva-categoria-nombre')?.focus();">
+                      <i data-lucide="settings" style="width: 12px; height: 12px;"></i> Gestionar
+                    </a>
+                  </div>
+                  <select id="producto-categoria" required>
+                    <!-- Las opciones de categorías se inyectan dinámicamente desde app.js -->
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="producto-icono">Icono representativo:</label>
+                  <select id="producto-icono">
+                    <option value="scissors">Tijeras (Costura)</option>
+                    <option value="shirt">Prenda / Camisa</option>
+                    <option value="shopping-bag">Bolso / Accesorio</option>
+                    <option value="file-text">Patrón en PDF</option>
+                    <option value="sparkles">Destacado / Especial</option>
+                    <option value="layers">Moldería en capas</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="producto-descripcion">Descripción detallada del patrón:</label>
+                <input type="text" id="producto-descripcion" required
+                  placeholder="Ej: Molde en PDF con guía paso a paso, talles XS al XXL">
+              </div>
+
+              <div class="form-group">
+                <label for="producto-imagen">Imagen del molde (opcional)</label>
+                <input type="file" id="producto-imagen" accept="image/*">
+                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">⚡ Optimización automática: se comprime y convierte a WebP para ahorrar espacio y cargar ultra rápido.</small>
+                <div id="producto-preview-wrap" style="margin-top:0.5rem; display: none;">
+                  <img id="producto-preview" src="" alt="Vista previa del molde"
+                    style="max-width:120px; border-radius:8px; border:1px solid var(--border);">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="producto-precio">Precio normal en Pesos ARS ($) *:</label>
+                  <input type="number" id="producto-precio" required min="0" step="0.01" placeholder="Ej: 2500">
+                </div>
+
+                <div class="form-group">
+                  <label for="producto-precio-usd">Precio normal en Dólares USD ($) *:</label>
+                  <input type="number" id="producto-precio-usd" required min="0" step="0.01" placeholder="Ej: 2.50">
+                  <small style="color: var(--text-muted); font-size: 0.78rem;">Se cobra al cliente cuando selecciona pago por PayPal.</small>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="producto-promo">¿Tiene promoción activa?</label>
+                <select id="producto-promo" onchange="toggleCampoPromo()">
+                  <option value="no">Sin promoción</option>
+                  <option value="si">Con descuento / promoción activa</option>
                 </select>
               </div>
 
-              <div class="form-group">
-                <label for="producto-icono">Icono representativo:</label>
-                <select id="producto-icono">
-                  <option value="scissors">Tijeras (Costura)</option>
-                  <option value="shirt">Prenda / Camisa</option>
-                  <option value="shopping-bag">Bolso / Accesorio</option>
-                  <option value="file-text">Patrón en PDF</option>
-                  <option value="sparkles">Destacado / Especial</option>
-                  <option value="layers">Moldería en capas</option>
-                </select>
-              </div>
-            </div>
+              <div class="form-row" id="grupo-precio-promo" style="display: none;">
+                <div class="form-group">
+                  <label for="producto-precio-promo">Precio promocional en ARS ($):</label>
+                  <input type="number" id="producto-precio-promo" min="0" step="0.01" placeholder="Ej: 1900">
+                </div>
 
-            <div class="form-group">
-              <label for="producto-descripcion">Descripción detallada del patrón:</label>
-              <input type="text" id="producto-descripcion" required
-                placeholder="Ej: Molde en PDF con guía paso a paso, talles XS al XXL">
-            </div>
-
-            <div class="form-group">
-              <label for="producto-imagen">Imagen del molde (opcional)</label>
-              <input type="file" id="producto-imagen" accept="image/*">
-              <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">⚡ Optimización automática: se comprime y convierte a WebP para ahorrar espacio y cargar ultra rápido.</small>
-              <div id="producto-preview-wrap" style="margin-top:0.5rem; display: none;">
-                <img id="producto-preview" src="" alt="Vista previa del molde"
-                  style="max-width:120px; border-radius:8px; border:1px solid var(--border);">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="producto-precio">Precio normal en Pesos ARS ($) *:</label>
-                <input type="number" id="producto-precio" required min="0" step="0.01" placeholder="Ej: 2500">
+                <div class="form-group">
+                  <label for="producto-precio-promo-usd">Precio promocional en USD ($):</label>
+                  <input type="number" id="producto-precio-promo-usd" min="0" step="0.01" placeholder="Ej: 1.90">
+                  <small style="color: var(--text-muted); font-size: 0.78rem;">Precio de oferta internacional con PayPal.</small>
+                </div>
               </div>
 
-              <div class="form-group">
-                <label for="producto-precio-usd">Precio normal en Dólares USD ($) *:</label>
-                <input type="number" id="producto-precio-usd" required min="0" step="0.01" placeholder="Ej: 2.50">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Se cobra al cliente cuando selecciona pago por PayPal.</small>
-              </div>
-            </div>
+              <!-- Enlaces digitales: Archivos en Drive y Video Tutorial -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="producto-link-archivos">Enlace de archivos PDF (Google Drive):</label>
+                  <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
+                </div>
 
-            <div class="form-group">
-              <label for="producto-promo">¿Tiene promoción activa?</label>
-              <select id="producto-promo" onchange="toggleCampoPromo()">
-                <option value="no">Sin promoción</option>
-                <option value="si">Con descuento / promoción activa</option>
-              </select>
-            </div>
-
-            <div class="form-row" id="grupo-precio-promo" style="display: none;">
-              <div class="form-group">
-                <label for="producto-precio-promo">Precio promocional en ARS ($):</label>
-                <input type="number" id="producto-precio-promo" min="0" step="0.01" placeholder="Ej: 1900">
+                <div class="form-group">
+                  <label for="producto-link-video">Enlace de video tutorial (YouTube/Drive):</label>
+                  <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                </div>
               </div>
 
-              <div class="form-group">
-                <label for="producto-precio-promo-usd">Precio promocional en USD ($):</label>
-                <input type="number" id="producto-precio-promo-usd" min="0" step="0.01" placeholder="Ej: 1.90">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Precio de oferta internacional con PayPal.</small>
+              <div class="form-buttons">
+                <button type="submit" class="btn btn-primary" id="btn-guardar-producto">Guardar Molde</button>
+                <button type="button" class="btn btn-secondary" id="btn-cancelar-edicion" style="display: none;"
+                  onclick="resetearFormulario()">Cancelar Edición</button>
               </div>
+            </form>
+          </div>
+
+          <!-- Tarjeta de Gestión de Categorías de Moldes -->
+          <div class="card admin-categories-card" id="admin-seccion-categorias">
+            <div class="admin-categories-header">
+              <div class="admin-cat-title-row">
+                <h3>
+                  <i data-lucide="tags" class="ui-icon"></i> Gestión de Categorías
+                </h3>
+                <span class="badge" id="admin-total-categorias-badge">0 categorías</span>
+              </div>
+              <p class="admin-cat-subtitle">
+                Agrega nuevas categorías o elimina las que ya no utilices. Si eliminas una categoría con moldes, estos pasarán a "Otros".
+              </p>
             </div>
 
-            <!-- Enlaces digitales: Archivos en Drive y Video Tutorial -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="producto-link-archivos">Enlace de archivos PDF (Google Drive):</label>
-                <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
+            <!-- Formulario para agregar nueva categoría -->
+            <form id="form-nueva-categoria" onsubmit="event.preventDefault(); agregarNuevaCategoria();" class="admin-add-cat-form">
+              <div class="input-with-btn-row">
+                <input type="text" id="nueva-categoria-nombre" placeholder="Nombre de categoría (ej: Ropa Infantil, Lencería)..." required maxlength="40" autocomplete="off">
+                <button type="submit" class="btn btn-primary btn-sm" id="btn-agregar-categoria">
+                  <i data-lucide="plus" class="ui-icon-xs"></i> Agregar
+                </button>
               </div>
+            </form>
 
-              <div class="form-group">
-                <label for="producto-link-video">Enlace de video tutorial (YouTube/Drive):</label>
-                <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+            <!-- Lista de categorías existentes con botón de eliminación -->
+            <div class="admin-cat-list-wrap">
+              <div class="cat-list-label">Categorías activas en el catálogo:</div>
+              <div id="admin-lista-categorias" class="admin-cat-chips-list">
+                <!-- Chips renderizados dinámicamente desde app.js -->
               </div>
             </div>
-
-            <div class="form-buttons">
-              <button type="submit" class="btn btn-primary" id="btn-guardar-producto">Guardar Molde</button>
-              <button type="button" class="btn btn-secondary" id="btn-cancelar-edicion" style="display: none;"
-                onclick="resetearFormulario()">Cancelar Edición</button>
-            </div>
-          </form>
+          </div>
         </div>
 
         <!-- Listado de moldes en el inventario -->

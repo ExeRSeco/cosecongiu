@@ -1,10 +1,16 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 17/11/2026 — Estética Boutique estilo Tiendanube implementada en toda la tienda + Checkout en 2 pasos.
+Última actualización: 18/11/2026 — Gestión dinámica de categorías en Panel Admin (agregar/eliminar con reasignación segura).
 
 ## Estado actual
-- Estética Boutique estilo Tiendanube en toda la tienda:
+- Gestión dinámica de categorías en Panel Admin:
+  - Formulario de alta rápida de categorías con validación anti-duplicados.
+  - Lista de categorías activas con conteo de moldes y botón de eliminación individual.
+  - Reasignación defensiva automática a "Otros" al eliminar una categoría en uso (con confirmación).
+  - Sincronización transparente en localStorage y tabla configuracion de Supabase (clave `categorias_moldes`).
+  - Dropdown del formulario de moldes y chips del catálogo actualizados automáticamente.
+- Estética Boutique estilo Tiendanube en toda la tienda (fuente Plus Jakarta Sans, Hero boutique, tarjetas alineadas).
   - Tipografía oficial: Plus Jakarta Sans (Google Fonts) con fallback nativo en system-ui.
   - Barra de anuncios superior con beneficios clave (A4, 10% OFF Transferencia, Entrega inmediata a Gmail).
   - Encabezado refinado con píldoras de navegación, enlace rápido a Preguntas y botón de carrito con insignia.

@@ -83,6 +83,18 @@ const STORAGE_CARRITO = "tienda_moldes_carrito";
 const STORAGE_PEDIDOS = "tienda_moldes_pedidos";
 const STORAGE_ADMIN_AUTH = "cose_admin_auth";
 const STORAGE_DATOS_BANCO = "cose_datos_bancarios";
+const STORAGE_CATEGORIAS = "cose_categorias_moldes";
+
+// Categorías oficiales por defecto de la tienda de moldes
+const CATEGORIAS_POR_DEFECTO = [
+  "Vestidos",
+  "Pantalones",
+  "Camisas",
+  "Bolsos y Accesorios",
+  "Otros"
+];
+
+let categorias = [...CATEGORIAS_POR_DEFECTO];
 
 // Datos bancarios, Mercado Pago, PayPal y de contacto iniciales por defecto para cobro y atención al cliente
 const DATOS_BANCARIOS_POR_DEFECTO = {
@@ -182,8 +194,9 @@ let pedidosExpandidos = new Set();
  */
 document.addEventListener("DOMContentLoaded", () => {
   cargarDatosDesdeLocalStorage();
+  cargarCategorias();
   cargarDatosBancarios();
-  renderCategoriasChips();
+  actualizarCategoriasUI();
   renderCatalogo();
   renderCarrito();
   renderAdmin();
@@ -320,6 +333,16 @@ async function sincronizarConSupabaseSiAplica() {
         };
         localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
         actualizarDatosBancariosUI();
+      }
+    }
+
+    // 4. Obtener categorías personalizadas de moldes desde Supabase
+    if (typeof supabaseObtenerConfig === "function") {
+      const configCat = await supabaseObtenerConfig("categorias_moldes");
+      if (Array.isArray(configCat) && configCat.length > 0) {
+        categorias = [...new Set([...configCat, ...productos.map(p => (p.categoria || '').trim()).filter(Boolean)])];
+        localStorage.setItem(STORAGE_CATEGORIAS, JSON.stringify(categorias));
+        actualizarCategoriasUI();
       }
     }
 
@@ -618,6 +641,224 @@ function abrirWhatsappConsulta(event) {
   const telLimpio = telOriginal.replace(/[^0-9]/g, "");
   const mensaje = encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta sobre los patrones...");
   window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${mensaje}`, "_blank", "noopener,noreferrer");
+}
+
+/**
+ * ====================================================================
+ * GESTIÓN DINÁMICA DE CATEGORÍAS DE MOLDES (ADMINISTRACIÓN)
+ * ====================================================================
+ */
+
+/**
+ * Carga las categorías desde localStorage o inicializa con las categorías por defecto
+ */
+function cargarCategorias() {
+  const guardadas = localStorage.getItem(STORAGE_CATEGORIAS);
+  if (guardadas) {
+    try {
+      const parsed = JSON.parse(guardadas);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        categorias = parsed;
+      } else {
+        categorias = [...CATEGORIAS_POR_DEFECTO];
+      }
+    } catch (e) {
+      categorias = [...CATEGORIAS_POR_DEFECTO];
+    }
+  } else {
+    categorias = [...CATEGORIAS_POR_DEFECTO];
+  }
+
+  // Respaldo de seguridad: aseguramos que cualquier categoría presente en los productos esté en la lista
+  const catsEnProductos = productos.map(p => (p.categoria || "").trim()).filter(Boolean);
+  catsEnProductos.forEach(cp => {
+    if (!categorias.some(c => c.toLowerCase() === cp.toLowerCase())) {
+      categorias.push(cp);
+    }
+  });
+
+  localStorage.setItem(STORAGE_CATEGORIAS, JSON.stringify(categorias));
+}
+
+/**
+ * Guarda las categorías en localStorage y en Supabase si está disponible
+ */
+function guardarCategorias() {
+  localStorage.setItem(STORAGE_CATEGORIAS, JSON.stringify(categorias));
+  actualizarCategoriasUI();
+
+  if (typeof supabaseGuardarConfig === "function" && estaSupabaseConfigurado()) {
+    supabaseGuardarConfig("categorias_moldes", categorias).catch(err => {
+      console.warn("[Supabase] No se pudo guardar categorías en segundo plano:", err);
+    });
+  }
+}
+
+/**
+ * Actualiza la UI de categorías en todas las vistas:
+ * 1. Opciones del select en el formulario de moldes (#producto-categoria)
+ * 2. Chips de filtrado en el catálogo (#categoria-chips)
+ * 3. Lista con botones de eliminación en el panel admin (#admin-lista-categorias)
+ */
+function actualizarCategoriasUI() {
+  renderCategoriasSelect();
+  renderAdminCategorias();
+  renderCategoriasChips();
+  actualizarIconosLucide();
+}
+
+/**
+ * Rellena las opciones del select del formulario de creación/edición de moldes
+ */
+function renderCategoriasSelect() {
+  const select = document.getElementById("producto-categoria");
+  if (!select) return;
+
+  const valorPrevio = select.value;
+  select.innerHTML = categorias.map(cat => `
+    <option value="${escaparHTML(cat)}">${escaparHTML(cat)}</option>
+  `).join("");
+
+  if (valorPrevio && categorias.includes(valorPrevio)) {
+    select.value = valorPrevio;
+  }
+}
+
+/**
+ * Renderiza la lista de categorías con contador y botón para eliminar en el panel de administración
+ */
+function renderAdminCategorias() {
+  const listaEl = document.getElementById("admin-lista-categorias");
+  const badgeEl = document.getElementById("admin-total-categorias-badge");
+  if (!listaEl) return;
+
+  if (badgeEl) {
+    badgeEl.textContent = `${categorias.length} ${categorias.length === 1 ? 'categoría' : 'categorías'}`;
+  }
+
+  if (categorias.length === 0) {
+    listaEl.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">No hay categorías registradas.</p>`;
+    return;
+  }
+
+  listaEl.innerHTML = categorias.map(cat => {
+    // Calculamos cuántos moldes pertenecen a esta categoría
+    const conteo = productos.filter(p => (p.categoria || "").trim().toLowerCase() === cat.trim().toLowerCase()).length;
+    const esUnica = categorias.length === 1;
+
+    return `
+      <div class="admin-cat-chip" data-categoria="${escaparHTML(cat)}">
+        <span class="cat-chip-name">${escaparHTML(cat)}</span>
+        <span class="cat-chip-count" title="${conteo} molde(s) en esta categoría">${conteo}</span>
+        <button type="button" class="btn-del-cat" 
+          onclick="confirmarEliminarCategoria('${escaparHTML(cat)}')" 
+          title="${esUnica ? 'No puedes eliminar la única categoría existente' : `Eliminar categoría '${escaparHTML(cat)}'`}"
+          aria-label="Eliminar categoría ${escaparHTML(cat)}"
+          ${esUnica ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''}>
+          ✕
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+/**
+ * Agrega una nueva categoría al catálogo desde el panel de administración
+ */
+function agregarNuevaCategoria() {
+  const input = document.getElementById("nueva-categoria-nombre");
+  if (!input) return;
+
+  const nombreRaw = input.value.trim();
+  const nombreLimpio = nombreRaw.replace(/\s+/g, ' ');
+
+  if (!nombreLimpio) {
+    mostrarToast("Por favor ingresa un nombre para la categoría.");
+    input.focus();
+    return;
+  }
+
+  if (nombreLimpio.toLowerCase() === "todas") {
+    mostrarToast("El nombre 'Todas' es una palabra reservada del catálogo.");
+    input.focus();
+    return;
+  }
+
+  const yaExiste = categorias.some(c => c.trim().toLowerCase() === nombreLimpio.toLowerCase());
+  if (yaExiste) {
+    mostrarToast(`La categoría "${nombreLimpio}" ya existe.`);
+    input.focus();
+    return;
+  }
+
+  categorias.push(nombreLimpio);
+  guardarCategorias();
+  input.value = "";
+  mostrarToast(`✓ Categoría "${nombreLimpio}" agregada con éxito.`);
+
+  // Seleccionar automáticamente la nueva categoría en el formulario
+  const select = document.getElementById("producto-categoria");
+  if (select) {
+    select.value = nombreLimpio;
+  }
+}
+
+/**
+ * Elimina una categoría del catálogo, con confirmación y reasignación automática a "Otros"
+ */
+async function confirmarEliminarCategoria(nombreCat) {
+  if (categorias.length <= 1) {
+    mostrarToast("Debe existir al menos una categoría en la tienda.");
+    return;
+  }
+
+  const catEncontrada = categorias.find(c => c.trim().toLowerCase() === nombreCat.trim().toLowerCase());
+  if (!catEncontrada) return;
+
+  // Verificamos si hay moldes que usen esta categoría
+  const moldesAfectados = productos.filter(p => (p.categoria || "").trim().toLowerCase() === catEncontrada.trim().toLowerCase());
+
+  let mensaje = `¿Estás seguro de que deseas eliminar la categoría "${catEncontrada}"?`;
+  if (moldesAfectados.length > 0) {
+    mensaje = `Atención: Hay ${moldesAfectados.length} molde(s) en la categoría "${catEncontrada}".\n\nSi la eliminas, pasarán automáticamente a la categoría "Otros".\n\n¿Deseas continuar?`;
+  }
+
+  const confirmado = window.confirm(mensaje);
+  if (!confirmado) return;
+
+  // Si hay moldes afectados, los reasignamos a "Otros"
+  if (moldesAfectados.length > 0) {
+    const destino = "Otros";
+    if (!categorias.some(c => c.toLowerCase() === "otros")) {
+      categorias.push("Otros");
+    }
+
+    productos.forEach(p => {
+      if ((p.categoria || "").trim().toLowerCase() === catEncontrada.trim().toLowerCase()) {
+        p.categoria = destino;
+        if (typeof supabaseActualizarProducto === "function" && estaSupabaseConfigurado()) {
+          supabaseActualizarProducto(p.id, p).catch(err => console.warn("[Supabase] Error actualizando producto tras eliminar categoría:", err));
+        }
+      }
+    });
+
+    guardarProductosEnStorage();
+    renderCatalogo();
+    renderCatalogoAdmin();
+  }
+
+  // Eliminamos la categoría
+  categorias = categorias.filter(c => c.trim().toLowerCase() !== catEncontrada.trim().toLowerCase());
+  guardarCategorias();
+
+  // Si el filtro activo del catálogo era esta categoría, volver a 'todas'
+  if (filtrosCatalogo.categoria.toLowerCase() === catEncontrada.toLowerCase()) {
+    filtrosCatalogo.categoria = "todas";
+    renderCategoriasChips();
+    renderCatalogo();
+  }
+
+  mostrarToast(`Categoría "${catEncontrada}" eliminada.`);
 }
 
 /**
@@ -1455,11 +1696,11 @@ function renderCategoriasChips() {
   const contenedor = document.getElementById("categoria-chips");
   if (!contenedor) return;
 
-  // Obtenemos lista única de categorías basada en los moldes registrados
-  const categoriasSet = new Set(productos.map(p => p.categoria || "Otros"));
-  const categorias = ["todas", ...Array.from(categoriasSet)];
+  // Lista única: categorías activas configuradas + cualquier categoría usada en moldes
+  const catsUnicas = [...new Set([...categorias, ...productos.map(p => p.categoria || "Otros")])];
+  const listaChips = ["todas", ...catsUnicas];
 
-  contenedor.innerHTML = categorias.map(cat => {
+  contenedor.innerHTML = listaChips.map(cat => {
     const esActivo = filtrosCatalogo.categoria.toLowerCase() === cat.toLowerCase();
     // Limpieza de cualquier emoji o icono residual para un diseño tipográfico limpio
     const nombreLimpio = cat.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
@@ -2644,7 +2885,8 @@ function editarProducto(id) {
   }
 
   if (document.getElementById("producto-categoria")) {
-    document.getElementById("producto-categoria").value = producto.categoria || "Vestidos";
+    renderCategoriasSelect();
+    document.getElementById("producto-categoria").value = producto.categoria || categorias[0] || "Vestidos";
   }
 
   if (document.getElementById("producto-icono")) {
@@ -2730,7 +2972,7 @@ function resetearFormulario() {
   document.getElementById("btn-guardar-producto").textContent = "Guardar Molde";
   document.getElementById("btn-cancelar-edicion").style.display = "none";
   if (document.getElementById("producto-categoria")) {
-    document.getElementById("producto-categoria").value = "Vestidos";
+    document.getElementById("producto-categoria").value = categorias[0] || "Vestidos";
   }
   if (document.getElementById("producto-icono")) {
     document.getElementById("producto-icono").value = "scissors";
@@ -2752,6 +2994,7 @@ function renderAdmin() {
   renderPedidosAdmin();
   renderCatalogoAdmin();
   actualizarDatosBancariosUI();
+  actualizarCategoriasUI();
 }
 
 /**
