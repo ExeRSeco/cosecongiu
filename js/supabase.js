@@ -574,8 +574,13 @@ async function supabaseSubirArchivoMolde(archivo, nombreMolde = "molde") {
 async function supabaseObtenerUrlDescargaMolde(archivoUrlOPath, segundosValidez = 86400) {
   if (!archivoUrlOPath || typeof archivoUrlOPath !== "string") return null;
 
-  // Si ya es un enlace externo completo (ej. Google Drive), se devuelve directo
-  if (archivoUrlOPath.startsWith("http://") || archivoUrlOPath.startsWith("https://")) {
+  // Si es Data URL o Blob URL (respaldo local), se devuelve directo
+  if (archivoUrlOPath.startsWith("data:") || archivoUrlOPath.startsWith("blob:")) {
+    return archivoUrlOPath;
+  }
+
+  // Si es un enlace externo que no pertenece a nuestro bucket de Supabase, se devuelve directo
+  if ((archivoUrlOPath.startsWith("http://") || archivoUrlOPath.startsWith("https://")) && !archivoUrlOPath.includes("/moldes-archivos/")) {
     return archivoUrlOPath;
   }
 
@@ -587,17 +592,31 @@ async function supabaseObtenerUrlDescargaMolde(archivoUrlOPath, segundosValidez 
     if (ruta.includes("/moldes-archivos/")) {
       ruta = ruta.split("/moldes-archivos/").pop();
     }
+    ruta = ruta.replace(/^moldes-archivos\//, "").replace(/^\/+/, "");
 
     const { data, error } = await client.storage
       .from("moldes-archivos")
-      .createSignedUrl(ruta, segundosValidez);
+      .createSignedUrl(ruta, segundosValidez, { download: true });
 
     if (error || !data || !data.signedUrl) {
       console.warn("[Supabase Storage] No se pudo generar URL firmada para molde:", error);
       return null;
     }
 
-    return data.signedUrl;
+    let urlFinal = data.signedUrl;
+    // Si la URL retornada por supabase-js es relativa (/storage/v1/...), anteponer la URL base del proyecto
+    if (urlFinal.startsWith("/")) {
+      const creds = obtenerCredencialesSupabase();
+      const baseUrl = creds && creds.url ? creds.url.replace(/\/+$/, "") : "";
+      urlFinal = `${baseUrl}${urlFinal}`;
+    }
+
+    // Asegurar parámetro de descarga automática para el navegador
+    if (!urlFinal.includes("download=")) {
+      urlFinal += (urlFinal.includes("?") ? "&" : "?") + "download=";
+    }
+
+    return urlFinal;
   } catch (err) {
     console.warn("[Supabase Storage] Error solicitando URL de descarga:", err);
     return null;

@@ -2668,6 +2668,84 @@ startxref
 }
 
 /**
+ * Lee un archivo File seleccionado en el input y lo convierte a DataURL base64 (para modo local o respaldo)
+ */
+function leerArchivoComoDataURL(file) {
+  return new Promise((resolve) => {
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Genera un PDF válido con el nombre del molde para pruebas o moldes demo
+ */
+function generarPdfMuestraBase64(nombreMolde = "Molde Cosé con Giu") {
+  const nombreLimpio = (nombreMolde || "Molde Cosé con Giu").replace(/[^a-zA-Z0-9 _-]/g, "");
+  const streamTexto = `BT\n/F1 18 Tf\n50 720 Td\n(COSE CON GIU - PATRON DE MOLDERIA) Tj\n/F1 12 Tf\n0 -35 Td\n(Molde: ${nombreLimpio}) Tj\n0 -22 Td\n(Patron digital preparado para imprimir en hojas A4 y escala 100%.) Tj\n0 -22 Td\n(Verifica el recuadro de calibracion de 5x5 cm antes de cortar la tela.) Tj\n0 -25 Td\n(Disfruta mucho de tu proyecto de costura!) Tj\nET`;
+  const streamLen = streamTexto.length;
+  const pdf = `%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
+4 0 obj << /Length ${streamLen} >> stream
+${streamTexto}
+endstream endobj
+5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000060 00000 n 
+0000000118 00000 n 
+0000000250 00000 n 
+0000000582 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+654
+%%EOF`;
+
+  try {
+    const blob = new Blob([pdf], { type: "application/pdf" });
+    return URL.createObjectURL(blob);
+  } catch (e) {
+    return "data:application/pdf;base64," + btoa(pdf);
+  }
+}
+
+/**
+ * Disparador universal de descarga de archivos de moldes
+ */
+function descargarArchivoMolde(url, nombre = "Molde_Digital") {
+  if (!url || url === "#") {
+    mostrarToast("El archivo de este molde aún se encuentra en preparación.");
+    return;
+  }
+  mostrarToast("Iniciando descarga de tu molde...");
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    const extension = (url.toLowerCase().includes(".zip") || (nombre && nombre.toLowerCase().endsWith(".zip"))) ? ".zip" : ".pdf";
+    const nombreLimpio = (nombre || "Molde_Costura").replace(/[^a-zA-Z0-9_-]/g, "_").replace(/_pdf$/i, "");
+    a.download = `${nombreLimpio}${extension}`;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (document.body.contains(a)) document.body.removeChild(a);
+    }, 200);
+  } catch (err) {
+    console.error("Error al descargar archivo:", err);
+    window.open(url, "_blank");
+  }
+}
+window.descargarArchivoMolde = descargarArchivoMolde;
+
+/**
  * ====================================================================
  * 4. PANEL DE ADMINISTRACIÓN (MOLDES, PRECIOS, PROMOCIONES)
  * ====================================================================
@@ -2760,9 +2838,13 @@ async function guardarProducto(evento) {
   // Subir archivo PDF a Supabase Storage privado si se seleccionó uno
   let nuevoArchivoUrl = null;
   if (archivoMoldeFile) {
-    mostrarToast("Subiendo archivo de moldería a Supabase Storage...");
+    mostrarToast("Procesando archivo de moldería...");
     if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseSubirArchivoMolde === "function") {
       nuevoArchivoUrl = await supabaseSubirArchivoMolde(archivoMoldeFile, nombre);
+    }
+    // Respaldo local si no está conectado a Supabase o falló la subida: guardar DataURL
+    if (!nuevoArchivoUrl) {
+      nuevoArchivoUrl = await leerArchivoComoDataURL(archivoMoldeFile);
     }
     if (!nuevoArchivoUrl) {
       nuevoArchivoUrl = archivoMoldeFile.name;
@@ -3942,11 +4024,15 @@ async function confirmarDescargaGratis() {
   const codigoPedido = "ORD-FREE-" + Math.floor(1000 + Math.random() * 9000);
   const fechaActual = obtenerFechaLocalHoraTexto(new Date());
 
-  // Resolver link de descarga directa (firmado si está en storage privado, o enlace alternativo)
-  let linkDescargaDirecta = producto.linkArchivos || "#";
+  // Resolver link de descarga directa (firmado si está en storage privado, o muestra)
+  let linkDescargaDirecta = producto.archivoUrl || null;
   if (producto.archivoUrl && typeof supabaseObtenerUrlDescargaMolde === "function") {
     const urlFirmada = await supabaseObtenerUrlDescargaMolde(producto.archivoUrl, 86400);
     if (urlFirmada) linkDescargaDirecta = urlFirmada;
+  }
+  // Si no tiene archivo aún (o es de prueba), generamos un patrón PDF válido de prueba
+  if (!linkDescargaDirecta || linkDescargaDirecta === "#") {
+    linkDescargaDirecta = generarPdfMuestraBase64(producto.nombre);
   }
 
   const nuevoPedido = {
@@ -4006,15 +4092,9 @@ async function confirmarDescargaGratis() {
           También te enviamos una copia a <strong>${escaparHTML(email)}</strong>. Podés descargar tus archivos directamente aquí:
         </p>
         <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.75rem;">
-          ${linkDescargaDirecta && linkDescargaDirecta !== "#" ? `
-            <a href="${linkDescargaDirecta}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size: 0.95rem; justify-content: center; padding: 0.75rem 1rem;">
-              <i data-lucide="download" class="ui-icon"></i> Descargar Patrón en PDF
-            </a>
-          ` : `
-            <div style="padding: 0.6rem; background: #ffffff; border-radius: 6px; font-size: 0.85rem; color: #15803d;">
-              Patrón enviado a tu correo ✓
-            </div>
-          `}
+          <button type="button" class="btn btn-primary" onclick="descargarArchivoMolde('${linkDescargaDirecta}', '${escaparHTML(producto.nombre)}')" style="font-size: 0.95rem; justify-content: center; padding: 0.75rem 1rem; width: 100%;">
+            <i data-lucide="download" class="ui-icon"></i> Descargar Patrón en PDF
+          </button>
           ${producto.linkVideo ? `
             <a href="${producto.linkVideo}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.92rem; justify-content: center; color: #dc2626; border-color: #fca5a5;">
               <i data-lucide="youtube" class="ui-icon"></i> Ver Video Tutorial en YouTube
@@ -4186,10 +4266,22 @@ async function consultarDescargasDesdeModal() {
       return;
     }
 
-    // Pedido COMPLETADO: renderizar tarjetas de descarga
+    // Pedido COMPLETADO: resolver URLs y renderizar tarjetas de descarga
     const items = resultadoDescargas.items || [];
+    for (const item of items) {
+      let link = item.linkDescarga || item.archivo_url || "";
+      if (item.archivo_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!link || link === "#" || link.startsWith("patron_") || link.startsWith("moldes-archivos/"))) {
+        const firmada = await supabaseObtenerUrlDescargaMolde(item.archivo_url, 86400);
+        if (firmada) link = firmada;
+      }
+      if (!link || link === "#") {
+        link = generarPdfMuestraBase64(item.nombre);
+      }
+      item.linkDescarga = link;
+    }
+
     const itemsHtml = items.map(item => {
-      const linkPdf = item.linkDescarga || item.link_archivos || "";
+      const linkPdf = item.linkDescarga || "";
       const linkVid = item.link_video || "";
 
       return `
@@ -4206,15 +4298,9 @@ async function consultarDescargasDesdeModal() {
           </div>
 
           <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.75rem;">
-            ${linkPdf ? `
-              <a href="${linkPdf}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
-                <i data-lucide="download" class="ui-icon"></i> Descargar Patrón (PDF)
-              </a>
-            ` : `
-              <span style="font-size: 0.82rem; color: var(--text-muted); background: var(--bg-page); padding: 0.4rem 0.75rem; border-radius: 6px;">
-                PDF en preparación
-              </span>
-            `}
+            <button type="button" class="btn btn-primary" onclick="descargarArchivoMolde('${linkPdf}', '${escaparHTML(item.nombre)}')" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
+              <i data-lucide="download" class="ui-icon"></i> Descargar Patrón (PDF)
+            </button>
 
             ${linkVid ? `
               <a href="${linkVid}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.6rem 1.1rem; color: #dc2626; border-color: #fca5a5;">

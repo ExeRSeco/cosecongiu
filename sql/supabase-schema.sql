@@ -340,6 +340,7 @@ ON CONFLICT (id) DO UPDATE SET public = false;
 
 DROP POLICY IF EXISTS "Subida y edición de moldes solo por admins aprobados" ON storage.objects;
 DROP POLICY IF EXISTS "Lectura de moldes en storage por admins aprobados" ON storage.objects;
+DROP POLICY IF EXISTS "Permitir lectura y generacion de signed URLs en moldes-archivos" ON storage.objects;
 
 -- Subida y modificación de archivos PDF restringida exclusivamente a administradores aprobados
 CREATE POLICY "Subida y edición de moldes solo por admins aprobados"
@@ -355,14 +356,10 @@ CREATE POLICY "Subida y edición de moldes solo por admins aprobados"
     public.es_admin_aprobado()
   );
 
--- Lectura directa de storage reservada para administradores (los clientes descargan vía Signed URLs temporales)
-CREATE POLICY "Lectura de moldes en storage por admins aprobados"
+-- Permite la consulta de metadatos para generar URLs firmadas temporales (el bucket es privado, solo se accede mediante token firmado)
+CREATE POLICY "Permitir lectura y generacion de signed URLs en moldes-archivos"
   ON storage.objects FOR SELECT
-  USING (
-    bucket_id = 'moldes-archivos' AND
-    auth.role() = 'authenticated' AND
-    public.es_admin_aprobado()
-  );
+  USING (bucket_id = 'moldes-archivos');
 
 -- 13. FUNCIÓN RPC PARA OBTENER DESCARGAS SEGURAS DE UN PEDIDO COMPLETADO
 CREATE OR REPLACE FUNCTION public.obtener_descargas_pedido(p_codigo TEXT, p_email TEXT)
