@@ -113,6 +113,9 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.administradores
     WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+  ) OR (
+    -- Todo usuario autenticado en Supabase Auth se considera administrador oficial
+    auth.role() = 'authenticated'
   );
 $$;
 
@@ -222,9 +225,9 @@ CREATE POLICY "Gestión completa de administradores"
 CREATE OR REPLACE FUNCTION public.handle_nuevo_usuario_admin()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.administradores (user_id, email, aprobado)
-  VALUES (NEW.id, LOWER(NEW.email), FALSE)
-  ON CONFLICT (email) DO UPDATE SET user_id = EXCLUDED.user_id;
+  INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
+  VALUES (NEW.id, LOWER(NEW.email), 'superadmin', TRUE, 'Registrado en Supabase Auth')
+  ON CONFLICT (email) DO UPDATE SET user_id = EXCLUDED.user_id, aprobado = TRUE;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -233,6 +236,12 @@ DROP TRIGGER IF EXISTS on_auth_user_created_admin ON auth.users;
 CREATE TRIGGER on_auth_user_created_admin
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_nuevo_usuario_admin();
+
+-- Sincronizar y aprobar inmediatamente a todos los usuarios que ya existan en Supabase Auth
+INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
+SELECT id, LOWER(email), 'superadmin', true, 'Aprobado automáticamente de Supabase Auth'
+FROM auth.users
+ON CONFLICT (email) DO UPDATE SET aprobado = true, rol = 'superadmin', user_id = EXCLUDED.user_id;
 
 -- 9. CONFIGURACIÓN DEL BUCKET DE IMÁGENES (SUPABASE STORAGE)
 INSERT INTO storage.buckets (id, name, public)

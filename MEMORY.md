@@ -21,7 +21,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 - Supabase Storage `createSignedUrl`: Requiere política SELECT en `storage.objects` para `moldes-archivos` para que usuarios anon puedan firmar la descarga. Además, devuelve una ruta relativa (`/storage/v1/...`), requiriendo anteponer la URL base del proyecto para no dar 404 local.
 - Descarga universal: Se usa `descargarArchivoMolde(url, nombre)` con atributo `download` y fallback DataURL base64 para garantizar descargas siempre, incluso en modo local.
 - Supabase Dashboard (Settings -> API Keys): Usar siempre la **Publishable key** (`sb_publishable_...`) o la clásica `anonKey` (en "View legacy API keys"). NUNCA la **Secret key** (`sb_secret_...`) en el frontend o navegador.
-- Project URL del proyecto `cosecongiu`: `https://ohvboktbdhahgbvemlid.supabase.co` (con 'h', no 'b').
+- Project URL del proyecto `cosecongiu`: `https://obvboktbdbahgbvemlid.supabase.co`.
 
 ## Próximos pasos
 - Ejecutar `sql/supabase-schema.sql` en el SQL Editor de Supabase para inicializar el bucket `moldes-archivos` y las funciones RPC.

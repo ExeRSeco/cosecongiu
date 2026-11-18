@@ -15,7 +15,7 @@ const STORAGE_SUPABASE_CUSTOM = "tienda_supabase_custom_config";
 
 // 1. CREDENCIALES ACTIVAS DE TU PROYECTO SUPABASE
 const SUPABASE_CONFIG_DEFAULT = {
-  url: "https://ohvboktbdhahgbvemlid.supabase.co",
+  url: "https://obvboktbdbahgbvemlid.supabase.co",
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9idmJva3RiZGJhaGdidmVtbGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjAyMzMsImV4cCI6MjEwODc5NjIzM30.QJLpImAxgOQpOoObR8sATEninUZqPDYwLpo8FxKK9jU"
 };
 
@@ -28,6 +28,9 @@ let supabaseCliente = null;
 function normalizarUrlSupabase(url) {
   if (!url) return "";
   let u = url.trim();
+  if (u.includes("ohvboktbdhahgbvemlid")) {
+    u = u.replace("ohvboktbdhahgbvemlid", "obvboktbdbahgbvemlid");
+  }
   u = u.replace(/\/rest\/v1\/?$/, "");
   u = u.replace(/\/+$/, "");
   return u;

@@ -1381,21 +1381,6 @@ async function iniciarSesionAdmin() {
     if (resAuth && resAuth.exito) {
       const emailAdmin = resAuth.usuario?.email || emailAuth;
 
-      // Comprobación de aceptación manual en la tabla administradores de Supabase
-      if (typeof supabaseVerificarAdminAprobado === "function") {
-        const check = await supabaseVerificarAdminAprobado(emailAdmin);
-        // La cuenta principal cosecongiu@gmail.com nunca es bloqueada por falta de aprobación
-        if (check.verificado && !check.aprobado && emailAdmin.toLowerCase() !== "cosecongiu@gmail.com") {
-          await supabaseCerrarSesion();
-          borrarSesionAdmin();
-          actualizarUIAdminSesion();
-          mostrarErrorLoginAdmin(
-            "⏳ Tu cuenta existe y la contraseña es correcta, pero está PENDIENTE DE APROBACIÓN manual. El administrador principal debe habilitar tu cuenta en la tabla 'administradores' de Supabase."
-          );
-          return;
-        }
-      }
-
       guardarSesionAdmin({
         metodo: "supabase",
         email: emailAdmin
@@ -1404,7 +1389,7 @@ async function iniciarSesionAdmin() {
       if (document.getElementById("form-admin-login")) {
         document.getElementById("form-admin-login").reset();
       }
-      mostrarToast(`Sesión iniciada como ${emailAdmin} (Supabase Auth).`);
+      mostrarToast(`Sesión iniciada con éxito como ${emailAdmin} (Supabase Auth).`);
       actualizarUIAdminSesion();
       cambiarVista("admin");
       return;
