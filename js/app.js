@@ -751,7 +751,8 @@ function renderAdminCategorias() {
         <span class="cat-chip-name">${escaparHTML(cat)}</span>
         <span class="cat-chip-count" title="${conteo} molde(s) en esta categoría">${conteo}</span>
         <button type="button" class="btn-del-cat" 
-          onclick="confirmarEliminarCategoria('${escaparHTML(cat)}')" 
+          data-categoria="${escaparHTML(cat)}"
+          onclick="confirmarEliminarCategoria(this.getAttribute('data-categoria'))" 
           title="${esUnica ? 'No puedes eliminar la única categoría existente' : `Eliminar categoría '${escaparHTML(cat)}'`}"
           aria-label="Eliminar categoría ${escaparHTML(cat)}"
           ${esUnica ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''}>
@@ -1706,7 +1707,7 @@ function renderCategoriasChips() {
     const nombreLimpio = cat.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
     const etiqueta = cat === "todas" ? "Todas las categorías" : (nombreLimpio || cat);
     return `
-      <button type="button" class="category-chip ${esActivo ? 'active' : ''}" onclick="seleccionarCategoria('${escaparHTML(cat)}')">
+      <button type="button" class="category-chip ${esActivo ? 'active' : ''}" data-categoria="${escaparHTML(cat)}" onclick="seleccionarCategoria(this.getAttribute('data-categoria'))">
         ${escaparHTML(etiqueta)}
       </button>
     `;
@@ -3785,10 +3786,13 @@ function esCorreoGmail(email) {
 }
 
 function escaparHTML(texto) {
-  if (!texto) return "";
-  const div = document.createElement("div");
-  div.textContent = texto;
-  return div.innerHTML;
+  if (texto === null || texto === undefined) return "";
+  return String(texto)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 let toastTimeout;

@@ -7,10 +7,20 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Credenciales activas con soporte para Service Role Key o Anon Key
-  const mpAccessToken = process.env.MP_ACCESS_TOKEN || "APP_USR-6717638260928914-111710-8cb0aaaee1beee31563d0746b65aa3e3-422418037";
+  // Credenciales activas exclusivamente desde variables de entorno seguras
+  const mpAccessToken = process.env.MP_ACCESS_TOKEN;
   const supabaseUrl = process.env.SUPABASE_URL || "https://obvboktbdbahgbvemlid.supabase.co";
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9idmJva3RiZGJhaGdidmVtbGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjAyMzMsImV4cCI6MjEwODc5NjIzM30.QJLpImAxgOQpOoObR8sATEninUZqPDYwLpo8FxKK9jU";
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (!mpAccessToken) {
+    console.error("[Webhook MP] Error: MP_ACCESS_TOKEN no está configurado en las variables de entorno.");
+    return res.status(500).json({ error: "Configuración incompleta en el servidor (MP_ACCESS_TOKEN ausente)." });
+  }
+
+  if (!supabaseKey) {
+    console.error("[Webhook MP] Error: Credencial de Supabase no configurada (SUPABASE_SERVICE_ROLE_KEY o SUPABASE_ANON_KEY requerida).");
+    return res.status(500).json({ error: "Configuración incompleta en el servidor (Supabase Key ausente)." });
+  }
 
   try {
     const query = req.query || {};

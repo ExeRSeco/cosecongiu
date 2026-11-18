@@ -25,26 +25,42 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: "El pedido no contiene ítems para cobrar." });
     }
 
-    // Token oficial de producción de Mercado Pago para Cosé con Giu
-    const mpAccessToken = process.env.MP_ACCESS_TOKEN || "APP_USR-6717638260928914-111710-8cb0aaaee1beee31563d0746b65aa3e3-422418037";
+    // Token oficial de producción de Mercado Pago desde variables de entorno
+    const mpAccessToken = process.env.MP_ACCESS_TOKEN;
+    if (!mpAccessToken) {
+      console.error("[Crear Preferencia] Error: MP_ACCESS_TOKEN no está configurado en las variables de entorno del servidor.");
+      return res.status(500).json({ error: "La pasarela de pagos no está configurada en el servidor (MP_ACCESS_TOKEN ausente)." });
+    }
 
     // URL base de la tienda en Vercel o producción
     const host = req.headers["x-forwarded-host"] || req.headers.host || "cosecongiu.vercel.app";
     const proto = req.headers["x-forwarded-proto"] || "https";
     const siteUrl = `${proto}://${host}`;
 
-    // Mapeo de ítems del molde al formato requerido por Mercado Pago
-    const preferenceItems = items.map(item => {
-      const precioUnitario = Number(item.precio || 0);
-      return {
-        id: String(item.id || "molde"),
-        title: String(item.nombre || "Molde Digital en PDF").slice(0, 250),
+    // Validación y mapeo seguro de ítems del molde al formato requerido por Mercado Pago
+    const preferenceItems = [];
+    for (const item of items) {
+      const precioUnitario = Number(item.precio);
+      const cantidad = parseInt(item.cantidad, 10);
+
+      // Verificación de integridad: precios y cantidades válidas
+      if (isNaN(precioUnitario) || precioUnitario <= 0) {
+        return res.status(400).json({ error: `El producto "${String(item.nombre || 'Molde')}" tiene un precio inválido.` });
+      }
+
+      if (isNaN(cantidad) || cantidad < 1 || cantidad > 50) {
+        return res.status(400).json({ error: `La cantidad solicitada para "${String(item.nombre || 'Molde')}" no es válida.` });
+      }
+
+      preferenceItems.push({
+        id: String(item.id || "molde").replace(/[^\w-]/g, "").slice(0, 50),
+        title: String(item.nombre || "Molde Digital en PDF").replace(/[\r\n]/g, " ").trim().slice(0, 250),
         description: "Patrón de costura descargable en PDF con guía y video",
-        quantity: Math.max(1, Number(item.cantidad || 1)),
-        unit_price: Math.max(0, precioUnitario),
+        quantity: cantidad,
+        unit_price: Math.round(precioUnitario * 100) / 100,
         currency_id: "ARS"
-      };
-    });
+      });
+    }
 
     const payerEmail = (cliente && cliente.email && cliente.email.includes("@")) 
       ? cliente.email.trim().toLowerCase() 

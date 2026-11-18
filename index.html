@@ -5,8 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cosé con Giu - Tienda de Moldes Digitales</title>
-  <meta name="description" content="Cosé con Giu: Catálogo online de moldes y patrones de costura descargables en formato PDF listos para imprimir en hojas A4 y pliego. Incluye guía paso a paso y video tutorial de confección.">
-  <meta name="keywords" content="moldes de costura, patrones pdf, costura facil, molderia digital, cose con giu, patrones para imprimir, vestidos, pantalones, moldes a4">
+  <meta name="description"
+    content="Cosé con Giu: Catálogo online de moldes y patrones de costura descargables en formato PDF listos para imprimir en hojas A4 y pliego. Incluye guía paso a paso y video tutorial de confección.">
+  <meta name="keywords"
+    content="moldes de costura, patrones pdf, costura facil, molderia digital, cose con giu, patrones para imprimir, vestidos, pantalones, moldes a4">
   <meta name="theme-color" content="#845ec2">
   <link rel="canonical" href="https://cosecongiu.vercel.app/">
 
@@ -15,7 +17,8 @@
   <meta property="og:site_name" content="Cosé con Giu">
   <meta property="og:url" content="https://cosecongiu.vercel.app/">
   <meta property="og:title" content="Cosé con Giu - Tienda Oficial de Moldes Digitales de Costura">
-  <meta property="og:description" content="Descarga patrones de costura en PDF listos para imprimir en A4. Guía ilustrada paso a paso y video tutorial de confección en cada molde.">
+  <meta property="og:description"
+    content="Descarga patrones de costura en PDF listos para imprimir en A4. Guía ilustrada paso a paso y video tutorial de confección en cada molde.">
   <meta property="og:image" content="https://cosecongiu.vercel.app/assets/logo.png">
   <meta property="og:image:alt" content="Logo oficial Cosé con Giu">
   <meta property="og:locale" content="es_AR">
@@ -23,7 +26,8 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Cosé con Giu - Tienda Oficial de Moldes Digitales">
-  <meta name="twitter:description" content="Patrones de costura en PDF listos para imprimir con guías ilustradas y video tutoriales.">
+  <meta name="twitter:description"
+    content="Patrones de costura en PDF listos para imprimir con guías ilustradas y video tutoriales.">
   <meta name="twitter:image" content="https://cosecongiu.vercel.app/assets/logo.png">
 
   <link rel="icon" type="image/png" href="assets/favicon.png">
@@ -31,7 +35,8 @@
   <!-- Google Fonts: Plus Jakarta Sans (Tipografía moderna e-commerce estilo Tiendanube) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <link rel="stylesheet" href="css/styles.css">
   <!-- Biblioteca de iconos modernos Lucide -->
@@ -43,9 +48,11 @@
   <!-- Barra Superior de Anuncios Tiendanube -->
   <div class="top-announcement-bar">
     <div class="container announcement-content">
-      <span class="announcement-item"><i data-lucide="sparkles" class="ui-icon-xs"></i> Moldes en PDF listos para imprimir en A4</span>
+      <span class="announcement-item"><i data-lucide="sparkles" class="ui-icon-xs"></i> Moldes en PDF listos para
+        imprimir en A4</span>
       <span class="announcement-dot">•</span>
-      <span class="announcement-item"><i data-lucide="percent" class="ui-icon-xs"></i> <strong>10% OFF</strong> con Transferencia</span>
+      <span class="announcement-item"><i data-lucide="percent" class="ui-icon-xs"></i> <strong>10% OFF</strong> con
+        Transferencia</span>
       <span class="announcement-dot">•</span>
       <span class="announcement-item"><i data-lucide="zap" class="ui-icon-xs"></i> Entrega inmediata a tu Gmail</span>
     </div>
@@ -71,7 +78,8 @@
         <button id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')">
           <i data-lucide="shopping-bag" class="ui-icon"></i> Carrito <span id="cart-badge" class="badge">0</span>
         </button>
-        <button id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')" title="Acceso a Administración">
+        <button id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')"
+          title="Acceso a Administración">
           <i data-lucide="shield-check" class="ui-icon-xs"></i> Admin
         </button>
       </nav>
@@ -89,7 +97,8 @@
           <span class="hero-badge"><i data-lucide="sparkles" class="ui-icon-xs"></i> Moldería & Costura Digital</span>
           <h2 class="hero-title">Patrones de costura listos para confeccionar</h2>
           <p class="hero-desc">
-            Moldes descargables en PDF preparados en hojas A4 estándar para imprimir en casa. Incluyen tabla de medidas, márgenes de costura y video tutorial paso a paso.
+            Moldes descargables en PDF preparados en hojas A4 estándar para imprimir en casa. Incluyen tabla de medidas,
+            márgenes de costura y video tutorial paso a paso.
           </p>
           <div class="hero-chips-row">
             <span class="hero-chip"><i data-lucide="printer" class="ui-icon-xs"></i> Impresión A4 hogareña</span>
@@ -104,7 +113,8 @@
         <div class="toolbar-search-row">
           <div class="search-input-wrap">
             <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
-            <input type="text" id="catalogo-busqueda" placeholder="Buscar moldes o patrones (ej: vestido, solero, remera)..."
+            <input type="text" id="catalogo-busqueda"
+              placeholder="Buscar moldes o patrones (ej: vestido, solero, remera)..."
               oninput="filtrarCatalogoPorBusqueda(this.value)">
             <button type="button" class="btn-clear-search" id="btn-clear-catalogo-search"
               onclick="limpiarBusquedaCatalogo()" title="Limpiar búsqueda" style="display: none;">✕</button>
@@ -174,33 +184,46 @@
           <!-- Item 1 -->
           <details class="faq-item" open>
             <summary class="faq-question">
-              <span><i data-lucide="clock" class="faq-icon"></i> ¿Cómo y en cuánto tiempo recibo mis moldes tras pagar?</span>
+              <span><i data-lucide="clock" class="faq-icon"></i> ¿Cómo y en cuánto tiempo recibo mis moldes tras
+                pagar?</span>
               <i data-lucide="chevron-down" class="faq-arrow"></i>
             </summary>
             <div class="faq-answer">
-              <p>Tras realizar tu transferencia y registrar tu pedido (adjuntando tu comprobante o avisando por WhatsApp), verificamos el pago y te habilitamos el acceso digital a la carpeta de Google Drive en un <strong>plazo máximo de 1 hora</strong> (en horario de 08:00 a 22:00 hs). La invitación llegará al correo <strong>@gmail.com</strong> que registres en el checkout.</p>
+              <p>Tras realizar tu transferencia y registrar tu pedido (adjuntando tu comprobante o avisando por
+                WhatsApp), verificamos el pago y te habilitamos el acceso digital a la carpeta de Google Drive en un
+                <strong>plazo máximo de 1 hora</strong> (en horario de 08:00 a 22:00 hs). La invitación llegará al
+                correo <strong>@gmail.com</strong> que registres en el checkout.</p>
             </div>
           </details>
 
           <!-- Item 2 -->
           <details class="faq-item">
             <summary class="faq-question">
-              <span><i data-lucide="printer" class="faq-icon"></i> ¿Cómo se imprimen los patrones en una impresora común?</span>
+              <span><i data-lucide="printer" class="faq-icon"></i> ¿Cómo se imprimen los patrones en una impresora
+                común?</span>
               <i data-lucide="chevron-down" class="faq-arrow"></i>
             </summary>
             <div class="faq-answer">
-              <p>Todos nuestros patrones vienen preparados en formato <strong>hoja A4 estándar</strong> para imprimir desde cualquier impresora hogareña. Al imprimir, asegúrate de elegir <strong>"Escala 100%" o "Tamaño Real"</strong> (sin seleccionar 'Ajustar a página'). Cada molde incluye en su primera página un <strong>cuadrado de calibración de 5x5 cm</strong> para verificar con regla que la escala sea milimétricamente exacta antes de unir las hojas.</p>
+              <p>Todos nuestros patrones vienen preparados en formato <strong>hoja A4 estándar</strong> para imprimir
+                desde cualquier impresora hogareña. Al imprimir, asegúrate de elegir <strong>"Escala 100%" o "Tamaño
+                  Real"</strong> (sin seleccionar 'Ajustar a página'). Cada molde incluye en su primera página un
+                <strong>cuadrado de calibración de 5x5 cm</strong> para verificar con regla que la escala sea
+                milimétricamente exacta antes de unir las hojas.</p>
             </div>
           </details>
 
           <!-- Item 3 -->
           <details class="faq-item">
             <summary class="faq-question">
-              <span><i data-lucide="scissors" class="faq-icon"></i> ¿Los moldes incluyen márgenes de costura y tabla de talles?</span>
+              <span><i data-lucide="scissors" class="faq-icon"></i> ¿Los moldes incluyen márgenes de costura y tabla de
+                talles?</span>
               <i data-lucide="chevron-down" class="faq-arrow"></i>
             </summary>
             <div class="faq-answer">
-              <p><strong>¡Sí, totalmente!</strong> Todos los patrones ya tienen incorporados los márgenes de costura (habitualmente 1 cm para costuras generales y 2 a 3 cm para dobladillos y ruedos) claramente delimitados en cada pieza. Además, cada patrón cuenta con su <strong>tabla de medidas completa en centímetros</strong> para elegir tu talle con total seguridad (desde XS hasta XXL).</p>
+              <p><strong>¡Sí, totalmente!</strong> Todos los patrones ya tienen incorporados los márgenes de costura
+                (habitualmente 1 cm para costuras generales y 2 a 3 cm para dobladillos y ruedos) claramente delimitados
+                en cada pieza. Además, cada patrón cuenta con su <strong>tabla de medidas completa en
+                  centímetros</strong> para elegir tu talle con total seguridad (desde XS hasta XXL).</p>
             </div>
           </details>
 
@@ -214,7 +237,8 @@
               <p>Con tu compra recibes:
                 <br>• Archivo PDF con el patrón completo desglosado por talles listo para imprimir y ensamblar.
                 <br>• Guía ilustrada de confección con sugerencias de tipos de telas y cálculo de metraje necesario.
-                <br>• Enlace al <strong>video tutorial paso a paso</strong> donde cosemos la prenda juntas de principio a fin.
+                <br>• Enlace al <strong>video tutorial paso a paso</strong> donde cosemos la prenda juntas de principio
+                a fin.
               </p>
             </div>
           </details>
@@ -226,18 +250,24 @@
               <i data-lucide="chevron-down" class="faq-arrow"></i>
             </summary>
             <div class="faq-answer">
-              <p>Utilizamos el ecosistema de Google Drive para compartir las carpetas de moldería y futuras actualizaciones de forma segura y permanente. Como el acceso se vincula directamente a una cuenta de Google, un correo Gmail te permite abrir, consultar y descargar tus patrones desde cualquier dispositivo sin riesgo de que los archivos pesados reboten en tu casilla.</p>
+              <p>Utilizamos el ecosistema de Google Drive para compartir las carpetas de moldería y futuras
+                actualizaciones de forma segura y permanente. Como el acceso se vincula directamente a una cuenta de
+                Google, un correo Gmail te permite abrir, consultar y descargar tus patrones desde cualquier dispositivo
+                sin riesgo de que los archivos pesados reboten en tu casilla.</p>
             </div>
           </details>
 
           <!-- Item 6 -->
           <details class="faq-item">
             <summary class="faq-question">
-              <span><i data-lucide="message-circle" class="faq-icon"></i> ¿Puedo consultar si tengo dudas durante la costura?</span>
+              <span><i data-lucide="message-circle" class="faq-icon"></i> ¿Puedo consultar si tengo dudas durante la
+                costura?</span>
               <i data-lucide="chevron-down" class="faq-arrow"></i>
             </summary>
             <div class="faq-answer">
-              <p>¡Claro que sí! La comunidad y el aprendizaje son el corazón de Cosé con Giu. Puedes escribirnos directamente por el botón flotante de WhatsApp o por mensaje privado en Instagram si tienes dudas sobre qué tela elegir o consultas en algún paso del armado.</p>
+              <p>¡Claro que sí! La comunidad y el aprendizaje son el corazón de Cosé con Giu. Puedes escribirnos
+                directamente por el botón flotante de WhatsApp o por mensaje privado en Instagram si tienes dudas sobre
+                qué tela elegir o consultas en algún paso del armado.</p>
             </div>
           </details>
         </div>
@@ -275,7 +305,8 @@
         <div class="card admin-login-card">
           <div class="admin-login-icon"><i data-lucide="lock" class="ui-icon-lg"></i></div>
           <h2 id="admin-auth-title">Acceso a Administración</h2>
-          <p id="admin-auth-subtext" class="admin-login-subtext">Ingresa tus credenciales oficiales para gestionar la tienda.</p>
+          <p id="admin-auth-subtext" class="admin-login-subtext">Ingresa tus credenciales oficiales para gestionar la
+            tienda.</p>
 
           <!-- Mensaje de Error -->
           <div id="admin-login-error" class="login-error-msg" style="display: none;"></div>
@@ -284,15 +315,15 @@
           <form id="form-admin-login" onsubmit="event.preventDefault(); iniciarSesionAdmin();" class="admin-login-form">
             <div class="form-group">
               <label for="admin-login-usuario">Correo Electrónico</label>
-              <input type="email" id="admin-login-usuario" required placeholder="tu@email.com"
-                autocomplete="username">
+              <input type="email" id="admin-login-usuario" required placeholder="tu@email.com" autocomplete="username">
             </div>
             <div class="form-group">
               <label for="admin-login-password">Contraseña</label>
               <input type="password" id="admin-login-password" required placeholder="••••••••"
                 autocomplete="current-password">
             </div>
-            <button type="submit" id="btn-submit-admin-login" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+            <button type="submit" id="btn-submit-admin-login" class="btn btn-primary btn-block"
+              style="margin-top: 1rem;">
               <i data-lucide="key-round" class="ui-icon"></i> Iniciar Sesión
             </button>
           </form>
@@ -312,8 +343,8 @@
             <i data-lucide="shield-check" class="ui-icon-sm"></i>
             <span id="admin-user-badge-text">admin</span>
           </div>
-          <button type="button" id="btn-status-supabase" class="btn-supabase-status" onclick="abrirModalConfigSupabase()"
-            title="Ver o configurar conexión a la base de datos Supabase">
+          <button type="button" id="btn-status-supabase" class="btn-supabase-status"
+            onclick="abrirModalConfigSupabase()" title="Ver o configurar conexión a la base de datos Supabase">
             <span class="status-dot-supabase" id="status-dot-supabase"></span>
             <span id="texto-status-supabase">Modo Local (Respaldo)</span>
           </button>
@@ -423,9 +454,11 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                  <div
+                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
                     <label for="producto-categoria" style="margin-bottom: 0;">Categoría:</label>
-                    <a href="#admin-seccion-categorias" class="link-manage-cats" onclick="document.getElementById('nueva-categoria-nombre')?.focus();">
+                    <a href="#admin-seccion-categorias" class="link-manage-cats"
+                      onclick="document.getElementById('nueva-categoria-nombre')?.focus();">
                       <i data-lucide="settings" style="width: 12px; height: 12px;"></i> Gestionar
                     </a>
                   </div>
@@ -456,7 +489,9 @@
               <div class="form-group">
                 <label for="producto-imagen">Imagen del molde (opcional)</label>
                 <input type="file" id="producto-imagen" accept="image/*">
-                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">⚡ Optimización automática: se comprime y convierte a WebP para ahorrar espacio y cargar ultra rápido.</small>
+                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">⚡
+                  Optimización automática: se comprime y convierte a WebP para ahorrar espacio y cargar ultra
+                  rápido.</small>
                 <div id="producto-preview-wrap" style="margin-top:0.5rem; display: none;">
                   <img id="producto-preview" src="" alt="Vista previa del molde"
                     style="max-width:120px; border-radius:8px; border:1px solid var(--border);">
@@ -472,7 +507,8 @@
                 <div class="form-group">
                   <label for="producto-precio-usd">Precio normal en Dólares USD ($) *:</label>
                   <input type="number" id="producto-precio-usd" required min="0" step="0.01" placeholder="Ej: 2.50">
-                  <small style="color: var(--text-muted); font-size: 0.78rem;">Se cobra al cliente cuando selecciona pago por PayPal.</small>
+                  <small style="color: var(--text-muted); font-size: 0.78rem;">Se cobra al cliente cuando selecciona
+                    pago por PayPal.</small>
                 </div>
               </div>
 
@@ -493,7 +529,8 @@
                 <div class="form-group">
                   <label for="producto-precio-promo-usd">Precio promocional en USD ($):</label>
                   <input type="number" id="producto-precio-promo-usd" min="0" step="0.01" placeholder="Ej: 1.90">
-                  <small style="color: var(--text-muted); font-size: 0.78rem;">Precio de oferta internacional con PayPal.</small>
+                  <small style="color: var(--text-muted); font-size: 0.78rem;">Precio de oferta internacional con
+                    PayPal.</small>
                 </div>
               </div>
 
@@ -501,12 +538,14 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="producto-link-archivos">Enlace de archivos PDF (Google Drive):</label>
-                  <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/drive/folders/..." autocomplete="off">
+                  <input type="url" id="producto-link-archivos" placeholder="https://drive.google.com/drive/folders/..."
+                    autocomplete="off">
                 </div>
 
                 <div class="form-group">
                   <label for="producto-link-video">Enlace de video tutorial (YouTube/Drive):</label>
-                  <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                  <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..."
+                    autocomplete="off">
                 </div>
               </div>
 
@@ -528,14 +567,18 @@
                 <span class="badge" id="admin-total-categorias-badge">0 categorías</span>
               </div>
               <p class="admin-cat-subtitle">
-                Agrega nuevas categorías o elimina las que ya no utilices. Si eliminas una categoría con moldes, estos pasarán a "Otros".
+                Agrega nuevas categorías o elimina las que ya no utilices. Si eliminas una categoría con moldes, estos
+                pasarán a "Otros".
               </p>
             </div>
 
             <!-- Formulario para agregar nueva categoría -->
-            <form id="form-nueva-categoria" onsubmit="event.preventDefault(); agregarNuevaCategoria();" class="admin-add-cat-form">
+            <form id="form-nueva-categoria" onsubmit="event.preventDefault(); agregarNuevaCategoria();"
+              class="admin-add-cat-form">
               <div class="input-with-btn-row">
-                <input type="text" id="nueva-categoria-nombre" placeholder="Nombre de categoría (ej: Ropa Infantil, Lencería)..." required maxlength="40" autocomplete="off">
+                <input type="text" id="nueva-categoria-nombre"
+                  placeholder="Nombre de categoría (ej: Ropa Infantil, Lencería)..." required maxlength="40"
+                  autocomplete="off">
                 <button type="submit" class="btn btn-primary btn-sm" id="btn-agregar-categoria">
                   <i data-lucide="plus" class="ui-icon-xs"></i> Agregar
                 </button>
@@ -588,12 +631,14 @@
               <i data-lucide="landmark" class="ui-icon"></i> Configuración de Cuenta Bancaria (Transferencias)
             </h3>
             <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-              Modifica la cuenta bancaria donde los clientes realizarán sus transferencias. Los cambios se actualizan de inmediato en el checkout.
+              Modifica la cuenta bancaria donde los clientes realizarán sus transferencias. Los cambios se actualizan de
+              inmediato en el checkout.
             </p>
           </div>
         </div>
 
-        <form id="form-config-banco" onsubmit="event.preventDefault(); guardarDatosBancariosDesdeAdmin();" style="margin-top: 1rem;">
+        <form id="form-config-banco" onsubmit="event.preventDefault(); guardarDatosBancariosDesdeAdmin();"
+          style="margin-top: 1rem;">
           <div class="form-row">
             <div class="form-group">
               <label for="admin-banco-nombre">Banco o Billetera Virtual *</label>
@@ -627,44 +672,53 @@
             <div class="form-group">
               <label for="admin-tienda-whatsapp">WhatsApp Oficial de la Tienda (para dudas y comprobantes) *</label>
               <input type="text" id="admin-tienda-whatsapp" required placeholder="Ej: +54 9 11 4455-8899">
-              <small style="color: var(--text-muted); font-size: 0.78rem;">Se utiliza para abrir chats directos de WhatsApp en la tienda y en la confirmación de compras.</small>
+              <small style="color: var(--text-muted); font-size: 0.78rem;">Se utiliza para abrir chats directos de
+                WhatsApp en la tienda y en la confirmación de compras.</small>
             </div>
 
             <div class="form-group">
               <label for="admin-tienda-instagram">Instagram de la Tienda (usuario o enlace)</label>
               <input type="text" id="admin-tienda-instagram" placeholder="Ej: @cosecongiu">
-              <small style="color: var(--text-muted); font-size: 0.78rem;">Se muestra como enlace directo en el pie de página para generar confianza.</small>
+              <small style="color: var(--text-muted); font-size: 0.78rem;">Se muestra como enlace directo en el pie de
+                página para generar confianza.</small>
             </div>
           </div>
 
           <!-- Configuración de Mercado Pago (Cobros Rápidos en ARS) -->
           <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border);">
-            <h4 style="color: #007bb5; font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i> Configuración de Mercado Pago (Cobros Directos en ARS)
+            <h4
+              style="color: #007bb5; font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i> Configuración de Mercado Pago
+              (Cobros Directos en ARS)
             </h4>
             <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem;">
-              Datos para que tus clientes te transfieran por MP o abonen mediante tu link de cobro oficial con acreditación inmediata.
+              Datos para que tus clientes te transfieran por MP o abonen mediante tu link de cobro oficial con
+              acreditación inmediata.
             </p>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="admin-mp-alias">Alias de Mercado Pago (CVU) *</label>
                 <input type="text" id="admin-mp-alias" placeholder="Ej: COSECONGIU.MP">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Alias de tu cuenta de Mercado Pago para transferencias entre usuarios.</small>
+                <small style="color: var(--text-muted); font-size: 0.78rem;">Alias de tu cuenta de Mercado Pago para
+                  transferencias entre usuarios.</small>
               </div>
 
               <div class="form-group">
                 <label for="admin-mp-link">Link de Pago / Cobro de Mercado Pago (opcional)</label>
                 <input type="url" id="admin-mp-link" placeholder="Ej: https://link.mercadopago.com.ar/cosecongiu">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Genera un botón de pago directo con tarjeta o dinero en cuenta.</small>
+                <small style="color: var(--text-muted); font-size: 0.78rem;">Genera un botón de pago directo con tarjeta
+                  o dinero en cuenta.</small>
               </div>
             </div>
           </div>
 
           <!-- Configuración de PayPal para cobros internacionales -->
           <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border);">
-            <h4 style="color: #003087; font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i data-lucide="globe" class="ui-icon" style="color: #003087;"></i> Configuración de Cuenta PayPal (Cobros en USD al Exterior)
+            <h4
+              style="color: #003087; font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="globe" class="ui-icon" style="color: #003087;"></i> Configuración de Cuenta PayPal (Cobros
+              en USD al Exterior)
             </h4>
             <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem;">
               Datos que se presentan al comprador cuando elige abonar en Dólares mediante PayPal.
@@ -673,14 +727,17 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="admin-paypal-email">Correo de tu Cuenta PayPal (para recibir transferencias) *</label>
-                <input type="email" id="admin-paypal-email" required placeholder="Ej: giuliana@ejemplo.com o cosecongiu@gmail.com">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Correo directo que el cliente copiará para enviar los dólares.</small>
+                <input type="email" id="admin-paypal-email" required
+                  placeholder="Ej: giuliana@ejemplo.com o cosecongiu@gmail.com">
+                <small style="color: var(--text-muted); font-size: 0.78rem;">Correo directo que el cliente copiará para
+                  enviar los dólares.</small>
               </div>
 
               <div class="form-group">
                 <label for="admin-paypal-me">Usuario o Link directo PayPal.Me (opcional)</label>
                 <input type="text" id="admin-paypal-me" placeholder="Ej: cosecongiu o https://paypal.me/cosecongiu">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Genera un enlace con un clic hacia tu enlace de pago personal.</small>
+                <small style="color: var(--text-muted); font-size: 0.78rem;">Genera un enlace con un clic hacia tu
+                  enlace de pago personal.</small>
               </div>
             </div>
           </div>
@@ -719,7 +776,8 @@
             </div>
           </div>
 
-          <form id="form-datos-cliente" onsubmit="event.preventDefault(); confirmarPedido();" class="checkout-form-compact">
+          <form id="form-datos-cliente" onsubmit="event.preventDefault(); confirmarPedido();"
+            class="checkout-form-compact">
             <div class="form-group" style="margin-bottom: 0.65rem;">
               <label for="cliente-nombre">Nombre y Apellido *</label>
               <input type="text" id="cliente-nombre" required placeholder="Ej: María Rossi" autocomplete="name">
@@ -728,7 +786,8 @@
             <div class="form-row" style="margin-bottom: 0.4rem;">
               <div class="form-group" style="margin-bottom: 0;">
                 <label for="cliente-email">Correo Gmail *</label>
-                <input type="email" id="cliente-email" required placeholder="maria.costura@gmail.com" autocomplete="email">
+                <input type="email" id="cliente-email" required placeholder="maria.costura@gmail.com"
+                  autocomplete="email">
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
@@ -755,19 +814,22 @@
 
           <div class="metodo-pago-selector">
             <div class="metodo-pago-tabs" role="tablist">
-              <button type="button" id="tab-pago-mercadopago" class="tab-pago active" role="tab" aria-selected="true" onclick="seleccionarMetodoPagoCheckout('mercadopago')">
+              <button type="button" id="tab-pago-mercadopago" class="tab-pago active" role="tab" aria-selected="true"
+                onclick="seleccionarMetodoPagoCheckout('mercadopago')">
                 <span class="tab-icon">💳</span>
                 <strong class="tab-name">Mercado Pago</strong>
                 <span class="pill-badge pill-mp">⚡ Inmediato</span>
               </button>
 
-              <button type="button" id="tab-pago-transferencia" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('transferencia')">
+              <button type="button" id="tab-pago-transferencia" class="tab-pago" role="tab" aria-selected="false"
+                onclick="seleccionarMetodoPagoCheckout('transferencia')">
                 <span class="tab-icon">🏦</span>
                 <strong class="tab-name">Transferencia</strong>
                 <span class="pill-badge pill-transf">🔥 10% OFF</span>
               </button>
 
-              <button type="button" id="tab-pago-paypal" class="tab-pago" role="tab" aria-selected="false" onclick="seleccionarMetodoPagoCheckout('paypal')">
+              <button type="button" id="tab-pago-paypal" class="tab-pago" role="tab" aria-selected="false"
+                onclick="seleccionarMetodoPagoCheckout('paypal')">
                 <span class="tab-icon">🌎</span>
                 <strong class="tab-name">PayPal</strong>
                 <span class="pill-badge pill-paypal">USD</span>
@@ -783,7 +845,8 @@
                 <strong>Acreditación instantánea 100% automatizada</strong>
               </div>
               <p class="mp-callout-desc">
-                Al presionar el botón se abrirá la pasarela oficial de Mercado Pago para pagar con tarjeta de crédito, débito o dinero en cuenta.
+                Al presionar el botón se abrirá la pasarela oficial de Mercado Pago para pagar con tarjeta de crédito,
+                débito o dinero en cuenta.
               </p>
               <div class="mp-payment-badges">
                 <span class="tag-chip">Visa</span>
@@ -795,12 +858,14 @@
 
             <!-- Opción alternativa sutil por si el cliente desea transferir por Alias MP -->
             <details class="alias-mp-dropdown">
-              <summary><i data-lucide="help-circle" class="ui-icon-xs"></i> ¿Querés transferir manualmente por Alias desde la app de MP?</summary>
+              <summary><i data-lucide="help-circle" class="ui-icon-xs"></i> ¿Querés transferir manualmente por Alias
+                desde la app de MP?</summary>
               <div class="alias-mp-content">
                 <div class="alias-mp-line">
                   <span>Alias MP:</span>
                   <strong id="checkout-mp-alias" class="copy-value">COSECONGIU.MP</strong>
-                  <button type="button" class="btn-copy-mini" onclick="copiarDatoBancario('mpAlias', this)">Copiar</button>
+                  <button type="button" class="btn-copy-mini"
+                    onclick="copiarDatoBancario('mpAlias', this)">Copiar</button>
                 </div>
                 <div class="alias-mp-line">
                   <span>Titular:</span>
@@ -831,7 +896,8 @@
                   <span class="b-label">Alias Bancario</span>
                   <strong id="checkout-banco-alias" class="copy-value b-value">COSE.CON.GIU</strong>
                 </div>
-                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('alias', this)" title="Copiar alias">
+                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('alias', this)"
+                  title="Copiar alias">
                   <i data-lucide="copy" class="ui-icon-xs"></i> Copiar
                 </button>
               </div>
@@ -840,7 +906,8 @@
                   <span class="b-label">CBU / CVU</span>
                   <span id="checkout-banco-cbu" class="copy-value b-value">0000003100012345678901</span>
                 </div>
-                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('cbu', this)" title="Copiar CBU">
+                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('cbu', this)"
+                  title="Copiar CBU">
                   <i data-lucide="copy" class="ui-icon-xs"></i> Copiar
                 </button>
               </div>
@@ -854,11 +921,14 @@
             <div class="comprobante-compact-wrap">
               <div class="form-group" style="margin-bottom: 0.6rem;">
                 <label for="checkout-num-operacion">N° de Operación Bancaria (opcional):</label>
-                <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230 (código en app bancaria)" autocomplete="off">
+                <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230 (código en app bancaria)"
+                  autocomplete="off">
               </div>
 
-              <div class="dropzone-compact" id="dropzone-comprobante" onclick="document.getElementById('checkout-comprobante-file').click();">
-                <input type="file" id="checkout-comprobante-file" accept="image/*,application/pdf" style="display: none;" onchange="manejarSeleccionComprobante(this)">
+              <div class="dropzone-compact" id="dropzone-comprobante"
+                onclick="document.getElementById('checkout-comprobante-file').click();">
+                <input type="file" id="checkout-comprobante-file" accept="image/*,application/pdf"
+                  style="display: none;" onchange="manejarSeleccionComprobante(this)">
                 <div id="dropzone-vacio" class="dropzone-compact-empty">
                   <i data-lucide="paperclip" class="ui-icon"></i>
                   <span>Adjuntar foto o PDF del comprobante (opcional)</span>
@@ -869,13 +939,15 @@
                     <span id="previa-nombre">comprobante.jpg</span>
                     <span id="previa-tamano" class="previa-size"></span>
                   </div>
-                  <button type="button" class="btn-quitar-mini" onclick="event.stopPropagation(); quitarComprobante();" title="Quitar">&times;</button>
+                  <button type="button" class="btn-quitar-mini" onclick="event.stopPropagation(); quitarComprobante();"
+                    title="Quitar">&times;</button>
                 </div>
               </div>
 
               <div class="verification-note">
                 <i data-lucide="clock" class="ui-icon-xs"></i>
-                <span>Verificación manual: te daremos acceso a los moldes en tu Gmail en un plazo de hasta 48 hs hábiles.</span>
+                <span>Verificación manual: te daremos acceso a los moldes en tu Gmail en un plazo de hasta 48 hs
+                  hábiles.</span>
               </div>
             </div>
           </div>
@@ -901,7 +973,8 @@
                 </button>
               </div>
 
-              <a id="btn-abrir-paypal-link" href="https://paypal.me/cosecongiu" target="_blank" rel="noopener noreferrer" class="btn-paypal-clean">
+              <a id="btn-abrir-paypal-link" href="https://paypal.me/cosecongiu" target="_blank"
+                rel="noopener noreferrer" class="btn-paypal-clean">
                 <i data-lucide="external-link" class="ui-icon-xs"></i> Abrir PayPal para transferir
               </a>
             </div>
@@ -954,7 +1027,8 @@
         <button type="button" class="btn btn-secondary checkout-btn-return" onclick="cerrarCheckout()">
           Volver al Carrito
         </button>
-        <button type="button" class="btn btn-primary checkout-btn-confirm" id="btn-confirmar-checkout" onclick="confirmarPedido()">
+        <button type="button" class="btn btn-primary checkout-btn-confirm" id="btn-confirmar-checkout"
+          onclick="confirmarPedido()">
           <i data-lucide="shield-check" class="ui-icon"></i>
           <span id="btn-confirmar-texto">Pagar con Mercado Pago</span>
         </button>
@@ -989,14 +1063,16 @@
     style="display: none;" onclick="if(event.target === this) cerrarModalConfigSupabase();">
     <div class="modal-box" role="document" style="max-width: 580px;">
       <div class="modal-header">
-        <h3 id="config-supabase-title"><i data-lucide="database" class="ui-icon"></i> Base de Datos en la Nube (Supabase)</h3>
+        <h3 id="config-supabase-title"><i data-lucide="database" class="ui-icon"></i> Base de Datos en la Nube
+          (Supabase)</h3>
         <button class="modal-close-btn" onclick="cerrarModalConfigSupabase()" title="Cerrar">&times;</button>
       </div>
 
       <div class="modal-body">
         <div class="supabase-info-card">
           <p style="font-size: 0.9rem; margin-bottom: 0.75rem; color: var(--text-main);">
-            Conecta tu proyecto de <strong>Supabase (PostgreSQL + Auth + Storage)</strong> para sincronizar los moldes, las ventas y las fotos en tiempo real desde cualquier dispositivo.
+            Conecta tu proyecto de <strong>Supabase (PostgreSQL + Auth + Storage)</strong> para sincronizar los moldes,
+            las ventas y las fotos en tiempo real desde cualquier dispositivo.
           </p>
           <div id="supabase-status-banner" class="supabase-status-banner local">
             <span class="status-dot-supabase" id="modal-status-dot"></span>
@@ -1007,7 +1083,8 @@
         <form id="form-config-supabase" onsubmit="event.preventDefault(); guardarConfigSupabaseDesdeModal();">
           <div class="form-group">
             <label for="input-supabase-url">Project URL (Supabase) *</label>
-            <input type="url" id="input-supabase-url" placeholder="https://abcdefghijklmno.supabase.co" autocomplete="off" required>
+            <input type="url" id="input-supabase-url" placeholder="https://abcdefghijklmno.supabase.co"
+              autocomplete="off" required>
             <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
               Encuéntrala en: <em>Supabase Dashboard → Tu Proyecto → Settings → API → Project URL</em>
             </small>
@@ -1015,7 +1092,8 @@
 
           <div class="form-group" style="margin-top: 1rem;">
             <label for="input-supabase-anon">Project API Key (anon / public) *</label>
-            <input type="password" id="input-supabase-anon" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off" required>
+            <input type="password" id="input-supabase-anon" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              autocomplete="off" required>
             <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
               Encuéntrala en: <em>Settings → API → Project API Keys → anon / public</em>
             </small>
@@ -1030,16 +1108,20 @@
             <button type="submit" class="btn btn-primary" style="flex: 1;">
               <i data-lucide="save" class="ui-icon"></i> Guardar y Conectar
             </button>
-            <button type="button" class="btn btn-danger btn-sm" onclick="restablecerModoLocalSupabase()" title="Desconectar y volver a almacenamiento local">
+            <button type="button" class="btn btn-danger btn-sm" onclick="restablecerModoLocalSupabase()"
+              title="Desconectar y volver a almacenamiento local">
               <i data-lucide="rotate-ccw" class="ui-icon"></i> Desconectar
             </button>
           </div>
         </form>
 
-        <div class="supabase-guide-box" style="margin-top: 1.25rem; padding: 0.85rem; background: var(--primary-soft); border-radius: var(--radius); border: 1px solid var(--primary-border); font-size: 0.82rem;">
-          <strong style="color: var(--primary-dark);"><i data-lucide="help-circle" class="ui-icon"></i> Pasos para conectar:</strong>
+        <div class="supabase-guide-box"
+          style="margin-top: 1.25rem; padding: 0.85rem; background: var(--primary-soft); border-radius: var(--radius); border: 1px solid var(--primary-border); font-size: 0.82rem;">
+          <strong style="color: var(--primary-dark);"><i data-lucide="help-circle" class="ui-icon"></i> Pasos para
+            conectar:</strong>
           <ol style="margin-left: 1.25rem; margin-top: 0.35rem; line-height: 1.45; color: var(--text-main);">
-            <li>Crea un proyecto gratis en <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" style="color: var(--primary-dark); font-weight: 600;">supabase.com</a>.</li>
+            <li>Crea un proyecto gratis en <a href="https://supabase.com" target="_blank" rel="noopener noreferrer"
+                style="color: var(--primary-dark); font-weight: 600;">supabase.com</a>.</li>
             <li>En el <strong>SQL Editor</strong> de Supabase ejecuta el script <code>supabase-schema.sql</code>.</li>
             <li>Pega tu URL y anon key aquí arriba y haz clic en <strong>Guardar y Conectar</strong>.</li>
           </ol>
@@ -1057,7 +1139,8 @@
     style="display: none;" onclick="if(event.target === this) cerrarModalComprobante();">
     <div class="modal-box visor-comprobante-box" role="document">
       <div class="modal-header">
-        <h3 id="visor-comprobante-titulo"><i data-lucide="receipt" class="ui-icon"></i> Comprobante de Transferencia</h3>
+        <h3 id="visor-comprobante-titulo"><i data-lucide="receipt" class="ui-icon"></i> Comprobante de Transferencia
+        </h3>
         <button class="modal-close-btn" onclick="cerrarModalComprobante()" title="Cerrar">&times;</button>
       </div>
 
@@ -1066,7 +1149,8 @@
       </div>
 
       <div class="modal-footer" style="justify-content: space-between;">
-        <a id="visor-comprobante-enlace" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display: none;">
+        <a id="visor-comprobante-enlace" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"
+          style="display: none;">
           <i data-lucide="external-link" class="ui-icon"></i> Abrir en Pestaña Nueva
         </a>
         <button class="btn btn-primary" onclick="cerrarModalComprobante()">Cerrar Visor</button>
@@ -1075,9 +1159,11 @@
   </div>
 
   <!-- Botón Flotante de WhatsApp para Atención al Cliente -->
-  <a id="btn-whatsapp-flotante" href="#" class="btn-whatsapp-flotante" onclick="abrirWhatsappConsulta(event)" title="¿Dudas con algún molde? Escríbeme por WhatsApp" aria-label="Contactar por WhatsApp">
+  <a id="btn-whatsapp-flotante" href="#" class="btn-whatsapp-flotante" onclick="abrirWhatsappConsulta(event)"
+    title="¿Dudas con algún molde? Escríbeme por WhatsApp" aria-label="Contactar por WhatsApp">
     <svg class="wa-float-icon-svg" viewBox="0 0 24 24" width="32" height="32" fill="currentColor" aria-hidden="true">
-      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+      <path
+        d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
     </svg>
     <span class="wa-float-tooltip">¿Dudas con los moldes? <strong>Chatea con Giu</strong></span>
   </a>
@@ -1097,16 +1183,20 @@
           </div>
         </div>
         <p class="footer-desc">
-          Patrones de costura descargables en formato PDF listos para imprimir en cualquier impresora común en hojas A4. Confecciona prendas hermosas con nuestras guías y tutoriales paso a paso.
+          Patrones de costura descargables en formato PDF listos para imprimir en cualquier impresora común en hojas A4.
+          Confecciona prendas hermosas con nuestras guías y tutoriales paso a paso.
         </p>
       </div>
 
       <div class="footer-col footer-col-links">
         <h5>Navegación Rápida</h5>
         <ul class="footer-links-list">
-          <li><a href="javascript:void(0)" onclick="cambiarVista('catalogo')"><i data-lucide="scissors" class="ui-icon"></i> Catálogo de Moldes</a></li>
-          <li><a href="#seccion-faq" onclick="cambiarVista('catalogo')"><i data-lucide="help-circle" class="ui-icon"></i> Preguntas Frecuentes</a></li>
-          <li><a href="javascript:void(0)" onclick="cambiarVista('carrito')"><i data-lucide="shopping-bag" class="ui-icon"></i> Ver mi Carrito</a></li>
+          <li><a href="javascript:void(0)" onclick="cambiarVista('catalogo')"><i data-lucide="scissors"
+                class="ui-icon"></i> Catálogo de Moldes</a></li>
+          <li><a href="#seccion-faq" onclick="cambiarVista('catalogo')"><i data-lucide="help-circle"
+                class="ui-icon"></i> Preguntas Frecuentes</a></li>
+          <li><a href="javascript:void(0)" onclick="cambiarVista('carrito')"><i data-lucide="shopping-bag"
+                class="ui-icon"></i> Ver mi Carrito</a></li>
         </ul>
       </div>
 
@@ -1116,21 +1206,30 @@
           ¿Tienes preguntas antes o después de tu compra? Estamos para ayudarte:
         </p>
         <div class="footer-social-links">
-          <a id="footer-btn-whatsapp" href="#" onclick="abrirWhatsappConsulta(event)" class="btn-footer-social wa" title="Escribir por WhatsApp">
-            <svg class="social-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          <a id="footer-btn-whatsapp" href="#" onclick="abrirWhatsappConsulta(event)" class="btn-footer-social wa"
+            title="Escribir por WhatsApp">
+            <svg class="social-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+              aria-hidden="true">
+              <path
+                d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
             </svg>
             <span id="footer-texto-whatsapp">WhatsApp Oficial</span>
           </a>
-          <a id="footer-btn-instagram" href="https://instagram.com/cosecongiu" target="_blank" rel="noopener noreferrer" class="btn-footer-social ig" title="Seguir en Instagram">
-            <svg class="social-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          <a id="footer-btn-instagram" href="https://instagram.com/cosecongiu" target="_blank" rel="noopener noreferrer"
+            class="btn-footer-social ig" title="Seguir en Instagram">
+            <svg class="social-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+              aria-hidden="true">
+              <path
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
             </svg>
             <span id="footer-texto-instagram">@cosecongiu</span>
           </a>
-          <a id="footer-btn-youtube" href="https://www.youtube.com/@cosecongiu" target="_blank" rel="noopener noreferrer" class="btn-footer-social yt" title="Ver Video Tutoriales de Costura en YouTube">
-            <svg class="social-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          <a id="footer-btn-youtube" href="https://www.youtube.com/@cosecongiu" target="_blank"
+            rel="noopener noreferrer" class="btn-footer-social yt" title="Ver Video Tutoriales de Costura en YouTube">
+            <svg class="social-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+              aria-hidden="true">
+              <path
+                d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
             </svg>
             <span>Tutoriales en YouTube</span>
           </a>
@@ -1155,12 +1254,6 @@
 
     <div class="container footer-bottom">
       <p>© 2026 Cosé con Giu - Venta de Moldes Digitales de Costura. Todos los derechos reservados.</p>
-      <div class="footer-badges">
-        <span class="badge-trust"><i data-lucide="shield-check" class="badge-icon"></i> Pago 100% Protegido</span>
-        <span class="badge-trust"><i data-lucide="clock" class="badge-icon"></i> Entrega en 1 Hora</span>
-        <span class="badge-trust"><i data-lucide="file-check" class="badge-icon"></i> Formato PDF A4</span>
-      </div>
-    </div>
   </footer>
 
   <!-- Variables de entorno locales (opcional / privado, ignorado en Git) -->
