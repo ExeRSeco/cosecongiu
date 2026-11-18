@@ -1,25 +1,27 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 17/11/2026 — Checkout rediseñado en 2 pasos limpios (estilo Atelier) + Supabase 100% migrado.
+Última actualización: 17/11/2026 — Estética Boutique estilo Tiendanube implementada en toda la tienda + Checkout en 2 pasos.
 
 ## Estado actual
-- Checkout profesionalizado en 2 pasos claros:
-  - Paso 1: Datos de entrega (Nombre, Gmail con nota sutil para Google Drive, WhatsApp).
-  - Paso 2: Medio de pago (Mercado Pago instantáneo sin comprobantes redundantes, Transferencia con 10% OFF en grid limpio con copiado rápido, PayPal en USD).
-- Base de datos Supabase al día: columnas de pagos agregadas, función RPC de confirmación activa y RLS optimizado sin recursión.
-- Mercado Pago Checkout Pro 100% operativo con Serverless backend y webhook.
-- Carrito con badges de confianza estilizados y catálogo limpio.
+- Estética Boutique estilo Tiendanube en toda la tienda:
+  - Barra de anuncios superior con beneficios clave (A4, 10% OFF Transferencia, Entrega inmediata a Gmail).
+  - Encabezado refinado con píldoras de navegación, enlace rápido a Preguntas y botón de carrito con insignia.
+  - Portada Hero Boutique en el catálogo destacando la confección casera en A4 y video tutorial.
+  - Tarjetas de moldes con esquinas redondeadas, elevación al hover, zoom suave en foto, badges flotantes (*Oferta*, *⭐ Más Vendido*), descripciones de altura uniforme (clamped 2 líneas) y píldora destacada de 10% OFF.
+  - Selector de categorías dinámico en chips redondeados sin desbordes.
+  - Footer con vitrina de medios de pago aceptados (Mercado Pago, Visa, Mastercard, Naranja, Transferencia, PayPal).
+- Checkout profesionalizado en 2 pasos sin sobrecarga ni scroll horizontal.
+- Mercado Pago Checkout Pro y Supabase 100% operativos.
 
 ## Decisiones y por qué
-- Checkout en 2 pasos: Elimina el scroll interminable y la sobrecarga cognitiva en compras móviles y de escritorio.
-- Eliminación de campos redundantes en MP: Checkout Pro valida automáticamente sin pedir comprobantes manuales innecesarios.
-- Paleta unificada: Se eliminaron cajas de colores estridentes por tarjetas neutras con acentos en lavanda y dorado oficial.
+- Estilo Tiendanube: Incrementa la confianza, la tasa de conversión y moderniza la presentación visual sin añadir frameworks pesados.
+- Altura uniforme en descripciones con `-webkit-line-clamp`: Evita desfasajes en la grilla del catálogo.
+- Vitrina de pagos en el pie de página: Transmite seguridad y claridad a los compradores antes de iniciar la compra.
 
 ## Aprendizajes y errores a evitar
-- Menos es más en microcopy: notas sutiles convierten mejor que advertencias extensas o restrictivas.
-- No duplicar botones de acción en modales para evitar confusión de flujo.
-- En CSS Grid dentro de modales, usar siempre minmax(0, 1fr) y overflow-x: hidden para evitar desbordes horizontales.
+- Mantener siempre la paleta oficial (`#845ec2`, `#c7a138`) para consistencia de marca.
+- En CSS Grid dentro de modales o grillas, usar minmax(0, 1fr) y overflow-x: hidden para evitar desbordes horizontales.
 
 ## Próximos pasos
-- Carga de moldes reales y enlaces finales a Google Drive por parte del administrador.
+- Carga de fotos de moldes reales y enlaces a Google Drive por parte del administrador.

@@ -34,6 +34,17 @@
 
 <body>
 
+  <!-- Barra Superior de Anuncios Tiendanube -->
+  <div class="top-announcement-bar">
+    <div class="container announcement-content">
+      <span class="announcement-item"><i data-lucide="sparkles" class="ui-icon-xs"></i> Moldes en PDF listos para imprimir en A4</span>
+      <span class="announcement-dot">•</span>
+      <span class="announcement-item"><i data-lucide="percent" class="ui-icon-xs"></i> <strong>10% OFF</strong> con Transferencia</span>
+      <span class="announcement-dot">•</span>
+      <span class="announcement-item"><i data-lucide="zap" class="ui-icon-xs"></i> Entrega inmediata a tu Gmail</span>
+    </div>
+  </div>
+
   <!-- Encabezado y Navegación Principal -->
   <header class="header">
     <div class="container header-container">
@@ -41,18 +52,21 @@
         <img src="assets/logo-cropped.png" alt="Logo Cosé con Giu" class="brand-logo-img">
         <div>
           <h1>Cosé con Giu</h1>
-          <p class="tagline">Patrones y moldes digitales listos para descargar</p>
+          <p class="tagline">Patrones y moldes digitales listos para confeccionar</p>
         </div>
       </div>
       <nav class="nav">
         <button id="btn-nav-catalogo" class="nav-btn active" onclick="cambiarVista('catalogo')">
           <i data-lucide="scissors" class="ui-icon"></i> Catálogo
         </button>
-        <button id="btn-nav-carrito" class="nav-btn" onclick="cambiarVista('carrito')">
+        <a href="#seccion-faq" class="nav-link-btn" onclick="cambiarVista('catalogo')">
+          <i data-lucide="help-circle" class="ui-icon-xs"></i> Preguntas
+        </a>
+        <button id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')">
           <i data-lucide="shopping-bag" class="ui-icon"></i> Carrito <span id="cart-badge" class="badge">0</span>
         </button>
-        <button id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')">
-          <i data-lucide="sliders-horizontal" class="ui-icon"></i> Panel Admin
+        <button id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')" title="Acceso a Administración">
+          <i data-lucide="shield-check" class="ui-icon-xs"></i> Admin
         </button>
       </nav>
     </div>
@@ -63,10 +77,20 @@
 
     <!-- 1. VISTA: CATÁLOGO DE MOLDES -->
     <section id="view-catalogo" class="view-section">
-      <div class="section-header">
-        <h2>Catálogo de Moldes Digitales</h2>
-        <p>Selecciona tus patrones de costura favoritos, agrégalos a tu carrito y recíbelos en PDF listos para imprimir.
-        </p>
+      <!-- Portada Hero estilo Tiendanube Boutique -->
+      <div class="boutique-hero-banner">
+        <div class="hero-content">
+          <span class="hero-badge"><i data-lucide="sparkles" class="ui-icon-xs"></i> Moldería & Costura Digital</span>
+          <h2 class="hero-title">Patrones de costura listos para confeccionar</h2>
+          <p class="hero-desc">
+            Moldes descargables en PDF preparados en hojas A4 estándar para imprimir en casa. Incluyen tabla de medidas, márgenes de costura y video tutorial paso a paso.
+          </p>
+          <div class="hero-chips-row">
+            <span class="hero-chip"><i data-lucide="printer" class="ui-icon-xs"></i> Impresión A4 hogareña</span>
+            <span class="hero-chip"><i data-lucide="video" class="ui-icon-xs"></i> Video tutorial incluido</span>
+            <span class="hero-chip"><i data-lucide="zap" class="ui-icon-xs"></i> Acceso en Google Drive</span>
+          </div>
+        </div>
       </div>
 
       <!-- Barra de herramientas del catálogo: Búsqueda, Categorías y Ordenamiento -->
@@ -74,7 +98,7 @@
         <div class="toolbar-search-row">
           <div class="search-input-wrap">
             <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
-            <input type="text" id="catalogo-busqueda" placeholder="Buscar moldes o patrones..."
+            <input type="text" id="catalogo-busqueda" placeholder="Buscar moldes o patrones (ej: vestido, solero, remera)..."
               oninput="filtrarCatalogoPorBusqueda(this.value)">
             <button type="button" class="btn-clear-search" id="btn-clear-catalogo-search"
               onclick="limpiarBusquedaCatalogo()" title="Limpiar búsqueda" style="display: none;">✕</button>
@@ -1053,6 +1077,21 @@
           <a id="footer-btn-instagram" href="https://instagram.com/cosecongiu" target="_blank" rel="noopener noreferrer" class="btn-footer-social ig" title="Seguir en Instagram">
             <i data-lucide="instagram" class="ui-icon"></i> <span id="footer-texto-instagram">@cosecongiu</span>
           </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medios de Pago Aceptados Estilo Tiendanube -->
+    <div class="container footer-payment-container">
+      <div class="footer-payment-showcase">
+        <span class="payment-title">Medios de pago disponibles:</span>
+        <div class="payment-badges-row">
+          <span class="pay-chip"><i data-lucide="zap" class="ui-icon-xs"></i> Mercado Pago</span>
+          <span class="pay-chip">Visa</span>
+          <span class="pay-chip">Mastercard</span>
+          <span class="pay-chip">Naranja</span>
+          <span class="pay-chip"><i data-lucide="percent" class="ui-icon-xs"></i> Transferencia (10% OFF)</span>
+          <span class="pay-chip"><i data-lucide="globe" class="ui-icon-xs"></i> PayPal (USD)</span>
         </div>
       </div>
     </div>

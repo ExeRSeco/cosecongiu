@@ -1605,14 +1605,16 @@ function renderCatalogo() {
         <p class="product-desc">${escaparHTML(producto.descripcion)}</p>
 
         <div class="product-price-box">
-          ${tieneDescuento ? `
-            <span class="price-promo">$${formatearPrecio(precioFinal)}</span>
-            <span class="price-old">$${formatearPrecio(producto.precio)}</span>
-          ` : `
-            <span class="price-regular">$${formatearPrecio(precioFinal)}</span>
-          `}
-          <div style="font-size: 0.76rem; color: #15803d; font-weight: 700; margin-top: 0.2rem;">
-            $${formatearPrecio(precioTransferencia)} con Transferencia (10% OFF)
+          <div class="product-price-row">
+            ${tieneDescuento ? `
+              <span class="price-promo">$${formatearPrecio(precioFinal)}</span>
+              <span class="price-old">$${formatearPrecio(producto.precio)}</span>
+            ` : `
+              <span class="price-regular">$${formatearPrecio(precioFinal)}</span>
+            `}
+          </div>
+          <div class="price-transfer-pill">
+            <i data-lucide="percent" class="ui-icon-xs"></i> $${formatearPrecio(precioTransferencia)} con Transferencia (10% OFF)
           </div>
           ${precioFinalUsd > 0 ? `
             <span class="price-usd-pill" title="Disponible para compra internacional en USD con PayPal">

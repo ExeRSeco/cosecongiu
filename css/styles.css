@@ -150,23 +150,59 @@ svg.lucide {
 }
 
 /* ==========================================================
-   ENCABEZADO Y NAVEGACIÓN
+   BARRA SUPERIOR DE ANUNCIOS (TIENDANUBE STYLE)
+   ========================================================== */
+.top-announcement-bar {
+  background: linear-gradient(90deg, #fcfaff 0%, #f4ecfd 50%, #fcfaff 100%);
+  border-bottom: 1px solid var(--primary-border);
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+  color: var(--primary-dark);
+  text-align: center;
+  position: relative;
+  z-index: 60;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.announcement-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.announcement-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.announcement-dot {
+  color: var(--primary);
+  opacity: 0.4;
+  font-weight: 800;
+}
+
+/* ==========================================================
+   ENCABEZADO Y NAVEGACIÓN (TIENDANUBE STYLE)
    ========================================================== */
 .header {
-  background-color: var(--bg-card);
-  border-bottom: 1px solid var(--border);
+  background-color: #ffffff;
+  border-bottom: 1px solid #ede8f5;
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 14px rgba(37, 27, 51, 0.04);
 }
 
 .header-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -182,12 +218,12 @@ svg.lucide {
   height: 52px;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 2px 5px rgba(132, 94, 194, 0.2));
-  transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 6px rgba(132, 94, 194, 0.2));
+  transition: transform 0.25s ease;
 }
 
 .logo:hover .brand-logo-img {
-  transform: scale(1.05);
+  transform: scale(1.05) rotate(-1deg);
 }
 
 .logo h1 {
@@ -199,7 +235,7 @@ svg.lucide {
 }
 
 .tagline {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
 }
 
@@ -210,12 +246,30 @@ svg.lucide {
   flex-wrap: wrap;
 }
 
+.nav-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.nav-link-btn:hover {
+  color: var(--primary);
+  background-color: var(--primary-soft);
+}
+
 .nav-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  padding: 0.55rem 1rem;
-  border-radius: var(--radius);
-  font-size: 0.95rem;
+  background: #ffffff;
+  border: 1px solid #ede8f5;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-main);
   cursor: pointer;
@@ -226,8 +280,8 @@ svg.lucide {
 }
 
 .nav-btn:hover {
-  background-color: var(--bg-page);
-  border-color: var(--primary);
+  background-color: var(--primary-soft);
+  border-color: var(--primary-border);
   color: var(--primary);
 }
 
@@ -235,20 +289,36 @@ svg.lucide {
   background-color: var(--primary);
   border-color: var(--primary);
   color: #ffffff;
+  box-shadow: 0 3px 10px rgba(132, 94, 194, 0.25);
 }
 
-.nav-btn.active .badge {
-  background-color: #ffffff;
-  color: var(--primary);
+.nav-btn-cart {
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+.nav-btn-cart:hover {
+  background: #ecdffc;
+  border-color: var(--primary);
+}
+
+.nav-btn-admin {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  padding: 0.45rem 0.85rem;
 }
 
 .badge {
   background-color: var(--primary);
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  font-weight: 700;
+  font-weight: 800;
+  line-height: 1;
 }
 
 /* ==========================================================
@@ -274,6 +344,95 @@ svg.lucide {
 .section-header p {
   color: var(--text-muted);
   font-size: 0.95rem;
+}
+
+/* ==========================================================
+   PORTADA HERO ESTILO TIENDANUBE BOUTIQUE
+   ========================================================== */
+.boutique-hero-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #faf6fe 60%, #f4ebfd 100%);
+  border: 1px solid #ede8f5;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(132, 94, 194, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.boutique-hero-banner::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(132, 94, 194, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--primary);
+  background: #ffffff;
+  border: 1px solid var(--primary-border);
+  padding: 0.35rem 0.95rem;
+  border-radius: 999px;
+  margin-bottom: 0.9rem;
+  box-shadow: 0 2px 6px rgba(132, 94, 194, 0.08);
+}
+
+.hero-title {
+  font-size: 2.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.4px;
+}
+
+.hero-desc {
+  font-size: 0.98rem;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: 0 auto 1.35rem auto;
+  line-height: 1.6;
+}
+
+.hero-chips-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e9e2f3;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 5px rgba(37, 27, 51, 0.03);
 }
 
 /* ==========================================================
@@ -325,10 +484,10 @@ svg.lucide {
 .catalogo-toolbar {
   margin-bottom: 2rem;
   padding: 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
+  background: #ffffff;
+  border: 1px solid #ede8f5;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(37, 27, 51, 0.03);
 }
 
 .toolbar-search-row {
@@ -355,16 +514,17 @@ svg.lucide {
 }
 
 .category-chip {
-  background-color: var(--bg-page);
-  border: 1px solid var(--border);
+  background-color: #ffffff;
+  border: 1px solid #ede8f5;
   color: var(--text-main);
-  padding: 0.4rem 0.95rem;
+  padding: 0.42rem 1rem;
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(37, 27, 51, 0.02);
 }
 
 .category-chip:hover {
@@ -377,7 +537,7 @@ svg.lucide {
   background-color: var(--primary);
   border-color: var(--primary);
   color: #ffffff;
-  box-shadow: 0 2px 6px rgba(132, 94, 194, 0.25);
+  box-shadow: 0 3px 8px rgba(132, 94, 194, 0.28);
 }
 
 .sort-select-wrap {
@@ -399,7 +559,7 @@ svg.lucide {
 }
 
 /* ==========================================================
-   TARJETAS Y PRODUCTOS (CATÁLOGO)
+   TARJETAS Y PRODUCTOS (CATÁLOGO TIENDANUBE STYLE)
    ========================================================== */
 .catalogo-grid {
   display: grid;
@@ -408,101 +568,125 @@ svg.lucide {
 }
 
 .product-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
+  background: #ffffff;
+  border: 1px solid #ede8f5;
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 10px rgba(37, 27, 51, 0.04);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  overflow: hidden;
 }
 
 .product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-5px);
+  box-shadow: 0 14px 28px rgba(132, 94, 194, 0.12);
   border-color: var(--primary-border);
 }
 
 .product-card.card-bestseller {
-  border-color: var(--accent-gold-border);
-  box-shadow: 0 4px 14px rgba(199, 161, 56, 0.15);
+  border-color: #f3df9c;
+  box-shadow: 0 4px 16px rgba(199, 161, 56, 0.12);
+}
+
+.product-card.card-bestseller:hover {
+  border-color: var(--accent-gold);
+  box-shadow: 0 14px 28px rgba(199, 161, 56, 0.2);
 }
 
 .product-badges-container {
   position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
+  top: 1rem;
+  right: 1rem;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.35rem;
-  z-index: 2;
+  z-index: 5;
+  pointer-events: none;
 }
 
 .product-badge-promo {
-  background-color: var(--promo-bg);
-  color: var(--promo-color);
-  border: 1px solid var(--promo-border);
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  color: #ffffff;
+  border: none;
   font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0.2rem 0.55rem;
-  border-radius: 6px;
+  font-weight: 800;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .product-badge-bestseller {
-  background-color: var(--accent-gold-soft);
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
   color: #854d0e;
   border: 1px solid var(--accent-gold-border);
   font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0.2rem 0.55rem;
-  border-radius: 6px;
+  font-weight: 800;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(199, 161, 56, 0.15);
-}
-
-.product-icon-wrap {
-  width: 76px;
-  height: 76px;
-  background: linear-gradient(135deg, var(--primary-soft) 0%, #ecdffc 100%);
-  color: var(--primary-dark);
-  border: 1px solid var(--primary-border);
-  border-radius: 18px;
-  display: flex;
+  box-shadow: 0 2px 6px rgba(199, 161, 56, 0.18);
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 2.6rem;
-  margin-bottom: 1.25rem;
-  box-shadow: 0 4px 10px rgba(132, 94, 194, 0.1);
-  transition: transform 0.25s ease;
+  gap: 0.3rem;
 }
 
-/* Imagen profesional para producto: reemplaza el emoji cuando existe una imagen */
+/* Imagen profesional para producto estilo Tiendanube */
 .product-image-wrap {
   width: 100%;
+  height: 185px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #faf7fd;
   display: flex;
   justify-content: center;
   align-items: center;
   margin-bottom: 1rem;
+  border: 1px solid #f1ecf7;
+  position: relative;
+  cursor: pointer;
 }
+
 .product-image-wrap img {
   width: 100%;
-  max-width: 180px;
-  height: 140px;
+  height: 100%;
   object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  box-shadow: 0 6px 18px rgba(37, 27, 51, 0.06);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product-card:hover .product-image-wrap img {
+  transform: scale(1.06);
+}
+
+.product-icon-wrap {
+  width: 100%;
+  height: 165px;
+  background: linear-gradient(135deg, #fcfaff 0%, #f4ecfd 100%);
+  color: var(--primary);
+  border: 1px dashed var(--primary-border);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.2rem;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease, background 0.3s ease;
+  cursor: pointer;
 }
 
 .product-card:hover .product-icon-wrap {
-  transform: scale(1.08) rotate(-3deg);
+  transform: scale(1.02);
+  background: linear-gradient(135deg, #f8f1fe 0%, #ebdffd 100%);
 }
 
 .product-category-badge {
@@ -510,18 +694,17 @@ svg.lucide {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   color: var(--primary);
   margin-bottom: 0.35rem;
 }
 
 .product-title {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.45rem;
   color: var(--text-main);
-  padding-right: 3rem; /* Espacio para el badge */
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .product-title-link {
@@ -536,15 +719,28 @@ svg.lucide {
 }
 
 .product-desc {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   color: var(--text-muted);
-  margin-bottom: 1.25rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
   flex: 1;
-  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6rem;
 }
 
 .product-price-box {
-  margin-bottom: 1rem;
+  margin-bottom: 1.1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #ede8f5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.product-price-row {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
@@ -552,7 +748,7 @@ svg.lucide {
 
 .price-regular {
   font-size: 1.35rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-main);
 }
 
@@ -563,9 +759,50 @@ svg.lucide {
 }
 
 .price-promo {
-  font-size: 1.4rem;
+  font-size: 1.38rem;
   font-weight: 800;
   color: var(--promo-color);
+}
+
+.price-transfer-pill {
+  font-size: 0.76rem;
+  color: #15803d;
+  font-weight: 700;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.price-usd-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.product-card .btn-primary {
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.65rem 1.15rem;
+  transition: all 0.2s ease;
+}
+
+.product-card .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(132, 94, 194, 0.3);
 }
 
 /* ==========================================================
@@ -598,6 +835,24 @@ svg.lucide {
   justify-content: center;
   position: relative;
   text-align: center;
+}
+
+.product-detail-visual .product-image-wrap {
+  width: 100%;
+  height: 280px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.product-detail-visual .product-image-wrap img {
+  max-width: 100%;
+  max-height: 280px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(37, 27, 51, 0.1);
 }
 
 .product-detail-icon {
@@ -2111,6 +2366,20 @@ select:focus {
     font-size: 0.88rem;
   }
 
+  /* Barra Superior de Anuncios Mobile */
+  .top-announcement-bar {
+    font-size: 0.72rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .announcement-content {
+    gap: 0.35rem;
+  }
+
+  .announcement-dot {
+    display: none;
+  }
+
   /* Encabezado y Navbar */
   .header-container {
     flex-direction: column;
@@ -2145,15 +2414,19 @@ select:focus {
     width: 100%;
   }
 
-  .nav-btn {
+  .nav-btn,
+  .nav-link-btn {
     flex: 1;
     min-width: 0;
     justify-content: center;
     padding: 0.52rem 0.3rem;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     white-space: nowrap;
-    border-radius: 8px;
+    border-radius: 999px;
     gap: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
   }
 
   .nav-btn .ui-icon {
@@ -2165,6 +2438,33 @@ select:focus {
   .badge {
     font-size: 0.7rem;
     padding: 0.1rem 0.4rem;
+  }
+
+  /* Portada Hero Mobile */
+  .boutique-hero-banner {
+    padding: 1.75rem 1rem;
+    border-radius: 16px;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-title {
+    font-size: 1.4rem;
+    line-height: 1.25;
+  }
+
+  .hero-desc {
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .hero-chips-row {
+    gap: 0.35rem;
+  }
+
+  .hero-chip {
+    font-size: 0.74rem;
+    padding: 0.25rem 0.6rem;
   }
 
   /* ==========================================================
@@ -2267,15 +2567,16 @@ select:focus {
     margin-bottom: 0.95rem;
   }
 
-  .product-icon-wrap {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 0.95rem;
+  .product-image-wrap {
+    height: 165px;
+    margin-bottom: 0.85rem;
   }
 
-  .product-icon-wrap svg.lucide {
-    width: 32px;
-    height: 32px;
+  .product-icon-wrap {
+    width: 100%;
+    height: 140px;
+    margin-bottom: 0.85rem;
+    font-size: 2.8rem;
   }
 
   .price-regular,
@@ -3597,6 +3898,55 @@ select:focus {
   border-color: #e1306c;
 }
 
+/* ==========================================================
+   MEDIOS DE PAGO EN FOOTER (ESTILO TIENDANUBE)
+   ========================================================== */
+.footer-payment-container {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.footer-payment-showcase {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.payment-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.payment-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pay-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  background: #ffffff;
+  border: 1px solid #e2d9f0;
+  color: var(--text-main);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(37, 27, 51, 0.03);
+}
+
+.pay-chip i,
+.pay-chip svg {
+  color: var(--primary);
+}
+
 .footer-bottom {
   padding-top: 1.75rem;
   display: flex;
@@ -3636,6 +3986,17 @@ select:focus {
   .footer-content-rich {
     grid-template-columns: 1fr;
     gap: 1.75rem;
+  }
+
+  .footer-payment-showcase {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .payment-badges-row {
+    justify-content: center;
   }
 
   .faq-answer {
