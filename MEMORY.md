@@ -12,6 +12,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas.
   - Tarjetas de moldes con esquinas redondeadas, elevación al hover, zoom suave en foto, badges flotantes (*Oferta*, *⭐ Más Vendido*), descripciones de altura uniforme (clamped 2 líneas) y píldora destacada de 10% OFF.
   - Selector de categorías dinámico en chips redondeados sin desbordes.
   - Footer con vitrina de medios de pago aceptados (Mercado Pago, Visa, Mastercard, Naranja, Transferencia, PayPal).
+  - Íconos oficiales vectoriales en SVG para redes: WhatsApp (botón flotante y checkout), Instagram y YouTube.
 - Checkout profesionalizado en 2 pasos sin sobrecarga ni scroll horizontal.
 - Mercado Pago Checkout Pro y Supabase 100% operativos.
 
