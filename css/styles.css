@@ -4310,8 +4310,8 @@ select:focus {
 
 .metodo-pago-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -4879,8 +4879,8 @@ select:focus {
     padding: 0.85rem 1rem !important;
   }
   .metodo-pago-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.35rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
   }
   .tab-pago {
     padding: 0.65rem 0.2rem;

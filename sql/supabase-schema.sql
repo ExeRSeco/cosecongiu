@@ -280,11 +280,11 @@ CREATE POLICY "Gestión de configuración solo por admins aprobados"
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
--- Valor inicial o actualizado para datos bancarios, Mercado Pago, PayPal y canales de atención
+-- Valor inicial o actualizado para datos bancarios, Mercado Pago y canales de atención
 INSERT INTO public.tienda_config (clave, valor)
 VALUES (
   'datos_bancarios',
-  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4", "whatsapp": "+54 9 381 358-1558", "instagram": "@cosecongiu", "mercado_pago_alias": "COSECONGIU.MP", "mercado_pago_link": "https://link.mercadopago.com.ar/cosecongiu", "paypal_email": "cosecongiu@gmail.com", "paypal_me": "cosecongiu"}'::jsonb
+  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4", "whatsapp": "+54 9 381 358-1558", "instagram": "@cosecongiu", "mercado_pago_alias": "COSECONGIU.MP"}'::jsonb
 )
 ON CONFLICT (clave) DO UPDATE SET valor = jsonb_set(
   public.tienda_config.valor,

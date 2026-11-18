@@ -96,7 +96,7 @@ const CATEGORIAS_POR_DEFECTO = [
 
 let categorias = [...CATEGORIAS_POR_DEFECTO];
 
-// Datos bancarios, Mercado Pago, PayPal y de contacto iniciales por defecto para cobro y atención al cliente
+// Datos bancarios, Mercado Pago y de contacto iniciales por defecto para cobro y atención al cliente
 const DATOS_BANCARIOS_POR_DEFECTO = {
   banco: "Banco Nación / Mercado Pago",
   titular: "Cosé con Giu - Moldes Digitales",
@@ -105,16 +105,13 @@ const DATOS_BANCARIOS_POR_DEFECTO = {
   cuit: "27-38491204-4",
   whatsapp: "+54 9 381 358-1558",
   instagram: "@cosecongiu",
-  mercadoPagoAlias: "COSECONGIU.MP",
-  mercadoPagoLink: "https://link.mercadopago.com.ar/cosecongiu",
-  paypalEmail: "cosecongiu@gmail.com",
-  paypalMe: "cosecongiu"
+  mercadoPagoAlias: "COSECONGIU.MP"
 };
 
 let datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
 let archivoComprobanteSeleccionado = null;
 let archivoComprobanteDataUrl = null;
-let metodoPagoCheckout = "mercadopago"; // "mercadopago" | "transferencia" | "paypal"
+let metodoPagoCheckout = "mercadopago"; // "mercadopago" | "transferencia"
 
 /**
  * ====================================================================
@@ -319,7 +316,7 @@ async function sincronizarConSupabaseSiAplica() {
       }
     }
 
-    // 3. Obtener configuración de cuenta bancaria, Mercado Pago y PayPal desde Supabase
+    // 3. Obtener configuración de cuenta bancaria y Mercado Pago desde Supabase
     if (typeof supabaseObtenerConfig === "function") {
       const configBanco = await supabaseObtenerConfig("datos_bancarios");
       if (configBanco && typeof configBanco === "object") {
@@ -333,10 +330,7 @@ async function sincronizarConSupabaseSiAplica() {
           ...DATOS_BANCARIOS_POR_DEFECTO,
           ...configBanco,
           whatsapp: waRemoto,
-          mercadoPagoAlias: configBanco.mercadoPagoAlias || configBanco.mercado_pago_alias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias,
-          mercadoPagoLink: configBanco.mercadoPagoLink || configBanco.mercado_pago_link || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink,
-          paypalEmail: configBanco.paypalEmail || configBanco.paypal_email || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail,
-          paypalMe: configBanco.paypalMe || configBanco.paypal_me || DATOS_BANCARIOS_POR_DEFECTO.paypalMe
+          mercadoPagoAlias: configBanco.mercadoPagoAlias || configBanco.mercado_pago_alias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias
         };
         localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
         actualizarDatosBancariosUI();
@@ -445,10 +439,7 @@ function cargarDatosBancarios() {
       datosBancarios = {
         ...DATOS_BANCARIOS_POR_DEFECTO,
         ...parsed,
-        mercadoPagoAlias: parsed.mercadoPagoAlias || parsed.mercado_pago_alias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias,
-        mercadoPagoLink: parsed.mercadoPagoLink || parsed.mercado_pago_link || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink,
-        paypalEmail: parsed.paypalEmail || parsed.paypal_email || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail,
-        paypalMe: parsed.paypalMe || parsed.paypal_me || DATOS_BANCARIOS_POR_DEFECTO.paypalMe
+        mercadoPagoAlias: parsed.mercadoPagoAlias || parsed.mercado_pago_alias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias
       };
 
       // Si el número de WhatsApp guardado era el placeholder anterior de prueba, actualizamos automáticamente al número oficial
@@ -476,16 +467,10 @@ function actualizarDatosBancariosUI() {
   const elemAlias = document.getElementById("checkout-banco-alias");
   const elemCbu = document.getElementById("checkout-banco-cbu");
   const elemCuit = document.getElementById("checkout-banco-cuit");
-  const elemPaypalEmail = document.getElementById("checkout-paypal-email");
-  const elemPaypalMe = document.getElementById("checkout-paypal-me-texto");
-  const rowPaypalMe = document.getElementById("row-checkout-paypal-me");
-  const btnAbrirPaypal = document.getElementById("btn-abrir-paypal-link");
 
   // Mercado Pago en checkout
   const elemMpAlias = document.getElementById("checkout-mp-alias");
   const elemMpTitular = document.getElementById("checkout-mp-titular");
-  const wrapBtnMp = document.getElementById("wrap-btn-mp-link");
-  const btnAbrirMp = document.getElementById("btn-abrir-mp-link");
 
   if (elemBanco) elemBanco.textContent = datosBancarios.banco || DATOS_BANCARIOS_POR_DEFECTO.banco;
   if (elemTitular) elemTitular.textContent = datosBancarios.titular || DATOS_BANCARIOS_POR_DEFECTO.titular;
@@ -496,26 +481,6 @@ function actualizarDatosBancariosUI() {
   if (elemMpAlias) elemMpAlias.textContent = datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias;
   if (elemMpTitular) elemMpTitular.textContent = datosBancarios.titular || DATOS_BANCARIOS_POR_DEFECTO.titular;
 
-  const mpLinkValido = (datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink || "").trim();
-  if (wrapBtnMp) wrapBtnMp.style.display = mpLinkValido ? "block" : "none";
-  if (btnAbrirMp && mpLinkValido) btnAbrirMp.href = mpLinkValido;
-
-  const mailPaypalValido = datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail;
-  if (elemPaypalEmail) elemPaypalEmail.textContent = mailPaypalValido;
-
-  const paypalMeValido = (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe || "").trim();
-  if (elemPaypalMe) elemPaypalMe.textContent = paypalMeValido.startsWith("http") ? paypalMeValido : `paypal.me/${paypalMeValido.replace("@", "")}`;
-  if (rowPaypalMe) rowPaypalMe.style.display = paypalMeValido ? "flex" : "none";
-
-  if (btnAbrirPaypal) {
-    if (paypalMeValido) {
-      const limpioUser = paypalMeValido.replace(/^https?:\/\/paypal\.me\//i, "").replace("@", "").trim();
-      btnAbrirPaypal.href = `https://paypal.me/${limpioUser}`;
-    } else {
-      btnAbrirPaypal.href = "https://www.paypal.com/myaccount/transfer/homepage/buy/preview";
-    }
-  }
-
   // 2. Inputs en el formulario de configuración bancaria y tienda del admin
   const inBanco = document.getElementById("admin-banco-nombre");
   const inTitular = document.getElementById("admin-banco-titular");
@@ -525,9 +490,6 @@ function actualizarDatosBancariosUI() {
   const inWhatsapp = document.getElementById("admin-tienda-whatsapp");
   const inInstagram = document.getElementById("admin-tienda-instagram");
   const inMpAlias = document.getElementById("admin-mp-alias");
-  const inMpLink = document.getElementById("admin-mp-link");
-  const inPaypalEmail = document.getElementById("admin-paypal-email");
-  const inPaypalMe = document.getElementById("admin-paypal-me");
 
   if (inBanco && document.activeElement !== inBanco) {
     inBanco.value = datosBancarios.banco;
@@ -547,20 +509,11 @@ function actualizarDatosBancariosUI() {
   if (inMpAlias && document.activeElement !== inMpAlias) {
     inMpAlias.value = datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias;
   }
-  if (inMpLink && document.activeElement !== inMpLink) {
-    inMpLink.value = datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink;
-  }
   if (inWhatsapp && document.activeElement !== inWhatsapp) {
     inWhatsapp.value = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
   }
   if (inInstagram && document.activeElement !== inInstagram) {
     inInstagram.value = datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram;
-  }
-  if (inPaypalEmail && document.activeElement !== inPaypalEmail) {
-    inPaypalEmail.value = datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail;
-  }
-  if (inPaypalMe && document.activeElement !== inPaypalMe) {
-    inPaypalMe.value = datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe;
   }
 
   // 3. Enlaces dinámicos en el pie de página y botón flotante de WhatsApp
@@ -604,9 +557,6 @@ async function guardarDatosBancariosDesdeAdmin() {
   const inWhatsapp = document.getElementById("admin-tienda-whatsapp");
   const inInstagram = document.getElementById("admin-tienda-instagram");
   const inMpAlias = document.getElementById("admin-mp-alias");
-  const inMpLink = document.getElementById("admin-mp-link");
-  const inPaypalEmail = document.getElementById("admin-paypal-email");
-  const inPaypalMe = document.getElementById("admin-paypal-me");
   const btnGuardar = document.getElementById("btn-guardar-banco");
 
   const banco = inBanco ? inBanco.value.trim() : "";
@@ -617,21 +567,13 @@ async function guardarDatosBancariosDesdeAdmin() {
   const whatsapp = inWhatsapp ? inWhatsapp.value.trim() : (datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp);
   const instagram = inInstagram ? inInstagram.value.trim() : (datosBancarios.instagram || DATOS_BANCARIOS_POR_DEFECTO.instagram);
   const mercadoPagoAlias = inMpAlias ? inMpAlias.value.trim() : (datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias);
-  const mercadoPagoLink = inMpLink ? inMpLink.value.trim() : (datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink);
-  const paypalEmail = inPaypalEmail ? inPaypalEmail.value.trim() : (datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail);
-  const paypalMe = inPaypalMe ? inPaypalMe.value.trim() : (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe);
 
   if (!banco || !titular || !alias || !cbu || !cuit) {
     mostrarToast("Por favor completa todos los campos de la cuenta bancaria.");
     return;
   }
 
-  if (!paypalEmail || !paypalEmail.includes("@")) {
-    mostrarToast("Por favor ingresa un correo de PayPal válido.");
-    return;
-  }
-
-  datosBancarios = { banco, titular, alias, cbu, cuit, whatsapp, instagram, mercadoPagoAlias, mercadoPagoLink, paypalEmail, paypalMe };
+  datosBancarios = { banco, titular, alias, cbu, cuit, whatsapp, instagram, mercadoPagoAlias };
   localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
   actualizarDatosBancariosUI();
 
@@ -923,13 +865,6 @@ async function copiarDatoBancario(tipo, btnElement) {
   } else if (tipo === "mpAlias") {
     texto = datosBancarios.mercadoPagoAlias || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoAlias;
     etiqueta = "Alias de Mercado Pago";
-  } else if (tipo === "paypal") {
-    texto = datosBancarios.paypalEmail || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail;
-    etiqueta = "Correo de PayPal";
-  } else if (tipo === "paypalMe") {
-    const rawMe = (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe || "").trim();
-    texto = rawMe.startsWith("http") ? rawMe : `https://paypal.me/${rawMe.replace("@", "")}`;
-    etiqueta = "Enlace PayPal.Me";
   }
 
   if (!texto) return;
@@ -987,16 +922,6 @@ async function manejarSeleccionComprobante(input) {
   const previaNombre = document.getElementById("previa-nombre");
   const previaTamano = document.getElementById("previa-tamano");
 
-  const dropzoneVacioMp = document.getElementById("dropzone-vacio-mp");
-  const dropzonePreviaMp = document.getElementById("dropzone-previa-mp");
-  const previaNombreMp = document.getElementById("previa-nombre-mp");
-  const previaTamanoMp = document.getElementById("previa-tamano-mp");
-
-  const dropzoneVacioPaypal = document.getElementById("dropzone-vacio-paypal");
-  const dropzonePreviaPaypal = document.getElementById("dropzone-previa-paypal");
-  const previaNombrePaypal = document.getElementById("previa-nombre-paypal");
-  const previaTamanoPaypal = document.getElementById("previa-tamano-paypal");
-
   // Si es imagen (JPG, PNG, WEBP), la optimizamos en el navegador para no saturar almacenamiento
   if (file.type && file.type.startsWith("image/")) {
     mostrarToast("Optimizando comprobante...");
@@ -1013,16 +938,6 @@ async function manejarSeleccionComprobante(input) {
     if (previaNombre) previaNombre.textContent = opt.file.name;
     if (previaTamano) previaTamano.textContent = textoTamano;
 
-    if (dropzoneVacioMp) dropzoneVacioMp.style.display = "none";
-    if (dropzonePreviaMp) dropzonePreviaMp.style.display = "flex";
-    if (previaNombreMp) previaNombreMp.textContent = opt.file.name;
-    if (previaTamanoMp) previaTamanoMp.textContent = textoTamano;
-
-    if (dropzoneVacioPaypal) dropzoneVacioPaypal.style.display = "none";
-    if (dropzonePreviaPaypal) dropzonePreviaPaypal.style.display = "flex";
-    if (previaNombrePaypal) previaNombrePaypal.textContent = opt.file.name;
-    if (previaTamanoPaypal) previaTamanoPaypal.textContent = textoTamano;
-
     actualizarIconosLucide();
     mostrarToast(`✓ Comprobante optimizado (${(opt.pesoComprimido / 1024).toFixed(0)} KB).`);
   } else {
@@ -1037,16 +952,6 @@ async function manejarSeleccionComprobante(input) {
     if (dropzonePrevia) dropzonePrevia.style.display = "flex";
     if (previaNombre) previaNombre.textContent = file.name;
     if (previaTamano) previaTamano.textContent = textoTamano;
-
-    if (dropzoneVacioMp) dropzoneVacioMp.style.display = "none";
-    if (dropzonePreviaMp) dropzonePreviaMp.style.display = "flex";
-    if (previaNombreMp) previaNombreMp.textContent = file.name;
-    if (previaTamanoMp) previaTamanoMp.textContent = textoTamano;
-
-    if (dropzoneVacioPaypal) dropzoneVacioPaypal.style.display = "none";
-    if (dropzonePreviaPaypal) dropzonePreviaPaypal.style.display = "flex";
-    if (previaNombrePaypal) previaNombrePaypal.textContent = file.name;
-    if (previaTamanoPaypal) previaTamanoPaypal.textContent = textoTamano;
 
     actualizarIconosLucide();
     mostrarToast("Documento de comprobante adjuntado correctamente.");
@@ -1064,17 +969,9 @@ function quitarComprobante() {
 
   const dropzoneVacio = document.getElementById("dropzone-vacio");
   const dropzonePrevia = document.getElementById("dropzone-previa");
-  const dropzoneVacioMp = document.getElementById("dropzone-vacio-mp");
-  const dropzonePreviaMp = document.getElementById("dropzone-previa-mp");
-  const dropzoneVacioPaypal = document.getElementById("dropzone-vacio-paypal");
-  const dropzonePreviaPaypal = document.getElementById("dropzone-previa-paypal");
 
   if (dropzoneVacio) dropzoneVacio.style.display = "flex";
   if (dropzonePrevia) dropzonePrevia.style.display = "none";
-  if (dropzoneVacioMp) dropzoneVacioMp.style.display = "flex";
-  if (dropzonePreviaMp) dropzonePreviaMp.style.display = "none";
-  if (dropzoneVacioPaypal) dropzoneVacioPaypal.style.display = "flex";
-  if (dropzonePreviaPaypal) dropzonePreviaPaypal.style.display = "none";
   actualizarIconosLucide();
 }
 
@@ -1630,9 +1527,6 @@ function verDetalleProducto(productoId) {
   const tieneDescuento = producto.enPromo && producto.precioPromo > 0;
   const precioFinal = tieneDescuento ? producto.precioPromo : producto.precio;
   const precioTransferencia = Math.round(precioFinal * 0.90 * 100) / 100;
-  const precioFinalUsd = (tieneDescuento && producto.precioPromoUsd > 0)
-    ? producto.precioPromoUsd
-    : (Number(producto.precioUsd) || 0);
 
   contenedor.innerHTML = `
     <div class="product-detail-visual">
@@ -1695,16 +1589,6 @@ function verDetalleProducto(productoId) {
             $${formatearPrecio(precioTransferencia)} ARS abonando por Transferencia (10% OFF)
           </span>
         </div>
-
-        ${precioFinalUsd > 0 ? `
-          <div style="margin-top: 0.35rem;">
-            <span class="price-usd-pill" style="font-size: 0.88rem; padding: 0.25rem 0.6rem;">
-              <i data-lucide="globe" class="ui-icon" style="width: 13px; height: 13px;"></i>
-              Exterior / PayPal: <strong>USD $${precioFinalUsd.toFixed(2)}</strong>
-              ${tieneDescuento && producto.precioUsd > 0 ? `<span style="text-decoration: line-through; opacity: 0.7; margin-left: 0.3rem;">$${Number(producto.precioUsd).toFixed(2)}</span>` : ''}
-            </span>
-          </div>
-        ` : ''}
 
         <!-- Cuadro aclaratorio de plazos de entrega -->
         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem; background: var(--bg-page); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45;">
@@ -1859,9 +1743,6 @@ function renderCatalogo() {
   catalogoGrid.innerHTML = listaFiltrada.map(producto => {
     const precioFinal = producto.enPromo && producto.precioPromo > 0 ? producto.precioPromo : producto.precio;
     const precioTransferencia = Math.round(precioFinal * 0.90 * 100) / 100;
-    const precioFinalUsd = (producto.enPromo && producto.precioPromoUsd > 0)
-      ? producto.precioPromoUsd
-      : (Number(producto.precioUsd) || 0);
     const tieneDescuento = producto.enPromo && producto.precioPromo > 0;
     const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
 
@@ -1904,11 +1785,6 @@ function renderCatalogo() {
           <div class="price-transfer-pill">
             <i data-lucide="percent" class="ui-icon-xs"></i> $${formatearPrecio(precioTransferencia)} con Transferencia (10% OFF)
           </div>
-          ${precioFinalUsd > 0 ? `
-            <span class="price-usd-pill" title="Disponible para compra internacional en USD con PayPal">
-              <i data-lucide="globe" style="width: 12px; height: 12px;"></i> USD $${precioFinalUsd.toFixed(2)}
-            </span>
-          ` : ''}
         </div>
 
         <button class="btn btn-primary btn-block" onclick="agregarAlCarrito(${producto.id})">
@@ -2098,27 +1974,27 @@ function renderCarrito() {
 
 /**
  * ====================================================================
- * 3. CHECKOUT (MERCADO PAGO, TRANSFERENCIA 10% OFF O PAYPAL USD)
+ * 3. CHECKOUT (MERCADO PAGO OFICIAL O TRANSFERENCIA 10% OFF)
  * ====================================================================
  */
 
 /**
- * Conmuta entre pago por Mercado Pago, Transferencia Bancaria (10% OFF) y PayPal (USD)
+ * Conmuta entre pago por Mercado Pago oficial y Transferencia Bancaria (10% OFF)
  */
 function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
+  if (metodo !== "transferencia") {
+    metodo = "mercadopago";
+  }
   metodoPagoCheckout = metodo;
 
   const tabMercadoPago = document.getElementById("tab-pago-mercadopago");
   const tabTransferencia = document.getElementById("tab-pago-transferencia");
-  const tabPaypal = document.getElementById("tab-pago-paypal");
 
   const secMercadoPago = document.getElementById("seccion-pago-mercadopago");
   const secTransferencia = document.getElementById("seccion-transferencia-bancaria");
-  const secPaypal = document.getElementById("seccion-pago-paypal");
 
   const alertMercadoPago = document.getElementById("alert-plazo-mercadopago");
   const alertTransferencia = document.getElementById("alert-plazo-transferencia");
-  const alertPaypal = document.getElementById("alert-plazo-paypal");
 
   const filaSubtotal = document.getElementById("checkout-fila-subtotal");
   const subtotalMonto = document.getElementById("checkout-subtotal-monto");
@@ -2130,13 +2006,9 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
   const elemTotalMonto = document.getElementById("checkout-total-monto");
   const btnConfirmarTexto = document.getElementById("btn-confirmar-texto");
   const elemResumen = document.getElementById("checkout-resumen-items");
-  const btnAbrirPaypal = document.getElementById("btn-abrir-paypal-link");
-  const wrapBtnMp = document.getElementById("wrap-btn-mp-link");
-  const btnAbrirMp = document.getElementById("btn-abrir-mp-link");
 
   const esMp = metodo === "mercadopago";
   const esTransferencia = metodo === "transferencia";
-  const esPaypal = metodo === "paypal";
 
   // Actualizar estados visuales de las pestañas
   if (tabMercadoPago) {
@@ -2147,20 +2019,14 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
     tabTransferencia.classList.toggle("active", esTransferencia);
     tabTransferencia.setAttribute("aria-selected", esTransferencia ? "true" : "false");
   }
-  if (tabPaypal) {
-    tabPaypal.classList.toggle("active", esPaypal);
-    tabPaypal.setAttribute("aria-selected", esPaypal ? "true" : "false");
-  }
 
   // Visibilidad de secciones con datos de cobro
   if (secMercadoPago) secMercadoPago.style.display = esMp ? "block" : "none";
   if (secTransferencia) secTransferencia.style.display = esTransferencia ? "block" : "none";
-  if (secPaypal) secPaypal.style.display = esPaypal ? "block" : "none";
 
   // Visibilidad de alertas dinámicas de plazos de entrega
   if (alertMercadoPago) alertMercadoPago.style.display = esMp ? "block" : "none";
   if (alertTransferencia) alertTransferencia.style.display = esTransferencia ? "block" : "none";
-  if (alertPaypal) alertPaypal.style.display = esPaypal ? "block" : "none";
 
   // Configuración de títulos, desglose y montos según método seleccionado
   if (tituloModal) tituloModal.textContent = "Finalizar Compra";
@@ -2184,31 +2050,6 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
         return `<span class="checkout-item-badge">${escaparHTML(item.nombre)} <small>x${item.cantidad}</small></span>`;
       }).join(" ");
     }
-  } else if (esPaypal) {
-    if (totalEtiqueta) totalEtiqueta.textContent = "Total en USD:";
-    if (btnConfirmarTexto) btnConfirmarTexto.textContent = "Confirmar Pago por PayPal";
-
-    if (filaSubtotal) filaSubtotal.style.display = "none";
-    if (filaDescuento) filaDescuento.style.display = "none";
-
-    const totalUsd = calcularTotalCarrito("USD");
-    if (elemTotalMonto) elemTotalMonto.textContent = `USD $${totalUsd.toFixed(2)}`;
-
-    if (elemResumen) {
-      elemResumen.innerHTML = carrito.map(item => {
-        return `<span class="checkout-item-badge">${escaparHTML(item.nombre)} <small>x${item.cantidad}</small></span>`;
-      }).join(" ");
-    }
-
-    if (btnAbrirPaypal) {
-      const paypalMeValido = (datosBancarios.paypalMe || DATOS_BANCARIOS_POR_DEFECTO.paypalMe || "").trim();
-      if (paypalMeValido) {
-        const limpioUser = paypalMeValido.replace(/^https?:\/\/paypal\.me\//i, "").replace("@", "").trim();
-        btnAbrirPaypal.href = `https://paypal.me/${limpioUser}/${totalUsd.toFixed(2)}`;
-      } else {
-        btnAbrirPaypal.href = "https://www.paypal.com/myaccount/transfer/homepage/buy/preview";
-      }
-    }
   } else {
     // Mercado Pago (por defecto)
     if (totalEtiqueta) totalEtiqueta.textContent = "Total a pagar:";
@@ -2225,10 +2066,6 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
         return `<span class="checkout-item-badge">${escaparHTML(item.nombre)} <small>x${item.cantidad}</small></span>`;
       }).join(" ");
     }
-
-    const mpLinkValido = (datosBancarios.mercadoPagoLink || DATOS_BANCARIOS_POR_DEFECTO.mercadoPagoLink || "").trim();
-    if (wrapBtnMp) wrapBtnMp.style.display = mpLinkValido ? "block" : "none";
-    if (btnAbrirMp && mpLinkValido) btnAbrirMp.href = mpLinkValido;
   }
 
   actualizarIconosLucide();
@@ -2244,10 +2081,6 @@ function abrirCheckout() {
   quitarComprobante();
   const numOpInput = document.getElementById("checkout-num-operacion");
   if (numOpInput) numOpInput.value = "";
-  const mpOpInput = document.getElementById("checkout-mp-num-operacion");
-  if (mpOpInput) mpOpInput.value = "";
-  const txidPaypalInput = document.getElementById("checkout-paypal-txid");
-  if (txidPaypalInput) txidPaypalInput.value = "";
 
   seleccionarMetodoPagoCheckout(metodoPagoCheckout || "mercadopago");
 
@@ -2279,25 +2112,14 @@ async function confirmarPedido() {
   const emailInput = document.getElementById("cliente-email");
   const telefonoInput = document.getElementById("cliente-telefono");
   const numOpInput = document.getElementById("checkout-num-operacion");
-  const mpOpInput = document.getElementById("checkout-mp-num-operacion");
-  const txidPaypalInput = document.getElementById("checkout-paypal-txid");
 
   const nombre = nombreInput ? nombreInput.value.trim() : "";
   const email = emailInput ? emailInput.value.trim() : "";
   const telefono = telefonoInput ? telefonoInput.value.trim() : "";
 
-  const esPaypal = metodoPagoCheckout === "paypal";
   const esTransferencia = metodoPagoCheckout === "transferencia";
-  const esMercadoPago = metodoPagoCheckout === "mercadopago";
-
-  let numeroOperacion = "";
-  if (esPaypal) {
-    numeroOperacion = txidPaypalInput ? txidPaypalInput.value.trim() : "";
-  } else if (esMercadoPago) {
-    numeroOperacion = mpOpInput ? mpOpInput.value.trim() : "";
-  } else {
-    numeroOperacion = numOpInput ? numOpInput.value.trim() : "";
-  }
+  const esMercadoPago = !esTransferencia;
+  const numeroOperacion = esTransferencia && numOpInput ? numOpInput.value.trim() : "";
 
   if (!nombre) {
     mostrarToast("Por favor ingresa tu Nombre y Apellido para recibir los moldes.");
@@ -2322,17 +2144,12 @@ async function confirmarPedido() {
   let moneda = "ARS";
   let sumaTotal = 0;
 
-  if (esPaypal) {
-    moneda = "USD";
-    sumaTotal = calcularTotalCarrito("USD");
-  } else if (esTransferencia) {
-    moneda = "ARS";
+  if (esTransferencia) {
     const subtotal = calcularTotalCarrito("ARS");
     const desc = Math.round(subtotal * 0.10 * 100) / 100;
     sumaTotal = subtotal - desc;
   } else {
     // Mercado Pago
-    moneda = "ARS";
     sumaTotal = calcularTotalCarrito("ARS");
   }
 
@@ -2376,14 +2193,10 @@ async function confirmarPedido() {
     },
     items: carrito.map(item => {
       const prodOriginal = productos.find(p => p.id === item.id) || {};
-      let itemPrecio = item.precio;
-      if (esPaypal) {
-        itemPrecio = (prodOriginal.enPromo && prodOriginal.precioPromoUsd > 0)
-          ? prodOriginal.precioPromoUsd
-          : (Number(prodOriginal.precioUsd) || (item.precioUsd || 0));
-      } else if (esTransferencia) {
-        itemPrecio = Math.round(item.precio * 0.90 * 100) / 100;
-      }
+      const itemPrecio = esTransferencia
+        ? Math.round(item.precio * 0.90 * 100) / 100
+        : item.precio;
+
       return {
         id: item.id,
         nombre: item.nombre,
@@ -2470,8 +2283,6 @@ async function confirmarPedido() {
   }
   quitarComprobante();
   if (numOpInput) numOpInput.value = "";
-  if (mpOpInput) mpOpInput.value = "";
-  if (txidPaypalInput) txidPaypalInput.value = "";
 
   cerrarCheckout();
 

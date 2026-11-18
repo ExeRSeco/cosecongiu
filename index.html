@@ -515,11 +515,9 @@
                   <input type="number" id="producto-precio" required min="0" step="0.01" placeholder="Ej: 2500">
                 </div>
 
-                <div class="form-group">
-                  <label for="producto-precio-usd">Precio normal en Dólares USD ($) *:</label>
-                  <input type="number" id="producto-precio-usd" required min="0" step="0.01" placeholder="Ej: 2.50">
-                  <small style="color: var(--text-muted); font-size: 0.78rem;">Se cobra al cliente cuando selecciona
-                    pago por PayPal.</small>
+                <div class="form-group" style="display: none;">
+                  <label for="producto-precio-usd">Precio normal en USD ($):</label>
+                  <input type="number" id="producto-precio-usd" min="0" step="0.01" placeholder="Ej: 2.50">
                 </div>
               </div>
 
@@ -537,11 +535,9 @@
                   <input type="number" id="producto-precio-promo" min="0" step="0.01" placeholder="Ej: 1900">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="display: none;">
                   <label for="producto-precio-promo-usd">Precio promocional en USD ($):</label>
                   <input type="number" id="producto-precio-promo-usd" min="0" step="0.01" placeholder="Ej: 1.90">
-                  <small style="color: var(--text-muted); font-size: 0.78rem;">Precio de oferta internacional con
-                    PayPal.</small>
                 </div>
               </div>
 
@@ -695,60 +691,21 @@
             </div>
           </div>
 
-          <!-- Configuración de Mercado Pago (Cobros Rápidos en ARS) -->
+          <!-- Configuración de Mercado Pago (Alias / CVU) -->
           <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border);">
             <h4
               style="color: #007bb5; font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i> Configuración de Mercado Pago
-              (Cobros Directos en ARS)
+              <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i> Mercado Pago (Pasarela y Transferencias)
             </h4>
             <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem;">
-              Datos para que tus clientes te transfieran por MP o abonen mediante tu link de cobro oficial con
-              acreditación inmediata.
+              Los cobros con tarjeta y dinero en cuenta se gestionan automáticamente a través de la pasarela oficial. Si deseas recibir transferencias directas a tu CVU de MP, especifica tu alias aquí:
             </p>
 
             <div class="form-row">
               <div class="form-group">
-                <label for="admin-mp-alias">Alias de Mercado Pago (CVU) *</label>
+                <label for="admin-mp-alias">Alias de Mercado Pago (CVU para transferencias directas)</label>
                 <input type="text" id="admin-mp-alias" placeholder="Ej: COSECONGIU.MP">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Alias de tu cuenta de Mercado Pago para
-                  transferencias entre usuarios.</small>
-              </div>
-
-              <div class="form-group">
-                <label for="admin-mp-link">Link de Pago / Cobro de Mercado Pago (opcional)</label>
-                <input type="url" id="admin-mp-link" placeholder="Ej: https://link.mercadopago.com.ar/cosecongiu">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Genera un botón de pago directo con tarjeta
-                  o dinero en cuenta.</small>
-              </div>
-            </div>
-          </div>
-
-          <!-- Configuración de PayPal para cobros internacionales -->
-          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border);">
-            <h4
-              style="color: #003087; font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i data-lucide="globe" class="ui-icon" style="color: #003087;"></i> Configuración de Cuenta PayPal (Cobros
-              en USD al Exterior)
-            </h4>
-            <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem;">
-              Datos que se presentan al comprador cuando elige abonar en Dólares mediante PayPal.
-            </p>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="admin-paypal-email">Correo de tu Cuenta PayPal (para recibir transferencias) *</label>
-                <input type="email" id="admin-paypal-email" required
-                  placeholder="Ej: giuliana@ejemplo.com o cosecongiu@gmail.com">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Correo directo que el cliente copiará para
-                  enviar los dólares.</small>
-              </div>
-
-              <div class="form-group">
-                <label for="admin-paypal-me">Usuario o Link directo PayPal.Me (opcional)</label>
-                <input type="text" id="admin-paypal-me" placeholder="Ej: cosecongiu o https://paypal.me/cosecongiu">
-                <small style="color: var(--text-muted); font-size: 0.78rem;">Genera un enlace con un clic hacia tu
-                  enlace de pago personal.</small>
+                <small style="color: var(--text-muted); font-size: 0.78rem;">Alias de tu cuenta de Mercado Pago.</small>
               </div>
             </div>
           </div>
@@ -838,17 +795,10 @@
                 <strong class="tab-name">Transferencia</strong>
                 <span class="pill-badge pill-transf">🔥 10% OFF</span>
               </button>
-
-              <button type="button" id="tab-pago-paypal" class="tab-pago" role="tab" aria-selected="false"
-                onclick="seleccionarMetodoPagoCheckout('paypal')">
-                <span class="tab-icon">🌎</span>
-                <strong class="tab-name">PayPal</strong>
-                <span class="pill-badge pill-paypal">USD</span>
-              </button>
             </div>
           </div>
 
-          <!-- DETALLE MÉTODO: MERCADO PAGO -->
+          <!-- DETALLE MÉTODO: MERCADO PAGO (PASARELA OFICIAL CHECKOUT PRO) -->
           <div id="seccion-pago-mercadopago" class="method-detail-card mp-panel">
             <div class="mp-callout-clean">
               <div class="mp-callout-header">
@@ -856,8 +806,7 @@
                 <strong>Acreditación instantánea 100% automatizada</strong>
               </div>
               <p class="mp-callout-desc">
-                Al presionar el botón se abrirá la pasarela oficial de Mercado Pago para pagar con tarjeta de crédito,
-                débito o dinero en cuenta.
+                Al presionar el botón se abrirá la pasarela oficial de Mercado Pago para pagar de forma segura con tarjeta de crédito, débito o dinero en cuenta.
               </p>
               <div class="mp-payment-badges">
                 <span class="tag-chip">Visa</span>
@@ -866,24 +815,6 @@
                 <span class="tag-chip">Saldo MP</span>
               </div>
             </div>
-
-            <!-- Opción alternativa sutil por si el cliente desea transferir por Alias MP -->
-            <details class="alias-mp-dropdown">
-              <summary><i data-lucide="help-circle" class="ui-icon-xs"></i> ¿Querés transferir manualmente por Alias
-                desde la app de MP?</summary>
-              <div class="alias-mp-content">
-                <div class="alias-mp-line">
-                  <span>Alias MP:</span>
-                  <strong id="checkout-mp-alias" class="copy-value">COSECONGIU.MP</strong>
-                  <button type="button" class="btn-copy-mini"
-                    onclick="copiarDatoBancario('mpAlias', this)">Copiar</button>
-                </div>
-                <div class="alias-mp-line">
-                  <span>Titular:</span>
-                  <span id="checkout-mp-titular">Cosé con Giu - Moldes Digitales</span>
-                </div>
-              </div>
-            </details>
           </div>
 
           <!-- DETALLE MÉTODO: TRANSFERENCIA (10% OFF) -->
@@ -960,44 +891,6 @@
                 <span>Verificación manual: te daremos acceso a los moldes en tu Gmail en un plazo de hasta 48 hs
                   hábiles.</span>
               </div>
-            </div>
-          </div>
-
-          <!-- DETALLE MÉTODO: PAYPAL (USD EXTERIOR) -->
-          <div id="seccion-pago-paypal" class="method-detail-card paypal-panel" style="display: none;">
-            <div class="paypal-clean-header">
-              <i data-lucide="globe" class="ui-icon" style="color: #0070ba;"></i>
-              <strong>Pago Internacional en Dólares (USD)</strong>
-            </div>
-            <p class="paypal-clean-desc">
-              Envía el monto total en USD a través de PayPal a nuestra cuenta oficial:
-            </p>
-
-            <div class="paypal-details-box">
-              <div class="paypal-email-row">
-                <div>
-                  <span class="b-label">Correo de PayPal:</span>
-                  <strong id="checkout-paypal-email" class="copy-value b-value">cosecongiu@gmail.com</strong>
-                </div>
-                <button type="button" class="btn-copy-chip" onclick="copiarDatoBancario('paypal', this)">
-                  <i data-lucide="copy" class="ui-icon-xs"></i> Copiar
-                </button>
-              </div>
-
-              <a id="btn-abrir-paypal-link" href="https://paypal.me/cosecongiu" target="_blank"
-                rel="noopener noreferrer" class="btn-paypal-clean">
-                <i data-lucide="external-link" class="ui-icon-xs"></i> Abrir PayPal para transferir
-              </a>
-            </div>
-
-            <div class="form-group" style="margin-top: 0.75rem; margin-bottom: 0.5rem;">
-              <label for="checkout-paypal-txid">ID de Transacción de PayPal (opcional):</label>
-              <input type="text" id="checkout-paypal-txid" placeholder="Ej: 9XY876543210" autocomplete="off">
-            </div>
-
-            <div class="verification-note">
-              <i data-lucide="clock" class="ui-icon-xs"></i>
-              <span>Envío de acceso a tu Gmail en el plazo de 1 hora tras confirmarse la recepción.</span>
             </div>
           </div>
         </div>
@@ -1257,8 +1150,7 @@
           <span class="pay-chip">Visa</span>
           <span class="pay-chip">Mastercard</span>
           <span class="pay-chip">Naranja</span>
-          <span class="pay-chip"><i data-lucide="percent" class="ui-icon-xs"></i> Transferencia (10% OFF)</span>
-          <span class="pay-chip"><i data-lucide="globe" class="ui-icon-xs"></i> PayPal (USD)</span>
+          <span class="pay-chip"><i data-lucide="percent" class="ui-icon-xs"></i> Transferencia Bancaria (10% OFF)</span>
         </div>
       </div>
     </div>
