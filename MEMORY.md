@@ -1,29 +1,28 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 18/11/2026 — Blindaje integral de seguridad (RLS, URLs firmadas, webhook HMAC, rate limiting y DB price cross-check).
+Última actualización: 18/11/2026 — Actualización de WhatsApp oficial (3813581558 -> +54 9 381 358-1558 / 5493813581558).
 
 ## Estado actual
+- Canales de contacto oficiales:
+  - WhatsApp oficial actualizado a `+54 9 381 358-1558` (normalización automática para enlaces de chat: `5493813581558`).
+  - Botón flotante, pie de página, modal de confirmación de pedido y panel admin sincronizados.
 - Blindaje integral de seguridad implementado:
-  - Enlaces de descarga (Google Drive / Video) restringidos: solo accesibles por admins aprobados (RLS y privilegios por columna).
-  - RLS reforzado en `pedidos` (forzando estado inicial `pendiente` y total > 0) y en `pedido_items` (montos y cantidades válidos).
-  - Bucket `comprobantes-transferencia` privado con URLs firmadas temporales (`createSignedUrl`) para previsualización admin.
-  - Validación de precios server-side en `api/crear-preferencia.js` contra la tabla `productos` de Supabase (previene tampering).
-  - Rate limiting por IP en `/api/crear-preferencia` (máx. 20 peticiones/min) contra spam de bots.
-  - Validación criptográfica de firmas HMAC-SHA256 (`x-signature`) con `crypto.timingSafeEqual` en webhook de Mercado Pago.
-  - Cero secretos hardcodeados y sanitización XSS estricta en todo el frontend.
-- Gestión dinámica de categorías en Panel Admin (agregar/eliminar con reasignación defensiva a "Otros").
-- Estética Boutique estilo Tiendanube con Checkout en 2 pasos sin desbordes.
+  - Enlaces de descarga (Google Drive / Video) restringidos solo a administradores aprobados.
+  - RLS reforzado en `pedidos` y `pedido_items`.
+  - Bucket `comprobantes-transferencia` privado con URLs firmadas temporales (`createSignedUrl`).
+  - Validación de precios server-side en `api/crear-preferencia.js` contra Supabase.
+  - Rate limiting por IP en `/api/crear-preferencia`.
+  - Validación criptográfica de firmas HMAC-SHA256 (`x-signature`) en webhook de Mercado Pago.
+- Gestión dinámica de categorías en Panel Admin (agregar/eliminar con reasignación a "Otros").
+- Estética Boutique estilo Tiendanube con Checkout en 2 pasos.
 
 ## Decisiones y por qué
-- Ocultar links de descarga del catálogo público: Evita que usuarios sin pagar descarguen PDFs de Drive mediante DevTools o consultas a Supabase.
-- Bucket de comprobantes privado: Protege la información bancaria y datos personales de compradores.
-- Verificación de precios en BD: Garantiza que nadie pueda pagar un molde a un precio manipulado en el cliente.
-- Timing-safe HMAC en Webhook: Evita ataques de temporización e impersonación de eventos de pago de Mercado Pago.
+- Función `normalizarNumeroWhatsApp`: Convierte automáticamente números locales argentinos (10 dígitos, ej. `3813581558`) al estándar E.164 internacional requerido por WhatsApp (`5493813581558`).
+- Migración transparente en `cargarDatosBancarios`: Reemplaza automáticamente el teléfono de prueba anterior en `localStorage` sin requerir que el usuario borre datos de navegación.
 
 ## Aprendizajes y errores a evitar
-- Los buckets de storage con datos personales nunca deben ser públicos.
-- Ejecutar el esquema SQL en Supabase tras modificar `sql/supabase-schema.sql` para aplicar las nuevas políticas RLS.
+- Los números de WhatsApp argentinos requieren el código de país `54` seguido del prefijo móvil `9` antes del código de área para funcionar correctamente en `api.whatsapp.com`.
 
 ## Próximos pasos
-- Ejecutar `sql/supabase-schema.sql` en el SQL Editor de Supabase para activar las nuevas políticas RLS y de almacenamiento.
+- Ejecutar `sql/supabase-schema.sql` en el SQL Editor de Supabase si se desean aplicar los valores por defecto en la nube.

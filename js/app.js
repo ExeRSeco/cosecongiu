@@ -103,7 +103,7 @@ const DATOS_BANCARIOS_POR_DEFECTO = {
   alias: "COSE.CON.GIU",
   cbu: "0000003100012345678901",
   cuit: "27-38491204-4",
-  whatsapp: "+54 9 11 4455-8899",
+  whatsapp: "+54 9 381 358-1558",
   instagram: "@cosecongiu",
   mercadoPagoAlias: "COSECONGIU.MP",
   mercadoPagoLink: "https://link.mercadopago.com.ar/cosecongiu",
@@ -438,6 +438,12 @@ function cargarDatosBancarios() {
         paypalEmail: parsed.paypalEmail || parsed.paypal_email || DATOS_BANCARIOS_POR_DEFECTO.paypalEmail,
         paypalMe: parsed.paypalMe || parsed.paypal_me || DATOS_BANCARIOS_POR_DEFECTO.paypalMe
       };
+
+      // Si el número de WhatsApp guardado era el placeholder anterior de prueba, actualizamos automáticamente al número oficial
+      if (datosBancarios.whatsapp === "+54 9 11 4455-8899" || datosBancarios.whatsapp === "5491144558899" || !datosBancarios.whatsapp) {
+        datosBancarios.whatsapp = DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
+        localStorage.setItem(STORAGE_DATOS_BANCO, JSON.stringify(datosBancarios));
+      }
     } catch (e) {
       datosBancarios = { ...DATOS_BANCARIOS_POR_DEFECTO };
     }
@@ -633,12 +639,28 @@ async function guardarDatosBancariosDesdeAdmin() {
 }
 
 /**
+ * Normaliza un número de WhatsApp al formato internacional estándar (E.164: 549 + código de área + número)
+ */
+function normalizarNumeroWhatsApp(tel) {
+  if (!tel) return "5493813581558";
+  let limpio = String(tel).replace(/[^0-9]/g, "");
+  // Si ingresaron 10 dígitos (ej. 3813581558), se antepone el código de Argentina para celulares (549)
+  if (limpio.length === 10) {
+    limpio = "549" + limpio;
+  } else if (limpio.startsWith("54") && !limpio.startsWith("549") && limpio.length === 12) {
+    // Si viene como 543813581558, se agrega el 9 requerido por WhatsApp en Argentina
+    limpio = "549" + limpio.slice(2);
+  }
+  return limpio;
+}
+
+/**
  * Abre un chat directo de WhatsApp con el número oficial de la tienda
  */
 function abrirWhatsappConsulta(event) {
   if (event) event.preventDefault();
   const telOriginal = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
-  const telLimpio = telOriginal.replace(/[^0-9]/g, "");
+  const telLimpio = normalizarNumeroWhatsApp(telOriginal);
   const mensaje = encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta sobre los patrones...");
   window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${mensaje}`, "_blank", "noopener,noreferrer");
 }
@@ -2586,7 +2608,7 @@ function mostrarModalConfirmacion(pedido) {
     ? `• Comprobante: Adjunto en la tienda web ✓\n`
     : `• Comprobante: Se adjunta en este mensaje\n`;
 
-  const telefonoWa = (datosBancarios.whatsapp || "5491144558899").replace(/[^0-9]/g, "");
+  const telefonoWa = normalizarNumeroWhatsApp(datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp);
 
   const mensajeWhatsApp = encodeURIComponent(
     `¡Hola Cosé con Giu! Acabo de registrar mi compra por ${metodoTexto} para el pedido ${pedido.codigo}.\n` +

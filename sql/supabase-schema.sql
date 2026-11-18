@@ -284,7 +284,7 @@ CREATE POLICY "Gestión de configuración solo por admins aprobados"
 INSERT INTO public.tienda_config (clave, valor)
 VALUES (
   'datos_bancarios',
-  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4", "whatsapp": "+54 9 11 4455-8899", "instagram": "@cosecongiu", "mercado_pago_alias": "COSECONGIU.MP", "mercado_pago_link": "https://link.mercadopago.com.ar/cosecongiu", "paypal_email": "cosecongiu@gmail.com", "paypal_me": "cosecongiu"}'::jsonb
+  '{"banco": "Banco Nación / Mercado Pago", "titular": "Cosé con Giu - Moldes Digitales", "alias": "COSE.CON.GIU", "cbu": "0000003100012345678901", "cuit": "27-38491204-4", "whatsapp": "+54 9 381 358-1558", "instagram": "@cosecongiu", "mercado_pago_alias": "COSECONGIU.MP", "mercado_pago_link": "https://link.mercadopago.com.ar/cosecongiu", "paypal_email": "cosecongiu@gmail.com", "paypal_me": "cosecongiu"}'::jsonb
 )
 ON CONFLICT (clave) DO NOTHING;
 
