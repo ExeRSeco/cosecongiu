@@ -5,6 +5,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
 ## Estado actual
 - Estética Boutique estilo Tiendanube en toda la tienda:
+  - Tipografía oficial: Plus Jakarta Sans (Google Fonts) con fallback nativo en system-ui.
   - Barra de anuncios superior con beneficios clave (A4, 10% OFF Transferencia, Entrega inmediata a Gmail).
   - Encabezado refinado con píldoras de navegación, enlace rápido a Preguntas y botón de carrito con insignia.
   - Portada Hero Boutique en el catálogo destacando la confección casera en A4 y video tutorial.
