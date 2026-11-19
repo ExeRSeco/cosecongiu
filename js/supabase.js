@@ -733,7 +733,7 @@ async function supabaseObtenerProductos() {
 /**
  * Guarda o actualiza un molde en Supabase
  */
-async function supabaseGuardarProducto(producto) {
+async function supabaseGuardarProducto(producto, esNuevo = false) {
   const client = obtenerClienteSupabase();
   if (!client) return false;
 
@@ -750,30 +750,46 @@ async function supabaseGuardarProducto(producto) {
     imagen: producto.imagen,
     archivo_url: producto.archivoUrl || null,
     es_gratuito: Boolean(producto.esGratuito),
-    link_archivos: producto.linkArchivos,
-    link_video: producto.linkVideo
+    link_archivos: producto.linkArchivos || producto.archivoUrl || "",
+    link_video: producto.linkVideo || ""
   };
 
   try {
-    if (producto.id && producto.id > 0) {
-      // Edición de molde existente
-      const { error } = await client
-        .from("productos")
-        .update(payload)
-        .eq("id", producto.id);
+    let fueActualizado = false;
 
-      if (error) throw error;
-    } else {
-      // Alta de nuevo molde
-      const { data, error } = await client
+    // Solo intentamos actualizar si NO es un molde nuevo y tiene ID asignado
+    if (!esNuevo && producto.id && producto.id > 0) {
+      const { data: existente } = await client
+        .from("productos")
+        .select("id")
+        .eq("id", producto.id)
+        .maybeSingle();
+
+      if (existente && existente.id) {
+        const { error: errorUpdate } = await client
+          .from("productos")
+          .update(payload)
+          .eq("id", producto.id);
+
+        if (errorUpdate) throw errorUpdate;
+        fueActualizado = true;
+      }
+    }
+
+    // Si es nuevo o no existía previamente en la base de datos de Supabase, lo insertamos
+    if (!fueActualizado) {
+      const { data: dataInsert, error: errorInsert } = await client
         .from("productos")
         .insert([payload])
         .select()
         .single();
 
-      if (error) throw error;
-      if (data && data.id) producto.id = Number(data.id);
+      if (errorInsert) throw errorInsert;
+      if (dataInsert && dataInsert.id) {
+        producto.id = Number(dataInsert.id);
+      }
     }
+
     return true;
   } catch (err) {
     console.error("[Supabase] Error al guardar producto:", err);
@@ -924,7 +940,7 @@ async function supabaseCrearPedido(pedido) {
         nombre: item.nombre,
         precio: item.precio,
         cantidad: item.cantidad || 1,
-        link_archivos: item.linkArchivos || "",
+        link_archivos: item.archivoUrl || item.linkArchivos || "",
         link_video: item.linkVideo || ""
       }));
 
@@ -933,7 +949,16 @@ async function supabaseCrearPedido(pedido) {
         .insert(itemsPayload);
 
       if (itemsError) {
-        console.error("[Supabase] Error al registrar ítems del pedido:", itemsError);
+        console.warn("[Supabase] Aviso al registrar pedido_items con producto_id:", itemsError);
+        // Reintento defensivo sin clave foránea por si el producto aún no existía en PostgreSQL
+        const itemsSinFk = itemsPayload.map(it => ({ ...it, producto_id: null }));
+        const { error: retryError } = await client
+          .from("pedido_items")
+          .insert(itemsSinFk);
+
+        if (retryError) {
+          console.error("[Supabase] Error final al registrar pedido_items sin FK:", retryError);
+        }
       }
     }
 
@@ -946,21 +971,28 @@ async function supabaseCrearPedido(pedido) {
 
 /**
  * Actualiza el estado y fecha de entrega de archivos de un pedido en Supabase
+ * Admite tanto el ID numérico de base de datos como el código de pedido ("ORD-XXXX")
  */
-async function supabaseActualizarEstadoPedido(pedidoId, nuevoEstado, archivosEnviados = null, fechaEnvioArchivos = null) {
+async function supabaseActualizarEstadoPedido(pedidoIdOCodigo, nuevoEstado, archivosEnviados = null, fechaEnvioArchivos = null) {
   const client = obtenerClienteSupabase();
-  if (!client) return false;
+  if (!client || !pedidoIdOCodigo) return false;
 
   const payload = { estado: nuevoEstado };
   if (archivosEnviados !== null) payload.archivos_enviados = Boolean(archivosEnviados);
   if (fechaEnvioArchivos !== null) payload.fecha_envio_archivos = fechaEnvioArchivos;
 
   try {
-    const { error } = await client
-      .from("pedidos")
-      .update(payload)
-      .eq("id", pedidoId);
+    let query = client.from("pedidos").update(payload);
 
+    if (typeof pedidoIdOCodigo === "string" && pedidoIdOCodigo.startsWith("ORD-")) {
+      query = query.eq("codigo", pedidoIdOCodigo);
+    } else if (typeof pedidoIdOCodigo === "number" || (!isNaN(Number(pedidoIdOCodigo)) && Number(pedidoIdOCodigo) < 1000000000)) {
+      query = query.eq("id", Number(pedidoIdOCodigo));
+    } else {
+      query = query.eq("codigo", String(pedidoIdOCodigo));
+    }
+
+    const { error } = await query;
     if (error) throw error;
     return true;
   } catch (err) {
@@ -1053,11 +1085,12 @@ async function supabaseObtenerDescargasPedido(codigo, email) {
     // Si el pedido está completado y tiene ítems, resolvemos las URLs de descarga
     if (data.estado === "completada" && Array.isArray(data.items)) {
       for (const item of data.items) {
-        if (item.archivo_url) {
-          const urlFirmada = await supabaseObtenerUrlDescargaMolde(item.archivo_url, 86400);
-          item.linkDescarga = urlFirmada || item.link_archivos || "";
+        const rutaArchivo = item.archivo_url || item.link_archivos;
+        if (rutaArchivo && typeof supabaseObtenerUrlDescargaMolde === "function" && (rutaArchivo.includes("/") || rutaArchivo.endsWith(".pdf") || rutaArchivo.endsWith(".zip") || rutaArchivo.startsWith("patron_"))) {
+          const urlFirmada = await supabaseObtenerUrlDescargaMolde(rutaArchivo, 86400);
+          item.linkDescarga = urlFirmada || rutaArchivo || "";
         } else {
-          item.linkDescarga = item.link_archivos || "";
+          item.linkDescarga = item.link_archivos || item.archivo_url || "";
         }
       }
     }

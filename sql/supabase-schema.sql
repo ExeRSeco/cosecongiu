@@ -418,9 +418,9 @@ BEGIN
     jsonb_build_object(
       'id', pi.producto_id,
       'nombre', pi.nombre,
-      'archivo_url', pr.archivo_url,
-      'link_archivos', pr.link_archivos,
-      'link_video', pr.link_video,
+      'archivo_url', COALESCE(pr.archivo_url, pi.link_archivos),
+      'link_archivos', COALESCE(pr.link_archivos, pi.link_archivos),
+      'link_video', COALESCE(pr.link_video, pi.link_video),
       'es_gratuito', COALESCE(pr.es_gratuito, false)
     )
   ) INTO v_items
@@ -455,7 +455,7 @@ BEGIN
 
   UPDATE public.pedidos
   SET estado = 'completada'
-  WHERE codigo = p_codigo;
+  WHERE LOWER(TRIM(codigo)) = LOWER(TRIM(p_codigo));
 
   RETURN FOUND;
 END;

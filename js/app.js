@@ -323,7 +323,11 @@ async function sincronizarConSupabaseSiAplica() {
     if (typeof supabaseObtenerProductos === "function") {
       const productosRemotos = await supabaseObtenerProductos();
       if (Array.isArray(productosRemotos) && productosRemotos.length > 0) {
-        productos = productosRemotos;
+        // Fusionar defensivamente con productos creados localmente que aún no se hayan sincronizado
+        const idsRemotos = new Set(productosRemotos.map(p => p.id));
+        const localesNuevos = productos.filter(p => !idsRemotos.has(p.id) && p.id > 100);
+
+        productos = [...productosRemotos, ...localesNuevos];
         guardarProductosEnStorage();
         renderCategoriasChips();
         renderCatalogo();
@@ -2265,7 +2269,8 @@ async function confirmarPedido() {
         nombre: item.nombre,
         precio: itemPrecio,
         cantidad: item.cantidad,
-        linkArchivos: prodOriginal.linkArchivos || "",
+        archivoUrl: prodOriginal.archivoUrl || null,
+        linkArchivos: prodOriginal.linkArchivos || prodOriginal.archivoUrl || "",
         linkVideo: prodOriginal.linkVideo || ""
       };
     }),
@@ -2736,6 +2741,18 @@ function descargarArchivoMolde(url, nombre = "Molde_Digital") {
 window.descargarArchivoMolde = descargarArchivoMolde;
 
 /**
+ * Descarga segura referenciada por índice para evitar problemas de comillas en HTML
+ */
+window.descargarItemConsultado = function(index) {
+  const item = (window.ultimasDescargasConsultadas || [])[index];
+  if (!item) {
+    mostrarToast("No se pudo localizar el archivo del molde seleccionado.");
+    return;
+  }
+  descargarArchivoMolde(item.linkDescarga, item.nombre);
+};
+
+/**
  * ====================================================================
  * 4. PANEL DE ADMINISTRACIÓN (MOLDES, PRECIOS, PROMOCIONES)
  * ====================================================================
@@ -2844,6 +2861,7 @@ async function guardarProducto(evento) {
   // Función interna para persistir producto una vez resuelta la imagen
   async function aplicarGuardado(imagenData) {
     let productoGuardado = null;
+    const esNuevo = !idInput;
 
     if (idInput) {
       // MODO EDITAR PRODUCTO EXISTENTE
@@ -2896,7 +2914,7 @@ async function guardarProducto(evento) {
     // Sincronización en la nube con Supabase si está activo
     if (productoGuardado && typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
       try {
-        await supabaseGuardarProducto(productoGuardado);
+        await supabaseGuardarProducto(productoGuardado, esNuevo);
         guardarProductosEnStorage();
       } catch (err) {
         console.warn("[Supabase] No se pudo guardar molde en la nube:", err);
@@ -2904,9 +2922,14 @@ async function guardarProducto(evento) {
     }
 
     resetearFormulario();
+    filtrosCatalogo.categoria = "todas";
+    filtrosCatalogo.busqueda = "";
+    const inputBusq = document.getElementById("catalogo-busqueda");
+    if (inputBusq) inputBusq.value = "";
     renderCategoriasChips();
     renderAdmin();
     renderCatalogo();
+    if (typeof renderCatalogoAdmin === "function") renderCatalogoAdmin();
   }
 
   // Gestión de imagen: Optimizar automáticamente para reducir peso en un 90-98%
@@ -4201,14 +4224,17 @@ async function consultarDescargasDesdeModal() {
           codigo: pedidoLocal.codigo,
           cliente_nombre: pedidoLocal.cliente?.nombre || "Cliente",
           metodo_pago: pedidoLocal.metodoPago,
-          items: pedidoLocal.items.map(item => ({
-            id: item.id,
-            nombre: item.nombre,
-            archivo_url: item.archivoUrl,
-            link_archivos: item.linkArchivos,
-            link_video: item.linkVideo,
-            linkDescarga: item.linkDescarga || item.linkArchivos || "#"
-          }))
+          items: (pedidoLocal.items || []).map(item => {
+            const prodRef = productos.find(p => p.id === item.id) || {};
+            return {
+              id: item.id,
+              nombre: item.nombre,
+              archivo_url: item.archivoUrl || prodRef.archivoUrl || null,
+              link_archivos: item.linkArchivos || prodRef.linkArchivos || "",
+              link_video: item.linkVideo || prodRef.linkVideo || "",
+              linkDescarga: item.linkDescarga || item.archivoUrl || prodRef.archivoUrl || "#"
+            };
+          })
         };
       }
     }
@@ -4235,11 +4261,14 @@ async function consultarDescargasDesdeModal() {
           <i data-lucide="clock" style="width: 2.5rem; height: 2.5rem; color: #d97706; margin-bottom: 0.4rem;"></i>
           <h4 style="margin: 0 0 0.4rem 0; color: #b45309; font-size: 1.1rem;">Verificación Bancaria en Proceso</h4>
           <p style="margin: 0 0 0.85rem 0; color: #78350f; font-size: 0.88rem; line-height: 1.5;">
-            Tu pedido <strong>${escaparHTML(resultadoDescargas.codigo)}</strong> fue registrado correctamente. Giu está verificando la acreditación de tu transferencia bancaria.
+            Tu pedido <strong>${escaparHTML(resultadoDescargas.codigo)}</strong> fue registrado correctamente. Estamos verificando la acreditación de tu transferencia bancaria.
           </p>
-          <div style="padding: 0.75rem; background: #ffffff; border-radius: 6px; font-size: 0.82rem; color: var(--text-muted);">
+          <div style="padding: 0.75rem; background: #ffffff; border-radius: 6px; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
             En cuanto se confirme el pago (máximo 48 hs hábiles), esta misma pantalla se actualizará automáticamente con tus enlaces de descarga y te llegará un correo de aviso.
           </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="descargarMuestraPDF()">
+            <i data-lucide="download" class="ui-icon-xs"></i> Descargar Guía de Muestra preliminar
+          </button>
         </div>
       `;
       actualizarIconosLucide();
@@ -4261,7 +4290,7 @@ async function consultarDescargasDesdeModal() {
     // Pedido COMPLETADO: resolver URLs y renderizar tarjetas de descarga
     const items = resultadoDescargas.items || [];
     for (const item of items) {
-      let link = item.linkDescarga || item.archivo_url || "";
+      let link = item.linkDescarga || item.archivo_url || item.link_archivos || "";
       if (item.archivo_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!link || link === "#" || link.startsWith("patron_") || link.startsWith("moldes-archivos/"))) {
         const firmada = await supabaseObtenerUrlDescargaMolde(item.archivo_url, 86400);
         if (firmada) link = firmada;
@@ -4272,8 +4301,37 @@ async function consultarDescargasDesdeModal() {
       item.linkDescarga = link;
     }
 
-    const itemsHtml = items.map(item => {
-      const linkPdf = item.linkDescarga || "";
+    window.ultimasDescargasConsultadas = items;
+
+    if (items.length === 0) {
+      contenedor.innerHTML = `
+        <div style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 0.88rem; color: #15803d; font-weight: 600;">
+            ✓ Pedido verificado: <strong>${escaparHTML(resultadoDescargas.codigo)}</strong>
+          </span>
+          <span class="badge" style="background: #15803d; color: #ffffff;">Pago Aprobado</span>
+        </div>
+        <div style="background: #faf7fd; border: 1.5px solid #ebdcfc; border-radius: 10px; padding: 1.25rem; text-align: center;">
+          <i data-lucide="package-check" style="width: 2.5rem; height: 2.5rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+          <h4 style="margin: 0 0 0.4rem 0; color: var(--primary-dark);">¡Tu compra está autorizada!</h4>
+          <p style="margin: 0 0 1rem 0; color: var(--text-muted); font-size: 0.88rem; line-height: 1.5;">
+            Tu pedido está confirmado. Podés descargar tu guía de costura directamente aquí:
+          </p>
+          <div style="display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary" onclick="descargarMuestraPDF()">
+              <i data-lucide="download" class="ui-icon"></i> Descargar Guía de Costura
+            </button>
+            <a href="https://api.whatsapp.com/send?phone=5493813581558&text=Hola%20Giu!%20Consulta%20por%20pedido%20${encodeURIComponent(resultadoDescargas.codigo)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="color: #15803d; border-color: #86efac;">
+              <i data-lucide="message-circle" class="ui-icon"></i> Consultar por WhatsApp
+            </a>
+          </div>
+        </div>
+      `;
+      actualizarIconosLucide();
+      return;
+    }
+
+    const itemsHtml = items.map((item, index) => {
       const linkVid = item.link_video || "";
 
       return `
@@ -4290,7 +4348,7 @@ async function consultarDescargasDesdeModal() {
           </div>
 
           <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.75rem;">
-            <button type="button" class="btn btn-primary" onclick="descargarArchivoMolde('${linkPdf}', '${escaparHTML(item.nombre)}')" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
+            <button type="button" class="btn btn-primary" onclick="descargarItemConsultado(${index})" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
               <i data-lucide="download" class="ui-icon"></i> Descargar Patrón
             </button>
 
