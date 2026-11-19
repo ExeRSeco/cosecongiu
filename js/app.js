@@ -10,7 +10,7 @@
 const PRODUCTOS_POR_DEFECTO = [
   {
     id: 1,
-    nombre: "Molde Vestido Solero Verano (PDF)",
+    nombre: "Molde Vestido Solero Verano",
     descripcion: "Patrón descargable en talles XS al XXL con guía de confección paso a paso.",
     categoria: "Vestidos",
     precio: 2500,
@@ -22,7 +22,7 @@ const PRODUCTOS_POR_DEFECTO = [
     imagen: null,
     archivoUrl: null,
     esGratuito: false,
-    linkArchivos: "https://drive.google.com/drive/folders/1SoleroVerano_PDF_Drive",
+    linkArchivos: "",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-vestido-solero"
   },
   {
@@ -39,7 +39,7 @@ const PRODUCTOS_POR_DEFECTO = [
     imagen: null,
     archivoUrl: null,
     esGratuito: false,
-    linkArchivos: "https://drive.google.com/drive/folders/1Palazzo_Elastic_PDF_Drive",
+    linkArchivos: "",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-pantalon-palazzo"
   },
   {
@@ -56,7 +56,7 @@ const PRODUCTOS_POR_DEFECTO = [
     imagen: null,
     archivoUrl: null,
     esGratuito: false,
-    linkArchivos: "https://drive.google.com/drive/folders/1CamisaOversize_PDF_Drive",
+    linkArchivos: "",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-camisa-oversize"
   },
   {
@@ -73,12 +73,12 @@ const PRODUCTOS_POR_DEFECTO = [
     imagen: null,
     archivoUrl: null,
     esGratuito: false,
-    linkArchivos: "https://drive.google.com/drive/folders/1ToteBag_Neceser_PDF_Drive",
+    linkArchivos: "",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-totebag-neceser"
   },
   {
     id: 5,
-    nombre: "Molde Antifaz para Dormir & Scrunchie (Freebie)",
+    nombre: "Molde Antifaz para Dormir & Scrunchie",
     descripcion: "Patrón gratuito en PDF listo para imprimir en casa. ¡Ideal para aprovechar retazos de tela!",
     categoria: "Bolsos y Accesorios",
     precio: 0,
@@ -90,7 +90,7 @@ const PRODUCTOS_POR_DEFECTO = [
     imagen: null,
     archivoUrl: null,
     esGratuito: true,
-    linkArchivos: "https://drive.google.com/drive/folders/1AntifazScrunchie_Freebie_PDF",
+    linkArchivos: "",
     linkVideo: "https://www.youtube.com/watch?v=tutorial-antifaz-scrunchie"
   }
 ];
@@ -99,7 +99,7 @@ const PRODUCTOS_POR_DEFECTO = [
 const PEDIDOS_POR_DEFECTO = [];
 
 // Enlaces de respaldo generales para la entrega digital
-const ENLACE_DRIVE_GENERAL = "https://drive.google.com/drive/folders/1CoseConGiu_MoldesPDF_Oficial";
+const ENLACE_DRIVE_GENERAL = "";
 const ENLACE_VIDEO_GENERAL = "https://www.youtube.com/watch?v=tutorial-cose-con-giu";
 
 // Claves utilizadas para guardar en el almacenamiento del navegador (localStorage y sessionStorage)
@@ -1335,23 +1335,6 @@ async function iniciarSesionAdmin() {
     return;
   }
 
-  // 1. Acceso directo de administración (admin o cosecongiu@gmail.com con clave giu2026)
-  const esAdminDirecto = (usuario.toLowerCase() === "admin" || usuario.toLowerCase() === "cosecongiu@gmail.com" || usuario.toLowerCase() === "admin@cosecongiu.com") && password === "giu2026";
-  if (esAdminDirecto) {
-    guardarSesionAdmin({
-      metodo: "directo",
-      email: "cosecongiu@gmail.com"
-    });
-    mostrarErrorLoginAdmin("");
-    if (document.getElementById("form-admin-login")) {
-      document.getElementById("form-admin-login").reset();
-    }
-    mostrarToast("¡Bienvenida, Giu! Sesión de administración iniciada.");
-    actualizarUIAdminSesion();
-    cambiarVista("admin");
-    return;
-  }
-
   // Si usuario es 'admin', mapear al correo oficial de la tienda
   let emailAuth = usuario;
   if (emailAuth.toLowerCase() === "admin") {
@@ -1368,12 +1351,12 @@ async function iniciarSesionAdmin() {
 
   try {
     if (!emailAuth.includes("@")) {
-      mostrarErrorLoginAdmin("Ingresa tu correo oficial o el usuario 'admin'.");
+      mostrarErrorLoginAdmin("Ingresa un correo oficial válido o el alias 'admin'.");
       return;
     }
 
     if (!supabaseActivo) {
-      mostrarErrorLoginAdmin("Supabase no está conectado y las credenciales directas no coinciden. Usa usuario: admin y clave: giu2026.");
+      mostrarErrorLoginAdmin("Supabase no está conectado. Configura tu base de datos para iniciar sesión de forma segura.");
       return;
     }
 
@@ -1626,7 +1609,7 @@ function verDetalleProducto(productoId) {
           <div style="margin-bottom: 0.5rem;">
             <span class="price-free" style="font-size: 2.2rem; font-weight: 800; color: #15803d; letter-spacing: -0.5px;">¡100% GRATIS!</span>
             <p style="margin: 0.25rem 0 0 0; color: var(--text-muted); font-size: 0.88rem;">
-              Descarga este molde de inmediato completando tu nombre y tu Gmail.
+              Descarga este molde de inmediato completando tu nombre y correo.
             </p>
           </div>
         ` : `
@@ -2207,13 +2190,13 @@ async function confirmarPedido() {
     return;
   }
 
-  if (!esCorreoGmail(email)) {
-    mostrarToast("Usá un correo @gmail.com para enviarte el enlace de Drive.");
+  if (!esCorreoValido(email)) {
+    mostrarToast("Por favor ingresa un correo electrónico válido.");
     if (emailInput) emailInput.focus();
     return;
   }
 
-  const emailGmail = email.toLowerCase();
+  const emailComprador = email.trim().toLowerCase();
 
   if (carrito.length === 0) {
     mostrarToast("Tu carrito está vacío.");
@@ -2268,7 +2251,7 @@ async function confirmarPedido() {
     fecha: fechaActual,
     cliente: {
       nombre: nombre,
-      email: emailGmail,
+      email: emailComprador,
       telefono: telefono || "No especificado"
     },
     items: carrito.map(item => {
@@ -2460,30 +2443,30 @@ function mostrarModalConfirmacion(pedido) {
   let totalFormateado = `$${formatearPrecio(pedido.total)} ARS`;
   let metodoBadgeHtml = '<span class="badge-metodo-pago mercadopago"><i data-lucide="credit-card" class="badge-icon"></i> Mercado Pago</span>';
   let plazoHeroHtml = "";
-  let plazoEntregaFila = "Google Drive (inmediata / máx. 1 hora)";
-  let infoPlazoWa = "Quedo a la espera del acceso inmediato a Google Drive en mi Gmail.";
+  let plazoEntregaFila = "Descarga directa digital";
+  let infoPlazoWa = "Quedo a la espera de la confirmación y enlaces de descarga.";
 
   if (esUsd) {
-    metodoTexto = "PayPal (USD)";
+    metodoTexto = "PayPal";
     totalFormateado = `USD $${Number(pedido.total).toFixed(2)}`;
-    metodoBadgeHtml = '<span class="badge-metodo-pago paypal"><i data-lucide="globe" class="badge-icon"></i> PayPal (USD)</span>';
-    plazoEntregaFila = "Google Drive (1 a 2 horas)";
+    metodoBadgeHtml = '<span class="badge-metodo-pago paypal"><i data-lucide="globe" class="badge-icon"></i> PayPal</span>';
+    plazoEntregaFila = "Descarga directa digital";
     plazoHeroHtml = `
       <div class="alert-box alert-plazo-paypal" style="margin: 0.9rem 0; text-align: left;">
         <div class="alert-plazo-header">
           <i data-lucide="globe" class="ui-icon alert-plazo-icon" style="color: #0284c7;"></i>
-          <strong style="color: #0284c7;">Plazo de entrega internacional:</strong>
+          <strong style="color: #0284c7;">Plazo de entrega:</strong>
         </div>
         <p class="alert-plazo-texto" style="color: #075985;">
-          En un <strong>plazo de 1 a 2 horas</strong> tras verificar tu pago en PayPal, recibirás la invitación con acceso completo a Google Drive en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
+          En un <strong>plazo de 1 a 2 horas</strong> tras verificar tu pago en PayPal, recibirás la confirmación con los enlaces de descarga en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
         </p>
       </div>`;
-    infoPlazoWa = "Quedo a la espera del acceso a Google Drive en el plazo de 1 a 2 horas.";
+    infoPlazoWa = "Quedo a la espera de los enlaces de descarga en el plazo de 1 a 2 horas.";
   } else if (esTransferencia) {
-    metodoTexto = "Transferencia Bancaria (10% OFF)";
-    totalFormateado = `$${formatearPrecio(pedido.total)} ARS (con 10% OFF)`;
-    metodoBadgeHtml = '<span class="badge-metodo-pago transferencia" style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"><i data-lucide="landmark" class="badge-icon"></i> Transferencia (10% OFF)</span>';
-    plazoEntregaFila = "Google Drive (demora de hasta 48 hs hábiles)";
+    metodoTexto = "Transferencia Bancaria";
+    totalFormateado = `$${formatearPrecio(pedido.total)} ARS con 10% OFF`;
+    metodoBadgeHtml = '<span class="badge-metodo-pago transferencia" style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"><i data-lucide="landmark" class="badge-icon"></i> Transferencia 10% OFF</span>';
+    plazoEntregaFila = "Verificación bancaria (hasta 48 hs hábiles)";
     plazoHeroHtml = `
       <div class="alert-box alert-plazo-transferencia" style="margin: 0.9rem 0; text-align: left;">
         <div class="alert-plazo-header">
@@ -2491,16 +2474,16 @@ function mostrarModalConfirmacion(pedido) {
           <strong style="color: #b45309;">Plazo de verificación bancaria: hasta 48 horas hábiles</strong>
         </div>
         <p class="alert-plazo-texto" style="color: #78350f;">
-          Al haber abonado por transferencia bancaria con el <strong>10% de descuento</strong>, se requiere verificación manual de la acreditación bancaria. Por este motivo, el acceso a la carpeta de Google Drive con tus moldes y videos tiene una demora de <strong>hasta 48 horas hábiles</strong> (días hábiles de lunes a viernes). Te notificaremos a tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong> una vez acreditado.
+          Al haber abonado por transferencia bancaria con el <strong>10% de descuento</strong>, se requiere verificación manual de la acreditación bancaria. Te notificaremos a tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong> y habilitaremos tus descargas una vez acreditado.
         </p>
       </div>`;
-    infoPlazoWa = "Quedo a la espera de la verificación bancaria en el plazo de hasta 48 horas hábiles para recibir los moldes.";
+    infoPlazoWa = "Quedo a la espera de la verificación bancaria para recibir mis descargas.";
   } else {
     // Mercado Pago
     metodoTexto = "Mercado Pago";
     totalFormateado = `$${formatearPrecio(pedido.total)} ARS`;
     metodoBadgeHtml = '<span class="badge-metodo-pago mercadopago"><i data-lucide="credit-card" class="badge-icon"></i> Mercado Pago</span>';
-    plazoEntregaFila = "Google Drive (inmediata / máx. 1 hora)";
+    plazoEntregaFila = "Descarga directa digital";
     plazoHeroHtml = `
       <div class="alert-box alert-plazo-inmediato" style="margin: 0.9rem 0; text-align: left;">
         <div class="alert-plazo-header">
@@ -2508,13 +2491,13 @@ function mostrarModalConfirmacion(pedido) {
           <strong style="color: #15803d;">Acreditación y entrega inmediata:</strong>
         </div>
         <p class="alert-plazo-texto" style="color: #166534;">
-          Tu pago por Mercado Pago cuenta con <strong>acreditación inmediata</strong>. En un plazo de hasta 1 hora (habitualmente al instante) recibirás la invitación con acceso completo a Google Drive en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
+          Tu pago por Mercado Pago cuenta con <strong>acreditación inmediata</strong>. Podés descargar tus moldes directamente y también recibirás una copia en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
         </p>
       </div>`;
-    infoPlazoWa = "Quedo a la espera del acceso inmediato a Google Drive en mi Gmail.";
+    infoPlazoWa = "Quedo a la espera de la confirmación de mi pedido.";
   }
 
-  const itemsLista = pedido.items.map(i => `${i.nombre} (x${i.cantidad})`).join(", ");
+  const itemsLista = pedido.items.map(i => `${i.nombre} x${i.cantidad}`).join(", ");
   const tieneComprobante = Boolean(pedido.comprobanteUrl);
   const infoOp = pedido.numeroOperacion
     ? (esUsd ? `• ID Transacción PayPal: ${pedido.numeroOperacion}\n` : (esMercadoPago ? `• N° Operación MP: ${pedido.numeroOperacion}\n` : `• N° de Operación: ${pedido.numeroOperacion}\n`))
@@ -2528,7 +2511,7 @@ function mostrarModalConfirmacion(pedido) {
   const mensajeWhatsApp = encodeURIComponent(
     `¡Hola Cosé con Giu! Acabo de registrar mi compra por ${metodoTexto} para el pedido ${pedido.codigo}.\n` +
     `• Nombre: ${pedido.cliente.nombre}\n` +
-    `• Email Gmail: ${pedido.cliente.email}\n` +
+    `• Correo: ${pedido.cliente.email}\n` +
     `• Moldes: ${itemsLista}\n` +
     `• Monto: ${totalFormateado}\n` +
     `• Medio de Pago: ${metodoTexto}\n` +
@@ -2561,7 +2544,7 @@ function mostrarModalConfirmacion(pedido) {
         ${metodoBadgeHtml}
       </div>
       <div class="order-success-row">
-        <span>Correo Gmail registrado:</span>
+        <span>Correo registrado:</span>
         <strong>${escaparHTML(pedido.cliente.email)}</strong>
       </div>
       ${pedido.numeroOperacion ? `
@@ -2602,7 +2585,7 @@ function mostrarModalConfirmacion(pedido) {
         Puedes descargar una guía de prueba de impresión en PDF mientras verificamos tu pago.
       </p>
       <button type="button" class="btn-sample-download" onclick="descargarMuestraPDF()">
-        <i data-lucide="download" class="ui-icon"></i> Descargar Guía de Costura de Muestra (PDF)
+        <i data-lucide="download" class="ui-icon"></i> Descargar Guía de Costura de Muestra
       </button>
     </div>
   `;
@@ -2641,7 +2624,7 @@ BT
 0 -20 Td
 (Asegurate de imprimir en escala 100% sin ajuste automatico.) Tj
 0 -25 Td
-(Tus moldes finales completos seran enviados a tu correo de Gmail.) Tj
+(Tus moldes finales completos estan listos para descargar.) Tj
 ET
 endstream endobj
 5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
@@ -3893,14 +3876,16 @@ function formatearPrecio(numero) {
 }
 
 /**
- * Solo admite correos @gmail.com (sin espacios, un único @).
- * Acepta alias con + porque siguen siendo cuentas de Gmail.
+ * Valida formato estándar de correo electrónico (admite cualquier proveedor válido)
  */
-function esCorreoGmail(email) {
+function esCorreoValido(email) {
   if (!email || typeof email !== "string") return false;
   const normalizado = email.trim().toLowerCase();
-  return /^[^\s@]+@gmail\.com$/.test(normalizado);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizado);
 }
+
+// Alias para compatibilidad interna
+const esCorreoGmail = esCorreoValido;
 
 function escaparHTML(texto) {
   if (texto === null || texto === undefined) return "";
@@ -4016,8 +4001,8 @@ async function confirmarDescargaGratis() {
     if (nombreInput) nombreInput.focus();
     return;
   }
-  if (!esCorreoGmail(email)) {
-    mostrarToast("Usá un correo @gmail.com para enviarte los archivos.");
+  if (!esCorreoValido(email)) {
+    mostrarToast("Por favor ingresa un correo electrónico válido.");
     if (emailInput) emailInput.focus();
     return;
   }
@@ -4306,7 +4291,7 @@ async function consultarDescargasDesdeModal() {
 
           <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.75rem;">
             <button type="button" class="btn btn-primary" onclick="descargarArchivoMolde('${linkPdf}', '${escaparHTML(item.nombre)}')" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
-              <i data-lucide="download" class="ui-icon"></i> Descargar Patrón (PDF)
+              <i data-lucide="download" class="ui-icon"></i> Descargar Patrón
             </button>
 
             ${linkVid ? `

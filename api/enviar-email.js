@@ -1,6 +1,23 @@
 // Vercel Serverless Function: Envío automatizado de correos con enlaces de moldería PDF y tutoriales de YouTube
 // Utiliza Gmail SMTP directo (Nodemailer) con credenciales de aplicación de Google
 
+const IP_RATE_LIMIT = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
+const MAX_REQUESTS_PER_WINDOW = 10; // Máximo 10 emails por IP por minuto
+
+function verificarRateLimit(ip) {
+  if (!ip || ip === "ip-desconocida") return true;
+  const ahora = Date.now();
+  const registro = IP_RATE_LIMIT.get(ip) || [];
+  const recientes = registro.filter(t => ahora - t < RATE_LIMIT_WINDOW_MS);
+  if (recientes.length >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  recientes.push(ahora);
+  IP_RATE_LIMIT.set(ip, recientes);
+  return true;
+}
+
 let nodemailer = null;
 try {
   nodemailer = require("nodemailer");
@@ -27,7 +44,7 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
           ${linkDescarga && linkDescarga !== "#" ? `
             <a href="${linkDescarga}" target="_blank" rel="noopener noreferrer"
                style="display: inline-block; background-color: #845ec2; color: #ffffff; text-decoration: none; padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(132, 94, 194, 0.25);">
-              📥 Descargar Patrón (PDF)
+              📥 Descargar Patrón
             </a>
           ` : `
             <span style="display: inline-block; background-color: #eee; color: #777; padding: 8px 14px; border-radius: 6px; font-size: 13px;">
@@ -161,6 +178,13 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: "Método no permitido. Utiliza POST." });
   }
 
+  // Rate Limiting anti-abuso (máximo 10 correos por IP por minuto)
+  const forwarded = req.headers["x-forwarded-for"];
+  const clientIp = forwarded ? forwarded.split(",")[0].trim() : (req.socket?.remoteAddress || "ip-desconocida");
+  if (!verificarRateLimit(clientIp)) {
+    return res.status(429).json({ error: "Demasiadas solicitudes de envío. Por favor espera un momento." });
+  }
+
   try {
     const { codigoPedido, cliente, items, metodoPago, total, urlTienda } = req.body || {};
 
@@ -170,7 +194,7 @@ module.exports = async (req, res) => {
 
     const destinatario = cliente.email.trim().toLowerCase();
     const asunto = metodoPago === "gratuito"
-      ? `🎁 Tu Molde Gratuito está listo - Cosé con Giu (${codigoPedido})`
+      ? `🎁 Tu Molde Gratuito está listo - Cosé con Giu`
       : `✂️ Tus Moldes Digitales están listos para descargar - Pedido ${codigoPedido}`;
 
     const htmlContent = generarHtmlCorreo({

@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
 
     const payerEmail = (cliente && cliente.email && cliente.email.includes("@")) 
       ? cliente.email.trim().toLowerCase() 
-      : "comprador@gmail.com";
+      : "comprador@email.com";
 
     const payerNombre = (cliente && cliente.nombre) ? cliente.nombre.trim().slice(0, 80) : "Cliente";
 

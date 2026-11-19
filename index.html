@@ -118,7 +118,7 @@
           <div class="search-input-wrap">
             <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
             <input type="text" id="catalogo-busqueda"
-              placeholder="Buscar moldes o patrones (ej: vestido, solero, remera)..."
+              placeholder="Buscar moldes o patrones..."
               oninput="filtrarCatalogoPorBusqueda(this.value)">
             <button type="button" class="btn-clear-search" id="btn-clear-catalogo-search"
               onclick="limpiarBusquedaCatalogo()" title="Limpiar búsqueda" style="display: none;">✕</button>
@@ -136,7 +136,7 @@
               <option value="defecto">Más Vendidos primero</option>
               <option value="precio-menor">Precio: Menor a Mayor</option>
               <option value="precio-mayor">Precio: Mayor a Menor</option>
-              <option value="nombre">Nombre (A-Z)</option>
+              <option value="nombre">Nombre A-Z</option>
             </select>
           </div>
         </div>
@@ -196,19 +196,15 @@
               <p>El tiempo y la forma de entrega dependen del medio de pago que elijas al finalizar tu compra:
                 <br>
                 <br>
-                • Pagando con Mercado Pago (<strong>Tarjeta, dinero en cuenta, etc.</strong>):
-                El acceso es inmediato y automático. Una vez acreditado el pago, vas a ver en pantalla (y también
-                recibirás por correo) el enlace directo para descargar tus archivos desde nuestra web.
+                • Pagando con Mercado Pago:
+                El acceso es inmediato y automático. Una vez acreditado el pago, vas a ver en pantalla y también
+                recibirás por correo el enlace directo para descargar tus archivos desde nuestra web.
                 <br>
                 <br>
-                • Pagando por Transferencia Bancaria: Una vez realizada la transferencia, debés enviar el comprobante
-                por
-                correo electrónico a <strong>cosecongiu@gmail.com</strong> indicando tu nombre y número de pedido.
-                Verificamos el pago y te enviamos el enlace de descarga directa a tu correo en un <strong>plazo de 24 a
-                  48 horas hábiles (de lunes a sábado).</strong>
+                • Pagando por Transferencia Bancaria: Una vez realizada la transferencia, podés adjuntar el comprobante
+                en el checkout o enviarlo por WhatsApp. Verificamos el pago y habilitamos la descarga directa en un <strong>plazo de 24 a 48 horas hábiles.</strong>
                 <br>
-                <strong>(Asegurate de ingresar correctamente tu correo electrónico al momento de la compra y de revisar
-                  tu bandeja de spam o correo no deseado).</strong>
+                Asegurate de ingresar correctamente tu correo electrónico al momento de la compra y de revisar tu bandeja de spam.
               </p>
             </div>
           </details>
@@ -223,7 +219,7 @@
             <div class="faq-answer">
               <p>Todos nuestros moldes vienen preparados en formato <strong>hoja A4 estándar</strong> para imprimir
                 desde cualquier impresora hogareña. Al imprimir, asegúrate de elegir <strong>"Escala 100%" o "Tamaño
-                  Real"</strong> (sin seleccionar 'Ajustar a página'). Cada molde incluye en una de sus páginas un
+                  Real"</strong> sin seleccionar 'Ajustar a página'. Cada molde incluye en una de sus páginas un
                 <strong>cuadrado de calibración de 3x3 cm</strong> para verificar con regla que la escala sea
                 milimétricamente exacta antes de unir las hojas.
               </p>
@@ -238,10 +234,7 @@
             </summary>
             <div class="faq-answer">
               <p><strong>¡Sí, totalmente!</strong> Todos nuestros moldes de costura creativa ya incluyen los márgenes de
-                costura.
-                Dependiendo de la estructura y el armado de cada proyecto, trabajamos con un margen de 1 cm o de 0,7 cm
-                (7 mm) (medida estándar a pie de prensatelas). En la descripción de cada producto y dentro del mismo
-                <strong>archivo PDF</strong> vas a encontrar especificado qué margen corresponde a ese diseño.
+                costura. Dependiendo de la estructura y el armado de cada proyecto, trabajamos con un margen de 1 cm o de 0,7 cm estándar a pie de prensatelas. En la descripción de cada producto vas a encontrar especificado qué margen corresponde a ese diseño.
               </p>
             </div>
           </details>
@@ -341,9 +334,6 @@
               style="margin-top: 1rem;">
               <i data-lucide="key-round" class="ui-icon"></i> Iniciar Sesión
             </button>
-            <div class="admin-login-hint" style="text-align: center; margin-top: 0.75rem; color: var(--text-muted); font-size: 0.82rem;">
-              <small>Acceso directo: <strong>admin</strong> · Clave: <strong>giu2026</strong> (o tu cuenta Supabase)</small>
-            </div>
           </form>
         </div>
       </div>
@@ -364,7 +354,7 @@
           <button type="button" id="btn-status-supabase" class="btn-supabase-status"
             onclick="abrirModalConfigSupabase()" title="Ver o configurar conexión a la base de datos Supabase">
             <span class="status-dot-supabase" id="status-dot-supabase"></span>
-            <span id="texto-status-supabase">Modo Local (Respaldo)</span>
+            <span id="texto-status-supabase">Modo Local</span>
           </button>
           <button type="button" class="btn btn-secondary btn-sm btn-logout-admin" onclick="cerrarSesionAdmin()"
             title="Cerrar sesión de administración">
@@ -418,7 +408,7 @@
       <div class="card admin-orders-card" style="margin-bottom: 2rem;">
         <div class="admin-list-header">
           <div>
-            <h3>Listado de Ventas y Compradores (<span id="total-pedidos-count">0</span>)</h3>
+            <h3>Listado de Ventas y Compradores: <span id="total-pedidos-count">0</span></h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
               Haz clic en cualquier pedido para desplegar su detalle completo. Color lateral según estado.
             </p>
@@ -443,7 +433,7 @@
             <select id="filtro-pedidos-estado" onchange="filtrarPedidosAdmin()" class="filtro-select">
               <option value="todos">Todos los estados</option>
               <option value="pendiente">Solo Pendientes</option>
-              <option value="completada">Solo Completadas (Entregados)</option>
+              <option value="completada">Solo Completadas</option>
               <option value="cancelada">Solo Canceladas</option>
             </select>
           </div>
@@ -488,7 +478,7 @@
                 <div class="form-group">
                   <label for="producto-icono">Icono representativo:</label>
                   <select id="producto-icono">
-                    <option value="scissors">Tijeras (Costura)</option>
+                    <option value="scissors">Tijeras</option>
                     <option value="shirt">Prenda / Camisa</option>
                     <option value="shopping-bag">Bolso / Accesorio</option>
                     <option value="file-text">Patrón en PDF</option>
@@ -505,7 +495,7 @@
               </div>
 
               <div class="form-group">
-                <label for="producto-imagen">Imagen del molde (opcional)</label>
+                <label for="producto-imagen">Imagen del molde</label>
                 <input type="file" id="producto-imagen" accept="image/*">
                 <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">⚡
                   Optimización automática: se comprime y convierte a WebP para ahorrar espacio y cargar ultra
@@ -516,22 +506,22 @@
                 </div>
               </div>
 
-              <!-- Casilla de Molde Gratuito (Lead Magnet) -->
+              <!-- Casilla de Molde Gratuito -->
               <div class="form-group" style="margin-bottom: 0.85rem; padding: 0.65rem 0.85rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
                 <label style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; margin: 0; font-weight: 600; color: #15803d;">
                   <input type="checkbox" id="producto-es-gratuito" onchange="alternarCamposMoldeGratuito(this.checked)" style="width: 1.15rem; height: 1.15rem; cursor: pointer;">
-                  <span>🎁 Marcar como Molde Gratuito (Freebie para descarga libre)</span>
+                  <span>🎁 Marcar como Molde Gratuito</span>
                 </label>
               </div>
 
               <div class="form-row" id="bloque-precios-molde">
                 <div class="form-group">
-                  <label for="producto-precio">Precio normal en Pesos ARS ($) *:</label>
+                  <label for="producto-precio">Precio normal en ARS *:</label>
                   <input type="number" id="producto-precio" required min="0" step="0.01" placeholder="Ej: 2500">
                 </div>
 
                 <div class="form-group" style="display: none;">
-                  <label for="producto-precio-usd">Precio normal en USD ($):</label>
+                  <label for="producto-precio-usd">Precio en USD:</label>
                   <input type="number" id="producto-precio-usd" min="0" step="0.01" placeholder="Ej: 2.50">
                 </div>
               </div>
@@ -546,12 +536,12 @@
 
               <div class="form-row" id="grupo-precio-promo" style="display: none;">
                 <div class="form-group">
-                  <label for="producto-precio-promo">Precio promocional en ARS ($):</label>
+                  <label for="producto-precio-promo">Precio promocional en ARS:</label>
                   <input type="number" id="producto-precio-promo" min="0" step="0.01" placeholder="Ej: 1900">
                 </div>
 
                 <div class="form-group" style="display: none;">
-                  <label for="producto-precio-promo-usd">Precio promocional en USD ($):</label>
+                  <label for="producto-precio-promo-usd">Precio promo en USD:</label>
                   <input type="number" id="producto-precio-promo-usd" min="0" step="0.01" placeholder="Ej: 1.90">
                 </div>
               </div>
@@ -559,22 +549,22 @@
               <!-- Archivos del Molde: Subida a Storage Privado + Video YouTube -->
               <div class="form-group" style="background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
                 <label for="producto-archivo-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
-                  <i data-lucide="file-up" class="ui-icon-xs"></i> Archivo del Molde para Descarga Directa (PDF o ZIP):
+                  <i data-lucide="file-up" class="ui-icon-xs"></i> Archivo del Molde:
                 </label>
                 <input type="file" id="producto-archivo-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
                 <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
-                  🔒 Se guarda en el almacenamiento privado seguro de Supabase. El cliente podrá descargarlo al instante tras completar el pago o registro gratuito.
+                  🔒 Almacenamiento seguro. Se habilitará para descarga directa una vez acreditado el pago o registro gratuito.
                 </small>
                 <div id="producto-archivo-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
               </div>
 
               <div class="form-group" style="margin-bottom: 1rem;">
                 <label for="producto-link-video" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
-                  <i data-lucide="video" class="ui-icon-xs"></i> Video Tutorial en YouTube (Paso a paso):
+                  <i data-lucide="video" class="ui-icon-xs"></i> Video Tutorial en YouTube:
                 </label>
                 <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
                 <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
-                  Enlace al video de YouTube. Se comparte automáticamente al cliente al aprobarse el pago o descargar gratis.
+                  Enlace al video de YouTube. Se comparte automáticamente al completar la compra o descarga gratuita.
                 </small>
               </div>
 
@@ -657,7 +647,7 @@
         <div class="admin-bank-header">
           <div>
             <h3 style="color: var(--primary-dark); margin-bottom: 0.25rem;">
-              <i data-lucide="landmark" class="ui-icon"></i> Configuración de Cuenta Bancaria (Transferencias)
+              <i data-lucide="landmark" class="ui-icon"></i> Configuración de Cuenta Bancaria
             </h3>
             <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
               Modifica la cuenta bancaria donde los clientes realizarán sus transferencias. Los cambios se actualizan de
@@ -687,7 +677,7 @@
             </div>
 
             <div class="form-group">
-              <label for="admin-banco-cbu">CBU o CVU (22 dígitos) *</label>
+              <label for="admin-banco-cbu">CBU o CVU *</label>
               <input type="text" id="admin-banco-cbu" required placeholder="Ej: 0000003100012345678901">
             </div>
 
@@ -699,25 +689,25 @@
 
           <div class="form-row" style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px dashed var(--border);">
             <div class="form-group">
-              <label for="admin-tienda-whatsapp">WhatsApp Oficial de la Tienda (para dudas y comprobantes) *</label>
+              <label for="admin-tienda-whatsapp">WhatsApp Oficial de la Tienda *</label>
               <input type="text" id="admin-tienda-whatsapp" required placeholder="Ej: +54 9 381 358-1558">
               <small style="color: var(--text-muted); font-size: 0.78rem;">Se utiliza para abrir chats directos de
                 WhatsApp en la tienda y en la confirmación de compras.</small>
             </div>
 
             <div class="form-group">
-              <label for="admin-tienda-instagram">Instagram de la Tienda (usuario o enlace)</label>
+              <label for="admin-tienda-instagram">Instagram de la Tienda</label>
               <input type="text" id="admin-tienda-instagram" placeholder="Ej: @cosecongiu">
               <small style="color: var(--text-muted); font-size: 0.78rem;">Se muestra como enlace directo en el pie de
                 página para generar confianza.</small>
             </div>
           </div>
 
-          <!-- Configuración de Mercado Pago (Alias / CVU) -->
+          <!-- Configuración de Mercado Pago -->
           <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border);">
             <h4
               style="color: #007bb5; font-size: 0.95rem; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i> Mercado Pago (Pasarela y Transferencias)
+              <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i> Mercado Pago
             </h4>
             <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem;">
               Los cobros con tarjeta y dinero en cuenta se gestionan automáticamente a través de la pasarela oficial. Si deseas recibir transferencias directas a tu CVU de MP, especifica tu alias aquí:
@@ -725,7 +715,7 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label for="admin-mp-alias">Alias de Mercado Pago (CVU para transferencias directas)</label>
+                <label for="admin-mp-alias">Alias o CVU de Mercado Pago</label>
                 <input type="text" id="admin-mp-alias" placeholder="Ej: COSECONGIU.MP">
                 <small style="color: var(--text-muted); font-size: 0.78rem;">Alias de tu cuenta de Mercado Pago.</small>
               </div>
@@ -775,19 +765,19 @@
 
             <div class="form-row" style="margin-bottom: 0.4rem;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label for="cliente-email">Correo Gmail *</label>
-                <input type="email" id="cliente-email" required placeholder="maria.costura@gmail.com"
+                <label for="cliente-email">Correo Electrónico *</label>
+                <input type="email" id="cliente-email" required placeholder="maria.costura@email.com"
                   autocomplete="email">
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label for="cliente-telefono">WhatsApp (opcional)</label>
+                <label for="cliente-telefono">WhatsApp</label>
                 <input type="tel" id="cliente-telefono" placeholder="+54 9 11 1234-5678" autocomplete="tel">
               </div>
             </div>
             <div class="field-subhint">
               <i data-lucide="info" class="ui-icon-xs"></i>
-              <span>Cuenta @gmail.com obligatoria para recibir tus descargas oficiales y soporte.</span>
+              <span>Te enviaremos el comprobante y los enlaces de descarga a este correo.</span>
             </div>
           </form>
         </div>
@@ -884,8 +874,8 @@
             <!-- Adjuntar Comprobante Compacto -->
             <div class="comprobante-compact-wrap">
               <div class="form-group" style="margin-bottom: 0.6rem;">
-                <label for="checkout-num-operacion">N° de Operación Bancaria (opcional):</label>
-                <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230 (código en app bancaria)"
+                <label for="checkout-num-operacion">N° de Operación Bancaria:</label>
+                <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230"
                   autocomplete="off">
               </div>
 
@@ -895,7 +885,7 @@
                   style="display: none;" onchange="manejarSeleccionComprobante(this)">
                 <div id="dropzone-vacio" class="dropzone-compact-empty">
                   <i data-lucide="paperclip" class="ui-icon"></i>
-                  <span>Adjuntar foto o PDF del comprobante (opcional)</span>
+                  <span>Adjuntar comprobante</span>
                 </div>
                 <div id="dropzone-previa" class="dropzone-compact-preview" style="display: none;">
                   <div class="previa-info-clean">
@@ -910,8 +900,7 @@
 
               <div class="verification-note">
                 <i data-lucide="clock" class="ui-icon-xs"></i>
-                <span>Verificación manual: te daremos acceso a los moldes en tu Gmail en un plazo de hasta 48 hs
-                  hábiles.</span>
+                <span>Verificación manual: te enviaremos la confirmación a tu correo en un plazo de hasta 48 hs hábiles.</span>
               </div>
             </div>
           </div>
@@ -930,7 +919,7 @@
               <span id="checkout-subtotal-monto">$0.00</span>
             </div>
             <div id="checkout-fila-descuento" class="summary-total-row discount-row" style="display: none;">
-              <span><i data-lucide="tag" class="ui-icon-xs"></i> Descuento Transferencia (10% OFF):</span>
+              <span><i data-lucide="tag" class="ui-icon-xs"></i> Descuento Transferencia 10% OFF:</span>
               <strong id="checkout-descuento-monto">-$0.00</strong>
             </div>
             <div class="summary-grand-total">
@@ -1011,8 +1000,8 @@
                 style="text-transform: uppercase;">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <label for="input-descargas-email">Correo @gmail.com *</label>
-              <input type="email" id="input-descargas-email" placeholder="tu-correo@gmail.com" required autocomplete="off">
+              <label for="input-descargas-email">Correo Electrónico *</label>
+              <input type="email" id="input-descargas-email" placeholder="tu-correo@email.com" required autocomplete="off">
             </div>
           </div>
           <div style="margin-top: 0.85rem; display: flex; justify-content: flex-end;">
@@ -1027,7 +1016,7 @@
           <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
             <i data-lucide="file-text" style="width: 2.8rem; height: 2.8rem; stroke-width: 1.5; color: var(--primary); opacity: 0.5; margin-bottom: 0.5rem;"></i>
             <p style="margin: 0; font-size: 0.92rem;">
-              Ingresa el código que recibiste al comprar (ej. <strong>ORD-1234</strong>) y tu Gmail para desbloquear tus archivos.
+              Ingresa el código que recibiste al comprar y tu correo electrónico para desbloquear tus archivos.
             </p>
           </div>
         </div>
@@ -1049,7 +1038,7 @@
             <i data-lucide="gift" class="ui-icon"></i> ¡Descarga tu Molde Gratis!
           </h3>
           <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: #166534;">
-            Completa tus datos para enviarte el patrón en PDF y el video tutorial a tu correo.
+            Completa tus datos para enviarte el patrón y el video tutorial a tu correo.
           </p>
         </div>
         <button class="modal-close-btn" onclick="cerrarModalMoldeGratis()" title="Cerrar">&times;</button>
@@ -1070,8 +1059,8 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 0.85rem;">
-            <label for="molde-gratis-email">Correo @gmail.com *</label>
-            <input type="email" id="molde-gratis-email" placeholder="ejemplo@gmail.com" required autocomplete="email">
+            <label for="molde-gratis-email">Correo Electrónico *</label>
+            <input type="email" id="molde-gratis-email" placeholder="tu-correo@email.com" required autocomplete="email">
             <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 0.25rem;">
               Te enviaremos los enlaces de descarga y el tutorial directamente a tu casilla.
             </small>
