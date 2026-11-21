@@ -1,33 +1,30 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 21/11/2026 — Carrusel de fotos, dualidad de PDFs (Molde + Especificaciones), sin talles y catálogo limpio.
+Última actualización: 21/11/2026 — Resiliencia total en descargas duales (Molde + Specs), RPC registrar_pedido_checkout y fallback auto-reparable.
 
 ## Estado actual
 - Moldería de costura creativa: Sin talles en ningún componente, card, formulario ni modal.
 - Catálogo en producción: Inicia limpio sin productos demo precargados (`PRODUCTOS_POR_DEFECTO = []`).
-- Carrusel de fotos interactivo:
-  - Soporte de múltiples imágenes por molde en panel admin con previsualización y eliminación individual.
-  - Carrusel compacto en tarjeta de producto del catálogo con flechas stopPropagation y dots.
-  - Visor boutique en vista/modal de detalle con imagen principal, contador 1/N y tira de miniaturas.
-  - Specs simplificadas en detalle: sólo Formato (PDF A4), Guía (Materiales) y Video Tutorial (YouTube).
+- Carrusel de fotos interactivo en tarjetas y vista detalle con miniaturas.
 - Subida y descarga dual de archivos PDF por molde:
   - PDF 1: Molde / Patrón (`archivo_url` en Supabase Storage `moldes-archivos`).
   - PDF 2: Especificaciones, materiales y recomendaciones (`archivo_specs_url`).
   - Botones de descarga independientes para Molde y Especificaciones en "Mis Descargas", modal gratuito y correos.
-- Persistencia & Seguridad:
-  - Supabase Auth + RPC `obtener_descargas_pedido` y `aprobar_pedido_transferencia` con SECURITY DEFINER.
-  - URLs firmadas temporales para descargas anónimas autorizadas. 31/31 tests automatizados aprobados.
+- Resiliencia y auto-reparación:
+  - `supabaseCrearPedido`: intenta RPC atómica `registrar_pedido_checkout`; si fallan columnas extendidas, serializa molde y specs en `link_archivos` (JSON) y asegura inserción de ítems.
+  - `supabaseObtenerProductos` y `supabaseGuardarProducto`: auto-reintento con columnas base si la migración de `imagenes` o `archivo_specs_url` aún no fue corrida en PostgreSQL.
+  - `consultarDescargasDesdeModal`: si la BD devuelve 0 ítems por migración pendiente, auto-recupera del pedido local y genera URLs firmadas para ambos PDFs.
+  - `enviarCorreoConfirmacion`: genera URLs firmadas con 7 días de validez y resuelve ítems locales si la orden en Supabase no los tenía.
 
 ## Decisiones y por qué
 - Sin talles: Los moldes de la marca corresponden a proyectos de costura creativa/accesorios sin graduación de talles de indumentaria.
-- Array `imagenes` con fallback a `imagen`: Garantiza retrocompatibilidad total con moldes precargados previamente.
-- Dualidad de PDFs: Los clientes reciben por separado el trazado para imprimir (Molde) y la guía técnica (Especificaciones y Materiales).
+- Serialización de respaldo en `link_archivos`: Permite almacenar tanto Molde como Especificaciones incluso si la base de datos no tiene las nuevas columnas agregadas.
+- RPC `registrar_pedido_checkout`: Permite que visitantes anónimos inserten cabecera e ítems en una sola transacción sin problemas de RLS ni `RETURNING`.
 
 ## Aprendizajes y errores a evitar
-- Correos universales: No restringir a `@gmail.com`; el sistema entrega descargas web directas y envía correos a cualquier dominio.
-- En PowerShell encadenar comandos con `;` en lugar de `&&` para evitar SyntaxError.
-- Subida de archivos en Supabase: usar `supabaseSubirArchivoMolde` para patrones y `supabaseSubirArchivoSpecs` para especificaciones.
+- PostgREST devuelve PGRST204 cuando se intenta insertar columnas que no existen en el schema cache. Todo payload debe tener fallback limpiando columnas extendidas.
+- En `obtener_descargas_pedido` y modales siempre resolver URLs firmadas para `archivo_specs_url` además de `archivo_url`.
 
 ## Próximos pasos
-- Ejecutar la migración SQL en Supabase Editor para habilitar `imagenes` y `archivo_specs_url` en la base de datos PostgreSQL en la nube.
+- Pegar y ejecutar el bloque SQL en Supabase Editor para habilitar `registrar_pedido_checkout`, `archivo_specs_url` e `imagenes` en PostgreSQL.

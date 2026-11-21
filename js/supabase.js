@@ -717,6 +717,7 @@ async function supabaseObtenerProductos() {
   try {
     const esAdmin = typeof estaAdminLogueado === "function" && estaAdminLogueado();
     const colsPublicas = "id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, imagenes, es_gratuito, created_at";
+    const colsPublicasBase = "id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, es_gratuito, created_at";
     const columnas = esAdmin ? "*" : colsPublicas;
 
     let res = await client
@@ -724,11 +725,12 @@ async function supabaseObtenerProductos() {
       .select(columnas)
       .order("id", { ascending: true });
 
-    // Si hubo error con '*' (por ejemplo si la sesión de admin expiró en el servidor), reintentamos con las columnas públicas
-    if (res.error && esAdmin) {
+    // Si hubo error con '*' o con colsPublicas (por ejemplo si la columna imagenes no existe aún en PostgreSQL), reintentamos con colsPublicasBase
+    if (res.error) {
+      console.warn("[Supabase] Aviso al consultar productos con columnas extendidas, reintentando con base:", res.error.message);
       res = await client
         .from("productos")
-        .select(colsPublicas)
+        .select(colsPublicasBase)
         .order("id", { ascending: true });
     }
 
@@ -741,12 +743,24 @@ async function supabaseObtenerProductos() {
 
     // Mapeamos de snake_case (BD) a camelCase (UI)
     return (data || []).map(p => {
-      const imagenesArray = Array.isArray(p.imagenes)
+      let imagenesArray = Array.isArray(p.imagenes)
         ? p.imagenes
         : (p.imagen ? [p.imagen] : []);
       const imagenPrincipal = imagenesArray.length > 0
         ? imagenesArray[0]
         : (p.imagen || null);
+
+      let archUrl = p.archivo_url || null;
+      let specsUrl = p.archivo_specs_url || null;
+
+      // Si link_archivos contiene JSON empaquetado (molde + specs):
+      if (typeof p.link_archivos === "string" && p.link_archivos.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(p.link_archivos);
+          if (!archUrl) archUrl = parsed.molde || "";
+          if (!specsUrl) specsUrl = parsed.specs || "";
+        } catch (e) {}
+      }
 
       return {
         id: Number(p.id),
@@ -761,10 +775,10 @@ async function supabaseObtenerProductos() {
         precioPromoUsd: Number(p.precio_promo_usd || 0),
         imagen: imagenPrincipal,
         imagenes: imagenesArray,
-        archivoUrl: p.archivo_url || null,
-        archivoSpecsUrl: p.archivo_specs_url || null,
+        archivoUrl: archUrl,
+        archivoSpecsUrl: specsUrl,
         esGratuito: Boolean(p.es_gratuito),
-        linkArchivos: p.link_archivos || "",
+        linkArchivos: archUrl || p.link_archivos || "",
         linkVideo: p.link_video || ""
       };
     });
@@ -788,7 +802,16 @@ async function supabaseGuardarProducto(producto, esNuevo = false) {
     ? imagenesArray[0]
     : (producto.imagen || null);
 
-  const payload = {
+  // Link de archivos con serialización de molde y especificaciones por si no existe aún la columna en BD
+  let linkArchivosSerializado = producto.linkArchivos || producto.archivoUrl || "";
+  if (producto.archivoSpecsUrl) {
+    linkArchivosSerializado = JSON.stringify({
+      molde: producto.archivoUrl || producto.linkArchivos || "",
+      specs: producto.archivoSpecsUrl
+    });
+  }
+
+  const payloadCompleto = {
     nombre: producto.nombre,
     descripcion: producto.descripcion,
     categoria: producto.categoria,
@@ -803,7 +826,24 @@ async function supabaseGuardarProducto(producto, esNuevo = false) {
     archivo_url: producto.archivoUrl || null,
     archivo_specs_url: producto.archivoSpecsUrl || null,
     es_gratuito: Boolean(producto.esGratuito),
-    link_archivos: producto.linkArchivos || producto.archivoUrl || "",
+    link_archivos: linkArchivosSerializado,
+    link_video: producto.linkVideo || ""
+  };
+
+  const payloadBase = {
+    nombre: producto.nombre,
+    descripcion: producto.descripcion,
+    categoria: producto.categoria,
+    icono: producto.icono,
+    precio: producto.precio,
+    en_promo: producto.enPromo,
+    precio_promo: producto.precioPromo,
+    precio_usd: Number(producto.precioUsd || 0),
+    precio_promo_usd: Number(producto.precioPromoUsd || 0),
+    imagen: imagenPrincipal,
+    archivo_url: producto.archivoUrl || null,
+    es_gratuito: Boolean(producto.esGratuito),
+    link_archivos: linkArchivosSerializado,
     link_video: producto.linkVideo || ""
   };
 
@@ -819,30 +859,52 @@ async function supabaseGuardarProducto(producto, esNuevo = false) {
         .maybeSingle();
 
       if (existente && existente.id) {
-        const { error: errorUpdate } = await client
+        let { error: errorUpdate } = await client
           .from("productos")
-          .update(payload)
+          .update(payloadCompleto)
           .eq("id", producto.id);
 
-        if (errorUpdate) throw errorUpdate;
+        // Si falló por columnas extendidas inexistentes (imagenes o archivo_specs_url), reintentar con base
+        if (errorUpdate) {
+          console.warn("[Supabase] Reintentando actualización de producto con payload base:", errorUpdate.message);
+          const { error: errorUpdateBase } = await client
+            .from("productos")
+            .update(payloadBase)
+            .eq("id", producto.id);
+
+          if (errorUpdateBase) throw errorUpdateBase;
+        }
         fueActualizado = true;
       }
     }
 
     // Si es nuevo o no existía previamente en la base de datos de Supabase, lo insertamos
     if (!fueActualizado) {
-      const { data: dataInsert, error: errorInsert } = await client
+      let { data: dataInsert, error: errorInsert } = await client
         .from("productos")
-        .insert([payload])
+        .insert([payloadCompleto])
         .select()
         .single();
 
-      if (errorInsert) throw errorInsert;
+      // Si falló la inserción completa, reintentar con payload base
+      if (errorInsert) {
+        console.warn("[Supabase] Reintentando inserción de producto con payload base:", errorInsert.message);
+        const resBase = await client
+          .from("productos")
+          .insert([payloadBase])
+          .select()
+          .single();
+
+        if (resBase.error) throw resBase.error;
+        dataInsert = resBase.data;
+      }
+
       if (dataInsert && dataInsert.id) {
         producto.id = Number(dataInsert.id);
       }
     }
 
+    console.log(`[Supabase] ✓ Molde "${producto.nombre}" guardado exitosamente en la base de datos.`);
     return true;
   } catch (err) {
     console.error("[Supabase] Error al guardar producto:", err);
@@ -936,14 +998,27 @@ async function supabaseObtenerPedidos() {
       fechaEnvioArchivos: p.fecha_envio_archivos || null,
       comprobanteUrl: p.comprobante_url || null,
       numeroOperacion: p.numero_operacion || null,
-      items: (p.pedido_items || []).map(it => ({
-        id: it.producto_id || it.id,
-        nombre: it.nombre,
-        precio: Number(it.precio),
-        cantidad: Number(it.cantidad || 1),
-        linkArchivos: it.link_archivos || "",
-        linkVideo: it.link_video || ""
-      }))
+      items: (p.pedido_items || []).map(it => {
+        let archUrl = it.link_archivos || "";
+        let specsUrl = "";
+        if (typeof it.link_archivos === "string" && it.link_archivos.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(it.link_archivos);
+            archUrl = parsed.molde || parsed.archivoUrl || "";
+            specsUrl = parsed.specs || parsed.archivoSpecsUrl || "";
+          } catch (e) {}
+        }
+        return {
+          id: it.producto_id || it.id,
+          nombre: it.nombre,
+          precio: Number(it.precio),
+          cantidad: Number(it.cantidad || 1),
+          archivoUrl: archUrl,
+          archivoSpecsUrl: specsUrl,
+          linkArchivos: archUrl,
+          linkVideo: it.link_video || ""
+        };
+      })
     }));
   } catch (err) {
     console.error("[Supabase] Excepción al obtener pedidos:", err);
@@ -959,64 +1034,147 @@ async function supabaseCrearPedido(pedido) {
   if (!client) return false;
 
   try {
-    // 1. Insertamos cabecera del pedido
-    const { data: pedidoData, error: pedidoError } = await client
-      .from("pedidos")
-      .insert([{
-        codigo: pedido.codigo,
-        fecha_texto: pedido.fecha,
-        cliente_nombre: pedido.cliente.nombre,
-        cliente_email: pedido.cliente.email,
-        cliente_telefono: pedido.cliente.telefono,
-        total: pedido.total,
-        moneda: pedido.moneda || "ARS",
-        metodo_pago: pedido.metodoPago || "transferencia",
-        estado: pedido.estado || "pendiente",
-        archivos_enviados: Boolean(pedido.archivosEnviados),
-        fecha_envio_archivos: pedido.fechaEnvioArchivos || null,
-        comprobante_url: pedido.comprobanteUrl || null,
-        numero_operacion: pedido.numeroOperacion || null
-      }])
-      .select()
-      .single();
-
-    if (pedidoError) throw pedidoError;
-
-    const nuevoPedidoId = pedidoData.id;
-    pedido.id = Number(nuevoPedidoId);
-
-    // 2. Insertamos ítems relacionales vinculados por pedido_id
-    if (pedido.items && pedido.items.length > 0) {
-      const itemsPayload = pedido.items.map(item => ({
-        pedido_id: nuevoPedidoId,
+    const itemsNormalizados = (pedido.items || []).map(item => {
+      let linkArchivos = item.archivoUrl || item.linkArchivos || "";
+      if (item.archivoSpecsUrl) {
+        linkArchivos = JSON.stringify({
+          molde: item.archivoUrl || item.linkArchivos || "",
+          specs: item.archivoSpecsUrl
+        });
+      }
+      return {
         producto_id: item.id && item.id > 0 ? item.id : null,
         nombre: item.nombre,
         precio: item.precio,
         cantidad: item.cantidad || 1,
         archivo_url: item.archivoUrl || item.archivo_url || null,
         archivo_specs_url: item.archivoSpecsUrl || item.archivo_specs_url || null,
-        link_archivos: item.archivoUrl || item.linkArchivos || "",
+        link_archivos: linkArchivos,
         link_video: item.linkVideo || ""
+      };
+    });
+
+    const cabeceraPayload = {
+      codigo: pedido.codigo,
+      fecha_texto: pedido.fecha,
+      cliente_nombre: pedido.cliente.nombre,
+      cliente_email: pedido.cliente.email,
+      cliente_telefono: pedido.cliente.telefono || "No especificado",
+      total: pedido.total,
+      moneda: pedido.moneda || "ARS",
+      metodo_pago: pedido.metodoPago || "transferencia",
+      estado: pedido.estado || "pendiente",
+      archivos_enviados: Boolean(pedido.archivosEnviados),
+      fecha_envio_archivos: pedido.fechaEnvioArchivos || null,
+      comprobante_url: pedido.comprobanteUrl || null,
+      numero_operacion: pedido.numeroOperacion || null
+    };
+
+    // 1. Intentamos registrar vía RPC atómica y segura si está disponible
+    try {
+      const { data: rpcData, error: rpcError } = await client.rpc("registrar_pedido_checkout", {
+        p_pedido: cabeceraPayload,
+        p_items: itemsNormalizados
+      });
+
+      if (!rpcError && rpcData && rpcData.exito) {
+        if (rpcData.id) pedido.id = Number(rpcData.id);
+        console.log(`[Supabase] ✓ Pedido ${pedido.codigo} registrado exitosamente vía RPC registrar_pedido_checkout.`);
+        return true;
+      }
+      if (rpcError) {
+        console.warn("[Supabase] Aviso en RPC registrar_pedido_checkout, probando inserción directa:", rpcError.message);
+      }
+    } catch (eRpc) {
+      console.warn("[Supabase] Fallback directo a tablas tras excepción en RPC:", eRpc);
+    }
+
+    // 2. Inserción directa en tabla pedidos
+    let nuevoPedidoId = null;
+
+    const { data: pedidoData, error: pedidoError } = await client
+      .from("pedidos")
+      .insert([cabeceraPayload])
+      .select("id")
+      .maybeSingle();
+
+    if (!pedidoError && pedidoData && pedidoData.id) {
+      nuevoPedidoId = pedidoData.id;
+      pedido.id = Number(nuevoPedidoId);
+    } else {
+      // Reintento sin select por si RLS bloquea lectura en visitantes anónimos
+      const { error: insertSimpleError } = await client
+        .from("pedidos")
+        .insert([cabeceraPayload]);
+
+      if (insertSimpleError) throw insertSimpleError;
+
+      // Intentar obtener el ID mediante RPC de consulta
+      try {
+        const { data: resDesc } = await client.rpc("obtener_descargas_pedido", {
+          p_codigo: pedido.codigo,
+          p_email: pedido.cliente.email
+        });
+        if (resDesc && resDesc.id) {
+          nuevoPedidoId = resDesc.id;
+          pedido.id = Number(nuevoPedidoId);
+        }
+      } catch (eId) {}
+    }
+
+    // 3. Inserción de ítems en pedido_items (si obtuvimos el ID del pedido)
+    if (nuevoPedidoId && itemsNormalizados.length > 0) {
+      // Intento A: Payload completo con columnas extendidas (archivo_url y archivo_specs_url)
+      const itemsPayloadCompleto = itemsNormalizados.map(it => ({
+        pedido_id: nuevoPedidoId,
+        producto_id: it.producto_id,
+        nombre: it.nombre,
+        precio: it.precio,
+        cantidad: it.cantidad,
+        archivo_url: it.archivo_url,
+        archivo_specs_url: it.archivo_specs_url,
+        link_archivos: it.link_archivos,
+        link_video: it.link_video
       }));
 
       const { error: itemsError } = await client
         .from("pedido_items")
-        .insert(itemsPayload);
+        .insert(itemsPayloadCompleto);
 
       if (itemsError) {
-        console.warn("[Supabase] Aviso al registrar pedido_items con producto_id:", itemsError);
-        // Reintento defensivo sin clave foránea por si el producto aún no existía en PostgreSQL
-        const itemsSinFk = itemsPayload.map(it => ({ ...it, producto_id: null }));
-        const { error: retryError } = await client
-          .from("pedido_items")
-          .insert(itemsSinFk);
+        console.warn("[Supabase] Aviso al insertar pedido_items completo, reintentando con columnas base garantizadas:", itemsError.message);
+        
+        // Intento B: Payload base garantizado (omitiendo archivo_url y archivo_specs_url inexistentes, ya serializados en link_archivos)
+        const itemsPayloadBase = itemsNormalizados.map(it => ({
+          pedido_id: nuevoPedidoId,
+          producto_id: it.producto_id,
+          nombre: it.nombre,
+          precio: it.precio,
+          cantidad: it.cantidad,
+          link_archivos: it.link_archivos,
+          link_video: it.link_video
+        }));
 
-        if (retryError) {
-          console.error("[Supabase] Error final al registrar pedido_items sin FK:", retryError);
+        const { error: retryErrorBase } = await client
+          .from("pedido_items")
+          .insert(itemsPayloadBase);
+
+        if (retryErrorBase) {
+          console.warn("[Supabase] Reintentando pedido_items sin clave foránea de producto:", retryErrorBase.message);
+          // Intento C: Sin foreign key producto_id por si el producto aún no se insertó en Supabase
+          const itemsSinFk = itemsPayloadBase.map(it => ({ ...it, producto_id: null }));
+          const { error: retryErrorFinal } = await client
+            .from("pedido_items")
+            .insert(itemsSinFk);
+
+          if (retryErrorFinal) {
+            console.error("[Supabase] Error final al registrar pedido_items:", retryErrorFinal);
+          }
         }
       }
     }
 
+    console.log(`[Supabase] ✓ Pedido ${pedido.codigo} registrado exitosamente.`);
     return true;
   } catch (err) {
     console.error("[Supabase] Error al crear pedido:", err);
@@ -1140,12 +1298,31 @@ async function supabaseObtenerDescargasPedido(codigo, email) {
     // Si el pedido está completado y tiene ítems, resolvemos las URLs de descarga
     if (data.estado === "completada" && Array.isArray(data.items)) {
       for (const item of data.items) {
-        const rutaArchivo = item.archivo_url || item.link_archivos;
-        if (rutaArchivo && typeof supabaseObtenerUrlDescargaMolde === "function" && (rutaArchivo.includes("/") || rutaArchivo.endsWith(".pdf") || rutaArchivo.endsWith(".zip") || rutaArchivo.startsWith("patron_"))) {
-          const urlFirmada = await supabaseObtenerUrlDescargaMolde(rutaArchivo, 86400);
-          item.linkDescarga = urlFirmada || rutaArchivo || "";
+        // Desempaquetar si viene en formato JSON dentro de link_archivos
+        if (typeof item.link_archivos === "string" && item.link_archivos.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(item.link_archivos);
+            if (!item.archivo_url) item.archivo_url = parsed.molde || "";
+            if (!item.archivo_specs_url) item.archivo_specs_url = parsed.specs || "";
+          } catch (e) {}
+        }
+
+        // 1. URL de descarga para el molde principal
+        const rutaMolde = item.archivo_url || item.link_archivos;
+        if (rutaMolde && typeof supabaseObtenerUrlDescargaMolde === "function" && (rutaMolde.includes("/") || rutaMolde.endsWith(".pdf") || rutaMolde.endsWith(".zip") || rutaMolde.startsWith("patron_"))) {
+          const urlFirmada = await supabaseObtenerUrlDescargaMolde(rutaMolde, 86400);
+          item.linkDescarga = urlFirmada || rutaMolde || "";
         } else {
           item.linkDescarga = item.link_archivos || item.archivo_url || "";
+        }
+
+        // 2. URL de descarga para el archivo de especificaciones y materiales
+        const rutaSpecs = item.archivo_specs_url;
+        if (rutaSpecs && typeof supabaseObtenerUrlDescargaMolde === "function" && (rutaSpecs.includes("/") || rutaSpecs.endsWith(".pdf") || rutaSpecs.endsWith(".zip") || rutaSpecs.startsWith("specs_"))) {
+          const urlFirmadaSpecs = await supabaseObtenerUrlDescargaMolde(rutaSpecs, 86400);
+          item.linkSpecs = urlFirmadaSpecs || rutaSpecs || "";
+        } else {
+          item.linkSpecs = item.archivo_specs_url || "";
         }
       }
     }

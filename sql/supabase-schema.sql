@@ -186,6 +186,7 @@ GRANT SELECT ON public.productos TO authenticated, service_role;
 
 -- B) POLÍTICAS PARA PEDIDOS:
 -- Clientes pueden registrar pedidos al completar el checkout (admite pedidos normales o moldes gratuitos con total = 0)
+DROP POLICY IF EXISTS "Clientes pueden registrar pedidos desde checkout" ON public.pedidos;
 CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
   ON public.pedidos FOR INSERT
   WITH CHECK (
@@ -193,14 +194,23 @@ CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
     (estado = 'pendiente' AND archivos_enviados = false AND total >= 0)
   );
 
+DROP POLICY IF EXISTS "Clientes pueden consultar sus pedidos por codigo" ON public.pedidos;
+CREATE POLICY "Clientes pueden consultar sus pedidos por codigo"
+  ON public.pedidos FOR SELECT
+  USING (true);
+
 -- Lectura, actualización y eliminación de pedidos restringida solo a administradores aprobados
+DROP POLICY IF EXISTS "Gestión de pedidos solo por admins aprobados" ON public.pedidos;
 CREATE POLICY "Gestión de pedidos solo por admins aprobados"
   ON public.pedidos FOR ALL
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
+GRANT SELECT, INSERT ON public.pedidos TO anon, authenticated, service_role;
+
 -- C) POLÍTICAS PARA PEDIDO_ITEMS:
 -- Clientes pueden registrar ítems comprados desde el checkout con validación de montos
+DROP POLICY IF EXISTS "Inserción de ítems de pedido desde checkout" ON public.pedido_items;
 CREATE POLICY "Inserción de ítems de pedido desde checkout"
   ON public.pedido_items FOR INSERT
   WITH CHECK (
@@ -208,11 +218,19 @@ CREATE POLICY "Inserción de ítems de pedido desde checkout"
     cantidad > 0
   );
 
+DROP POLICY IF EXISTS "Lectura de items de pedidos" ON public.pedido_items;
+CREATE POLICY "Lectura de items de pedidos"
+  ON public.pedido_items FOR SELECT
+  USING (true);
+
 -- Consulta y gestión de ítems de compra restringida a administradores aprobados
+DROP POLICY IF EXISTS "Gestión de ítems solo por admins aprobados" ON public.pedido_items;
 CREATE POLICY "Gestión de ítems solo por admins aprobados"
   ON public.pedido_items FOR ALL
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
+
+GRANT SELECT, INSERT ON public.pedido_items TO anon, authenticated, service_role;
 
 -- D) POLÍTICAS PARA ADMINISTRADORES:
 -- Consulta de administradores solo para usuarios autenticados
@@ -407,6 +425,7 @@ BEGIN
 
   IF v_pedido.estado != 'completada' THEN
     RETURN jsonb_build_object(
+      'id', v_pedido.id,
       'encontrado', true,
       'estado', v_pedido.estado,
       'codigo', v_pedido.codigo,
@@ -435,6 +454,7 @@ BEGIN
   WHERE pi.pedido_id = v_pedido.id;
 
   RETURN jsonb_build_object(
+    'id', v_pedido.id,
     'encontrado', true,
     'estado', 'completada',
     'codigo', v_pedido.codigo,
@@ -468,3 +488,87 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.aprobar_pedido_transferencia(TEXT) TO authenticated, service_role;
+
+-- 15. FUNCIÓN RPC PARA REGISTRAR PEDIDOS Y SUS ÍTEMS EN CHECKOUT (ATÓMICA Y SEGURA)
+CREATE OR REPLACE FUNCTION public.registrar_pedido_checkout(p_pedido JSONB, p_items JSONB)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pedido_id BIGINT;
+  v_item JSONB;
+BEGIN
+  INSERT INTO public.pedidos (
+    codigo,
+    fecha_texto,
+    cliente_nombre,
+    cliente_email,
+    cliente_telefono,
+    total,
+    moneda,
+    metodo_pago,
+    estado,
+    archivos_enviados,
+    fecha_envio_archivos,
+    comprobante_url,
+    numero_operacion
+  ) VALUES (
+    p_pedido->>'codigo',
+    p_pedido->>'fecha_texto',
+    p_pedido->>'cliente_nombre',
+    p_pedido->>'cliente_email',
+    COALESCE(p_pedido->>'cliente_telefono', 'No especificado'),
+    COALESCE((p_pedido->>'total')::numeric, 0),
+    COALESCE(p_pedido->>'moneda', 'ARS'),
+    COALESCE(p_pedido->>'metodo_pago', 'transferencia'),
+    COALESCE(p_pedido->>'estado', 'pendiente'),
+    COALESCE((p_pedido->>'archivos_enviados')::boolean, false),
+    p_pedido->>'fecha_envio_archivos',
+    p_pedido->>'comprobante_url',
+    p_pedido->>'numero_operacion'
+  )
+  RETURNING id INTO v_pedido_id;
+
+  IF p_items IS NOT NULL AND jsonb_array_length(p_items) > 0 THEN
+    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+    LOOP
+      INSERT INTO public.pedido_items (
+        pedido_id,
+        producto_id,
+        nombre,
+        precio,
+        cantidad,
+        archivo_url,
+        archivo_specs_url,
+        link_archivos,
+        link_video
+      ) VALUES (
+        v_pedido_id,
+        CASE WHEN (v_item->>'producto_id') IS NOT NULL AND (v_item->>'producto_id') ~ '^[0-9]+$' THEN (v_item->>'producto_id')::bigint ELSE NULL END,
+        v_item->>'nombre',
+        COALESCE((v_item->>'precio')::numeric, 0),
+        COALESCE((v_item->>'cantidad')::integer, 1),
+        v_item->>'archivo_url',
+        v_item->>'archivo_specs_url',
+        COALESCE(v_item->>'link_archivos', v_item->>'archivo_url', ''),
+        COALESCE(v_item->>'link_video', '')
+      );
+    END LOOP;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'exito', true,
+    'id', v_pedido_id,
+    'codigo', p_pedido->>'codigo'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object(
+    'exito', false,
+    'error', SQLERRM
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.registrar_pedido_checkout(JSONB, JSONB) TO anon, authenticated, service_role;

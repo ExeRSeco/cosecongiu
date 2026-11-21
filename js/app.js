@@ -1622,6 +1622,7 @@ function verDetalleProducto(productoId) {
         <h4>Detalles y Especificaciones del Molde:</h4>
         <ul style="grid-template-columns: 1fr;">
           <li><i data-lucide="file-text" class="ui-icon"></i> <strong>Formato:</strong> Archivo PDF listo para imprimir en hojas A4 a tamaño real</li>
+          <li><i data-lucide="book-open" class="ui-icon"></i> <strong>Guía:</strong> Paso a paso de confección ilustrada y lista de materiales</li>
           <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> Confección guiada paso a paso</li>
         </ul>
       </div>
@@ -4310,6 +4311,54 @@ async function confirmarDescargaGratis() {
 async function enviarCorreoConfirmacion(pedido) {
   if (!pedido || !pedido.cliente || !pedido.cliente.email) return;
 
+  // Recuperar ítems de pedidos locales si vienen vacíos
+  let itemsParaCorreo = (pedido.items && pedido.items.length > 0) ? pedido.items : [];
+  if (itemsParaCorreo.length === 0) {
+    const pedidoLocal = pedidos.find(p => p.codigo === pedido.codigo);
+    if (pedidoLocal && pedidoLocal.items && pedidoLocal.items.length > 0) {
+      itemsParaCorreo = pedidoLocal.items;
+    }
+  }
+
+  // Generar URLs firmadas de descarga para cada ítem (con 7 días de validez para el correo)
+  const itemsCompletos = [];
+  for (const item of itemsParaCorreo) {
+    const prodRef = productos.find(p => p.id === item.id || p.nombre === item.nombre) || {};
+    let archMolde = item.archivoUrl || item.archivo_url || prodRef.archivoUrl || item.linkArchivos || prodRef.linkArchivos || "";
+    let archSpecs = item.archivoSpecsUrl || item.archivo_specs_url || prodRef.archivoSpecsUrl || "";
+    const linkVideo = item.linkVideo || item.link_video || prodRef.linkVideo || "";
+
+    if (typeof archMolde === "string" && archMolde.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(archMolde);
+        archMolde = parsed.molde || "";
+        if (!archSpecs) archSpecs = parsed.specs || "";
+      } catch (e) {}
+    }
+
+    let linkDescarga = archMolde;
+    if (archMolde && typeof supabaseObtenerUrlDescargaMolde === "function" && (archMolde.startsWith("patron_") || archMolde.includes("moldes-archivos"))) {
+      const firmada = await supabaseObtenerUrlDescargaMolde(archMolde, 86400 * 7);
+      if (firmada) linkDescarga = firmada;
+    }
+
+    let linkSpecs = archSpecs;
+    if (archSpecs && typeof supabaseObtenerUrlDescargaMolde === "function" && (archSpecs.startsWith("specs_") || archSpecs.includes("moldes-archivos"))) {
+      const firmadaSpecs = await supabaseObtenerUrlDescargaMolde(archSpecs, 86400 * 7);
+      if (firmadaSpecs) linkSpecs = firmadaSpecs;
+    }
+
+    itemsCompletos.push({
+      id: item.id || prodRef.id,
+      nombre: item.nombre || prodRef.nombre || "Molde Digital",
+      linkDescarga: linkDescarga,
+      linkSpecs: linkSpecs,
+      linkVideo: linkVideo,
+      precio: item.precio || 0,
+      cantidad: item.cantidad || 1
+    });
+  }
+
   try {
     const res = await fetch("/api/enviar-email", {
       method: "POST",
@@ -4317,7 +4366,7 @@ async function enviarCorreoConfirmacion(pedido) {
       body: JSON.stringify({
         codigoPedido: pedido.codigo,
         cliente: pedido.cliente,
-        items: pedido.items,
+        items: itemsCompletos,
         metodoPago: pedido.metodoPago,
         total: pedido.total,
         urlTienda: window.location.origin
@@ -4469,8 +4518,41 @@ async function consultarDescargasDesdeModal() {
     }
 
     // Pedido COMPLETADO: resolver URLs y renderizar tarjetas de descarga
-    const items = resultadoDescargas.items || [];
+    let items = (resultadoDescargas.items && resultadoDescargas.items.length > 0) ? resultadoDescargas.items : [];
+
+    // Fallback defensivo: si el pedido está completado pero la BD devolvió 0 ítems,
+    // recuperar los ítems desde el pedido registrado en memoria local o catálogo
+    if (items.length === 0) {
+      const pedidoLocal = pedidos.find(p =>
+        String(p.codigo || "").trim().toUpperCase() === codigo
+      );
+      if (pedidoLocal && Array.isArray(pedidoLocal.items) && pedidoLocal.items.length > 0) {
+        items = pedidoLocal.items.map(it => {
+          const prodRef = productos.find(p => p.id === it.id || p.nombre === it.nombre) || {};
+          return {
+            id: it.id || prodRef.id || null,
+            nombre: it.nombre || prodRef.nombre || "Molde Digital",
+            archivo_url: it.archivoUrl || it.archivo_url || prodRef.archivoUrl || null,
+            archivo_specs_url: it.archivoSpecsUrl || it.archivo_specs_url || prodRef.archivoSpecsUrl || null,
+            link_archivos: it.linkArchivos || prodRef.linkArchivos || "",
+            link_video: it.linkVideo || prodRef.linkVideo || "",
+            linkDescarga: it.linkDescarga || it.archivoUrl || prodRef.archivoUrl || "#",
+            linkSpecs: it.linkSpecs || it.archivoSpecsUrl || prodRef.archivoSpecsUrl || ""
+          };
+        });
+      }
+    }
+
     for (const item of items) {
+      // Si el link de archivos viene con JSON empaquetado (molde + specs):
+      if (typeof item.link_archivos === "string" && item.link_archivos.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(item.link_archivos);
+          if (!item.archivo_url) item.archivo_url = parsed.molde || "";
+          if (!item.archivo_specs_url) item.archivo_specs_url = parsed.specs || "";
+        } catch (e) {}
+      }
+
       let link = item.linkDescarga || item.archivo_url || item.link_archivos || "";
       if (item.archivo_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!link || link === "#" || link.startsWith("patron_") || link.startsWith("moldes-archivos/"))) {
         const firmada = await supabaseObtenerUrlDescargaMolde(item.archivo_url, 86400);
