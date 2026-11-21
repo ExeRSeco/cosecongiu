@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Mostrar vista previa optimizada de imagen al seleccionar un archivo en el formulario admin
   const inputImagen = document.getElementById('producto-imagen');
   if (inputImagen) {
-    inputImagen.addEventListener('change', async function() {
+    inputImagen.addEventListener('change', async function () {
       const file = this.files && this.files[0];
       const previewWrap = document.getElementById('producto-preview-wrap');
       const previewImg = document.getElementById('producto-preview');
@@ -1622,7 +1622,6 @@ function verDetalleProducto(productoId) {
         <h4>Detalles y Especificaciones del Molde:</h4>
         <ul style="grid-template-columns: 1fr;">
           <li><i data-lucide="file-text" class="ui-icon"></i> <strong>Formato:</strong> Archivo PDF listo para imprimir en hojas A4 a tamaño real</li>
-          <li><i data-lucide="book-open" class="ui-icon"></i> <strong>Guía:</strong> Paso a paso de confección ilustrada y lista de materiales</li>
           <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> ${producto.linkVideo ? `<a href="${producto.linkVideo}" target="_blank" rel="noopener noreferrer" style="color: #dc2626; font-weight: 600; text-decoration: underline;">Confección guiada paso a paso en YouTube</a>` : 'Confección guiada paso a paso'}</li>
         </ul>
       </div>
@@ -1857,7 +1856,7 @@ function renderCatalogo() {
         <div class="product-image-wrap product-card-carousel" onclick="verDetalleProducto(${producto.id})" style="cursor: pointer;" title="Ver detalle del molde">
           <div class="card-carousel-slides" id="card-carousel-slides-${producto.id}">
             ${imgs.map((img, idx) => `
-              <img src="${img}" alt="${escaparHTML(producto.nombre)} - Foto ${idx+1}" class="card-carousel-img ${idx === 0 ? 'active' : ''}" data-idx="${idx}">
+              <img src="${img}" alt="${escaparHTML(producto.nombre)} - Foto ${idx + 1}" class="card-carousel-img ${idx === 0 ? 'active' : ''}" data-idx="${idx}">
             `).join('')}
           </div>
           <button type="button" class="card-carousel-arrow prev" onclick="event.stopPropagation(); rotarImagenCard(${producto.id}, -1);" aria-label="Imagen anterior">‹</button>
@@ -2806,7 +2805,7 @@ window.descargarArchivoMolde = descargarArchivoMolde;
  * Descarga segura referenciada por índice para evitar problemas de comillas en HTML
  * Permite seleccionar entre archivo de 'molde' o 'specs' (especificaciones)
  */
-window.descargarItemConsultado = function(index, tipo = 'molde') {
+window.descargarItemConsultado = function (index, tipo = 'molde') {
   const item = (window.ultimasDescargasConsultadas || [])[index];
   if (!item) {
     mostrarToast("No se pudo localizar el archivo seleccionado.");
@@ -2827,7 +2826,7 @@ let imagenesAdminSeleccionadas = [];
 async function manejarSeleccionImagenesMultiples(input) {
   if (!input || !input.files || input.files.length === 0) return;
   mostrarToast(`Procesando ${input.files.length} ${input.files.length === 1 ? 'imagen' : 'imágenes'}...`);
-  
+
   for (let i = 0; i < input.files.length; i++) {
     const file = input.files[i];
     try {
@@ -2842,7 +2841,7 @@ async function manejarSeleccionImagenesMultiples(input) {
     }
   }
 
-  try { input.value = null; } catch (e) {}
+  try { input.value = null; } catch (e) { }
   renderizarPreviewImagenesAdmin();
 }
 
@@ -3403,12 +3402,12 @@ function renderPedidosAdmin() {
       // 4. Filtro por fecha rápida (hoy, semana, mes) conforme a la skill local-dates
       const fechaCorta = pedido.fecha.split(",")[0].trim();
       const partesFecha = fechaCorta.split("/").map(Number);
-      
+
       if (partesFecha.length === 3) {
         // Construcción segura en hora local sin desvío UTC
         const fechaOrden = new Date(partesFecha[2], partesFecha[1] - 1, partesFecha[0]);
         const hoyInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-        
+
         if (filtrosAdmin.fechaRapida === "hoy") {
           if (fechaCorta !== hoyStr) return false;
         } else if (filtrosAdmin.fechaRapida === "semana") {
@@ -3506,7 +3505,7 @@ function renderPedidosAdmin() {
     const esMp = pedido.metodoPago === "mercadopago";
     const esTransferencia = pedido.metodoPago === "transferencia";
     const totalDisplay = esPaypal ? `USD $${Number(pedido.total).toFixed(2)}` : `$${formatearPrecio(pedido.total)}`;
-    
+
     let metodoBadge = "";
     if (esPaypal) {
       metodoBadge = '<span class="badge-metodo-pago paypal" title="Pago mediante PayPal"><i data-lucide="globe" class="badge-icon"></i> PayPal (USD)</span>';
@@ -3721,13 +3720,13 @@ function generarEnlaceCorreoEntrega(pedido) {
     const linkVideo = (item.linkVideo || prodEnCatalogo.linkVideo || ENLACE_VIDEO_GENERAL).trim();
 
     return `${idx + 1}. ${item.nombre} (x${item.cantidad || 1})\n` +
-           `   • Descarga directa en la tienda con tu código ${codigo}\n` +
-           `   • Video Tutorial paso a paso (YouTube): ${linkVideo}`;
+      `   • Descarga directa en la tienda con tu código ${codigo}\n` +
+      `   • Video Tutorial paso a paso (YouTube): ${linkVideo}`;
   }).join("\n\n");
 
   const asunto = `Entrega de Moldes Digitales y Video Tutorial - Pedido ${codigo} | Cosé con Giu`;
   const cuerpo =
-`¡Hola, ${clienteNombre}!
+    `¡Hola, ${clienteNombre}!
 
 ¡Muchísimas gracias por tu compra en Cosé con Giu!
 Hemos verificado tu pago con éxito. A continuación encontrarás los enlaces de acceso inmediato a tus moldes en PDF listos para imprimir y sus correspondientes videos tutoriales paso a paso:
@@ -4026,9 +4025,9 @@ function renderCatalogoAdmin() {
           `}
           <div style="font-size: 0.82rem; color: #003087; font-weight: 600; margin-top: 0.2rem;">
             ${producto.enPromo && producto.precioPromoUsd > 0
-              ? `USD $${producto.precioPromoUsd.toFixed(2)} <span style="text-decoration: line-through; font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">$${(producto.precioUsd || 0).toFixed(2)}</span>`
-              : (producto.precioUsd > 0 ? `USD $${Number(producto.precioUsd).toFixed(2)}` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Sin USD</span>')
-            }
+      ? `USD $${producto.precioPromoUsd.toFixed(2)} <span style="text-decoration: line-through; font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">$${(producto.precioUsd || 0).toFixed(2)}</span>`
+      : (producto.precioUsd > 0 ? `USD $${Number(producto.precioUsd).toFixed(2)}` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Sin USD</span>')
+    }
           </div>
         </div>
       </td>
@@ -4392,7 +4391,7 @@ async function consultarDescargasDesdeModal() {
 
     // 2. Fallback a búsqueda en almacenamiento local si no está Supabase o no arrojó resultado
     if (!resultadoDescargas || !resultadoDescargas.encontrado) {
-      const pedidoLocal = pedidos.find(p => 
+      const pedidoLocal = pedidos.find(p =>
         String(p.codigo || "").trim().toUpperCase() === codigo &&
         String(p.cliente?.email || "").trim().toLowerCase() === email
       );
