@@ -370,7 +370,7 @@ CREATE POLICY "Gestión de comprobantes por admins aprobados"
     public.es_admin_aprobado()
   );
 
--- 12. CONFIGURACIÓN DEL BUCKET PRIVADO DE MOLDES Y PATRONES PDF (SUPABASE STORAGE)
+-- 12. CONFIGURACIÓN DEL BUCKET PRIVADO DE MOLDES Y ARCHIVOS PDF (SUPABASE STORAGE)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('moldes-archivos', 'moldes-archivos', false)
 ON CONFLICT (id) DO UPDATE SET public = false;

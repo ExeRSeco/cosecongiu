@@ -81,7 +81,7 @@ module.exports = async (req, res) => {
       preferenceItems.push({
         id: String(item.id || "molde").replace(/[^\w-]/g, "").slice(0, 50),
         title: String(item.nombre || "Molde Digital en PDF").replace(/[\r\n]/g, " ").trim().slice(0, 250),
-        description: "Patrón de costura descargable en PDF con guía y video",
+        description: "Molde de costura descargable en PDF con guía y video",
         quantity: cantidad,
         unit_price: Math.round(precioUnitario * 100) / 100,
         currency_id: "ARS"

@@ -39,13 +39,13 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
           ✂️ ${nombre}
         </h3>
         <p style="margin: 0 0 14px 0; color: #555555; font-size: 14px; line-height: 1.5;">
-          Patrón digital descargable listo para imprimir en hojas A4 y tamaño real.
+          Molde digital descargable listo para imprimir en hojas A4 y tamaño real.
         </p>
         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
           ${linkDescarga && linkDescarga !== "#" ? `
             <a href="${linkDescarga}" target="_blank" rel="noopener noreferrer"
                style="display: inline-block; background-color: #845ec2; color: #ffffff; text-decoration: none; padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(132, 94, 194, 0.25);">
-              📥 Descargar Patrón
+              📥 Descargar Molde
             </a>
           ` : `
             <span style="display: inline-block; background-color: #eee; color: #777; padding: 8px 14px; border-radius: 6px; font-size: 13px;">

@@ -494,7 +494,7 @@ function actualizarDatosBancariosUI() {
 
   const waTelDisplay = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
   const waTelLimpio = normalizarNumeroWhatsApp(waTelDisplay);
-  const waUrl = `https://api.whatsapp.com/send?phone=${waTelLimpio}&text=${encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta sobre los patrones...")}`;
+  const waUrl = `https://api.whatsapp.com/send?phone=${waTelLimpio}&text=${encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta...")}`;
 
   if (footerTextoWa) {
     footerTextoWa.textContent = waTelDisplay;
@@ -596,7 +596,7 @@ function abrirWhatsappConsulta(event) {
   if (event) event.preventDefault();
   const telOriginal = datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp;
   const telLimpio = normalizarNumeroWhatsApp(telOriginal);
-  const mensaje = encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta sobre los patrones...");
+  const mensaje = encodeURIComponent("¡Hola Giu! Estoy viendo los moldes en la tienda oficial y tengo una consulta...");
   window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${mensaje}`, "_blank", "noopener,noreferrer");
 }
 
@@ -1603,7 +1603,7 @@ function verDetalleProducto(productoId) {
     <div class="product-detail-info">
       <div class="product-detail-meta">
         <span class="badge" style="background: var(--primary-soft); color: var(--primary-dark); border: 1px solid var(--primary-border); font-size: 0.8rem; padding: 0.3rem 0.65rem;">
-          <i data-lucide="file-text" class="ui-icon"></i> Patrón en PDF Descargable
+          <i data-lucide="file-text" class="ui-icon"></i> Molde en PDF Descargable
         </span>
         <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.8rem; padding: 0.3rem 0.65rem;">
           <i data-lucide="zap" class="ui-icon"></i> Entrega Digital
@@ -1811,7 +1811,7 @@ function renderCatalogo() {
         <div style="margin-bottom: 0.6rem;"><i data-lucide="sparkles" class="ui-icon-lg" style="color: var(--primary); width: 3rem; height: 3rem;"></i></div>
         <h3>Catálogo de Moldes en Preparación</h3>
         <p style="color: var(--text-muted); margin: 0.5rem auto 1.25rem auto; max-width: 480px;">
-          Próximamente publicaremos nuevos patrones y moldes de costura descargables en PDF.
+          Próximamente publicaremos nuevos moldes de costura descargables en PDF.
         </p>
       </div>
     `;
@@ -2742,7 +2742,7 @@ function leerArchivoComoDataURL(file) {
  */
 function generarPdfMuestraBase64(nombreMolde = "Molde Cosé con Giu") {
   const nombreLimpio = (nombreMolde || "Molde Cosé con Giu").replace(/[^a-zA-Z0-9 _-]/g, "");
-  const streamTexto = `BT\n/F1 18 Tf\n50 720 Td\n(COSE CON GIU - PATRON DE MOLDERIA) Tj\n/F1 12 Tf\n0 -35 Td\n(Molde: ${nombreLimpio}) Tj\n0 -22 Td\n(Patron digital preparado para imprimir en hojas A4 y escala 100%.) Tj\n0 -22 Td\n(Verifica el recuadro de calibracion de 5x5 cm antes de cortar la tela.) Tj\n0 -25 Td\n(Disfruta mucho de tu proyecto de costura!) Tj\nET`;
+  const streamTexto = `BT\n/F1 18 Tf\n50 720 Td\n(COSE CON GIU - MOLDE DIGITAL) Tj\n/F1 12 Tf\n0 -35 Td\n(Molde: ${nombreLimpio}) Tj\n0 -22 Td\n(Molde digital preparado para imprimir en hojas A4 y escala 100%.) Tj\n0 -22 Td\n(Verifica el recuadro de calibracion de 5x5 cm antes de cortar la tela.) Tj\n0 -25 Td\n(Disfruta mucho de tu proyecto de costura!) Tj\nET`;
   const streamLen = streamTexto.length;
   const pdf = `%PDF-1.4
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
@@ -2983,7 +2983,7 @@ async function guardarProducto(evento) {
     }
   }
 
-  // 2. Subir archivo PDF 1: Molde / Patrón
+  // 2. Subir archivo PDF 1: Molde
   let nuevoArchivoUrl = null;
   if (archivoMoldeFile) {
     mostrarToast("Procesando archivo del molde...");
@@ -3735,7 +3735,7 @@ Hemos verificado tu pago con éxito. A continuación encontrarás los enlaces de
 ${lineasMoldes}
 
 💡 Recomendaciones de costura e impresión:
-- Al imprimir los patrones, selecciona "Tamaño real" o "Escala 100%" en los ajustes de tu impresora y verifica el cuadrado de calibración de 5x5 cm.
+- Al imprimir los moldes, selecciona "Tamaño real" o "Escala 100%" en los ajustes de tu impresora y verifica el cuadrado de calibración de 5x5 cm.
 - Puedes ver el video tutorial todas las veces que lo desees para guiarte en el corte de telas, armado y confección de la prenda.
 
 Si tienes alguna duda o precisas asistencia, puedes responder directamente a este correo o escribirnos a nuestro WhatsApp.
@@ -4703,7 +4703,7 @@ async function aprobarTransferenciaYEnviarArchivos(pedidoId) {
   if (pedido.cliente.telefono && pedido.cliente.telefono !== "No especificado" && !pedido.cliente.telefono.includes("Descarga")) {
     const waLimpio = normalizarNumeroWhatsApp(pedido.cliente.telefono);
     const urlDescarga = `${window.location.origin}?descarga=${encodeURIComponent(pedido.codigo)}&email=${encodeURIComponent(pedido.cliente.email)}`;
-    const msg = encodeURIComponent(`¡Hola ${pedido.cliente.nombre}! Te confirmamos que tu transferencia para el pedido ${pedido.codigo} fue aprobada con éxito ✓. Ya te enviamos tus patrones al correo y podés descargarlos directamente desde aquí: ${urlDescarga}`);
+    const msg = encodeURIComponent(`¡Hola ${pedido.cliente.nombre}! Te confirmamos que tu transferencia para el pedido ${pedido.codigo} fue aprobada con éxito ✓. Ya te enviamos tus moldes al correo y podés descargarlos directamente desde aquí: ${urlDescarga}`);
 
     setTimeout(() => {
       const abrirWa = confirm(`¿Deseas abrir WhatsApp para avisarle también a ${pedido.cliente.nombre}?`);

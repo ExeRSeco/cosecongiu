@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cosé con Giu - Tienda de Moldes Digitales</title>
   <meta name="description"
-    content="Cosé con Giu: Catálogo online de moldes y patrones de costura descargables en formato PDF listos para imprimir en hojas A4 y pliego. Incluye guía paso a paso y video tutorial de confección.">
+    content="Cosé con Giu: Catálogo online de moldes de costura descargables en formato PDF listos para imprimir en hojas A4 y pliego. Incluye guía paso a paso y video tutorial de confección.">
   <meta name="keywords"
-    content="moldes de costura, patrones pdf, costura facil, molderia digital, cose con giu, patrones para imprimir, vestidos, pantalones, moldes a4">
+    content="moldes de costura, moldes pdf, costura facil, molderia digital, cose con giu, moldes para imprimir, accesorios, bolsos, moldes a4">
   <meta name="theme-color" content="#845ec2">
   <link rel="canonical" href="https://cosecongiu.vercel.app/">
 
@@ -18,7 +18,7 @@
   <meta property="og:url" content="https://cosecongiu.vercel.app/">
   <meta property="og:title" content="Cosé con Giu - Tienda Oficial de Moldes Digitales de Costura">
   <meta property="og:description"
-    content="Descarga patrones de costura en PDF listos para imprimir en A4. Guía ilustrada paso a paso y video tutorial de confección en cada molde.">
+    content="Descarga moldes de costura en PDF listos para imprimir en A4. Guía ilustrada paso a paso y video tutorial de confección en cada molde.">
   <meta property="og:image" content="https://cosecongiu.vercel.app/assets/logo.png">
   <meta property="og:image:alt" content="Logo oficial Cosé con Giu">
   <meta property="og:locale" content="es_AR">
@@ -27,7 +27,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Cosé con Giu - Tienda Oficial de Moldes Digitales">
   <meta name="twitter:description"
-    content="Patrones de costura en PDF listos para imprimir con guías ilustradas y video tutoriales.">
+    content="Moldes de costura en PDF listos para imprimir con guías ilustradas y video tutoriales.">
   <meta name="twitter:image" content="https://cosecongiu.vercel.app/assets/logo.png">
 
   <link rel="icon" type="image/png" href="assets/favicon.png">
@@ -65,7 +65,7 @@
         <img src="assets/logo-cropped.png" alt="Logo Cosé con Giu" class="brand-logo-img">
         <div>
           <h1>Cosé con Giu</h1>
-          <p class="tagline">Patrones y moldes digitales listos para confeccionar</p>
+          <p class="tagline">Moldes digitales listos para confeccionar</p>
         </div>
       </div>
       <nav class="nav">
@@ -99,10 +99,10 @@
       <div class="boutique-hero-banner">
         <div class="hero-content">
           <span class="hero-badge"><i data-lucide="sparkles" class="ui-icon-xs"></i> Moldería & Costura Digital</span>
-          <h2 class="hero-title">Patrones de costura listos para confeccionar</h2>
+          <h2 class="hero-title">Moldes de costura listos para confeccionar</h2>
           <p class="hero-desc">
-            Moldes descargables en PDF preparados en hojas A4 estándar para imprimir en casa. Incluyen tabla de medidas,
-            márgenes de costura y video tutorial paso a paso.
+            Moldes descargables en PDF preparados en hojas A4 estándar para imprimir en casa. Incluyen lista de materiales,
+            especificaciones claras y video tutorial paso a paso.
           </p>
           <div class="hero-chips-row">
             <span class="hero-chip"><i data-lucide="printer" class="ui-icon-xs"></i> Impresión A4 hogareña</span>
@@ -118,7 +118,7 @@
           <div class="search-input-wrap">
             <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
             <input type="text" id="catalogo-busqueda"
-              placeholder="Buscar moldes o patrones..."
+              placeholder="Buscar moldes de costura..."
               oninput="filtrarCatalogoPorBusqueda(this.value)">
             <button type="button" class="btn-clear-search" id="btn-clear-catalogo-search"
               onclick="limpiarBusquedaCatalogo()" title="Limpiar búsqueda" style="display: none;">✕</button>
@@ -171,7 +171,7 @@
           <div class="benefit-card">
             <div class="benefit-icon"><i data-lucide="scissors" class="ui-icon"></i></div>
             <h4>Costura Fácil y Clara</h4>
-            <p>Patrones de costura creativa con márgenes de costura incluidos y explicaciones claras.</p>
+            <p>Moldes de costura creativa con explicaciones claras y lista de materiales.</p>
           </div>
         </div>
       </section>
@@ -481,7 +481,7 @@
                     <option value="scissors">Tijeras</option>
                     <option value="shirt">Prenda / Camisa</option>
                     <option value="shopping-bag">Bolso / Accesorio</option>
-                    <option value="file-text">Patrón en PDF</option>
+                    <option value="file-text">Molde en PDF</option>
                     <option value="sparkles">Destacado / Especial</option>
                     <option value="layers">Moldería en capas</option>
                   </select>
@@ -489,7 +489,7 @@
               </div>
 
               <div class="form-group">
-                <label for="producto-descripcion">Descripción detallada del patrón:</label>
+                <label for="producto-descripcion">Descripción detallada del molde:</label>
                 <input type="text" id="producto-descripcion" required
                   placeholder="Ej: Molde en PDF con guía paso a paso y lista de materiales">
               </div>
@@ -553,7 +553,7 @@
                   </label>
                   <input type="file" id="producto-archivo-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
                   <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
-                    Patrón para imprimir en hojas A4.
+                    Molde para imprimir en hojas A4.
                   </small>
                   <div id="producto-archivo-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
                 </div>
@@ -995,7 +995,7 @@
             <i data-lucide="download-cloud" class="ui-icon"></i> Mis Descargas Digitales
           </h3>
           <p style="margin: 0.25rem 0 0 0; font-size: 0.84rem; color: var(--text-muted);">
-            Consulta el estado de tu compra y descarga tus patrones en PDF y videos tutoriales.
+            Consulta el estado de tu compra y descarga tus moldes en PDF y videos tutoriales.
           </p>
         </div>
         <button class="modal-close-btn" onclick="cerrarModalMisDescargas()" title="Cerrar">&times;</button>
@@ -1050,7 +1050,7 @@
             <i data-lucide="gift" class="ui-icon"></i> ¡Descarga tu Molde Gratis!
           </h3>
           <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: #166534;">
-            Completa tus datos para enviarte el patrón y el video tutorial a tu correo.
+            Completa tus datos para enviarte el molde y el video tutorial a tu correo.
           </p>
         </div>
         <button class="modal-close-btn" onclick="cerrarModalMoldeGratis()" title="Cerrar">&times;</button>
@@ -1217,7 +1217,7 @@
           </div>
         </div>
         <p class="footer-desc">
-          Patrones de costura descargables en formato PDF listos para imprimir en cualquier impresora común en hojas A4.
+          Moldes de costura descargables en formato PDF listos para imprimir en cualquier impresora común en hojas A4.
           Confecciona prendas hermosas con nuestras guías y tutoriales paso a paso.
         </p>
       </div>

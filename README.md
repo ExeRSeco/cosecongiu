@@ -1,6 +1,6 @@
 # Tienda de Moldes Digitales — Cosé con Giu
 
-Plataforma de comercio electrónico de alto rendimiento (SPA Vanilla Web Stack) para la venta y distribución de patrones de costura y moldes digitales en formato PDF.
+Plataforma de comercio electrónico de alto rendimiento (SPA Vanilla Web Stack) para la venta y distribución de moldes de costura y moldería digital en formato PDF.
 
 ---
 

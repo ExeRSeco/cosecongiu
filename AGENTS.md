@@ -8,7 +8,7 @@ Bienvenido al repositorio de **Tienda de Moldes Digitales - Ecommerce MVP**. Est
 
 - **Nombre:** Tienda de Moldes Digitales (Moldes & Costura).
 - **Tipo:** MVP de Comercio Electrónico tipo Single Page Application (SPA).
-- **Propósito:** Catálogo digital de patrones de costura y moldería descargable en formato PDF, con carrito de compras, checkout guiado por transferencia bancaria y un panel de administración para gestión de productos y precios promocionales.
+- **Propósito:** Catálogo digital de moldes de costura y moldería descargable en formato PDF, con carrito de compras, checkout guiado por transferencia bancaria y un panel de administración para gestión de productos y precios promocionales.
 - **Enfoque técnico:** Código pedagógico, limpio, sin dependencias externas ni procesos de compilación (Vanilla Web Stack).
 
 ---
