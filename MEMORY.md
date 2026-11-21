@@ -1,14 +1,14 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 21/11/2026 — Resiliencia total en descargas duales (Molde + Specs), RPC registrar_pedido_checkout y fallback auto-reparable.
+Última actualización: 21/11/2026 — Renombrado "patrón/patrones" → "molde/moldes" en todos los textos visibles. Commit d94362b pusheado a main.
 
 ## Estado actual
 - Moldería de costura creativa: Sin talles en ningún componente, card, formulario ni modal.
 - Catálogo en producción: Inicia limpio sin productos demo precargados (`PRODUCTOS_POR_DEFECTO = []`).
 - Carrusel de fotos interactivo en tarjetas y vista detalle con miniaturas.
 - Subida y descarga dual de archivos PDF por molde:
-  - PDF 1: Molde / Patrón (`archivo_url` en Supabase Storage `moldes-archivos`).
+  - PDF 1: Molde (`archivo_url` en Supabase Storage `moldes-archivos`).
   - PDF 2: Especificaciones, materiales y recomendaciones (`archivo_specs_url`).
   - Botones de descarga independientes para Molde y Especificaciones en "Mis Descargas", modal gratuito y correos.
 - Resiliencia y auto-reparación:
