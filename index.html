@@ -98,11 +98,12 @@
       <!-- Portada Hero estilo Tiendanube Boutique -->
       <div class="boutique-hero-banner">
         <div class="hero-content">
-          <span class="hero-badge"><i data-lucide="sparkles" class="ui-icon-xs"></i> Moldería & Costura Digital</span>
-          <h2 class="hero-title">Moldes de costura listos para confeccionar</h2>
+          <span class="hero-badge"><i data-lucide="sparkles" class="ui-icon-xs"></i> COSE CON GIU.COSTURA
+            CREATIVA</span>
+          <h2 class="hero-title"> Aprendé a coser conmigo: moldes y proyectos paso a paso</h2>
           <p class="hero-desc">
-            Moldes descargables en PDF preparados en hojas A4 estándar para imprimir en casa. Incluyen lista de materiales,
-            especificaciones claras y video tutorial paso a paso.
+            Desde moldes individuales para acompañar mis tutoriales abiertos hasta proyectos exclusivos con clases
+            detalladas paso a paso. Todo preparado en PDF tamaño A4 con márgenes de costura incluidos.
           </p>
           <div class="hero-chips-row">
             <span class="hero-chip"><i data-lucide="printer" class="ui-icon-xs"></i> Impresión A4 hogareña</span>
@@ -117,8 +118,7 @@
         <div class="toolbar-search-row">
           <div class="search-input-wrap">
             <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
-            <input type="text" id="catalogo-busqueda"
-              placeholder="Buscar moldes de costura..."
+            <input type="text" id="catalogo-busqueda" placeholder="Buscar moldes de costura..."
               oninput="filtrarCatalogoPorBusqueda(this.value)">
             <button type="button" class="btn-clear-search" id="btn-clear-catalogo-search"
               onclick="limpiarBusquedaCatalogo()" title="Limpiar búsqueda" style="display: none;">✕</button>
@@ -161,7 +161,7 @@
           <div class="benefit-card">
             <div class="benefit-icon"><i data-lucide="printer" class="ui-icon"></i></div>
             <h4>Impresión A4 en Casa</h4>
-            <p>Moldes listos para imprimir en cualquier impresora común, con cuadro de prueba de 5x5 cm.</p>
+            <p>Moldes listos para imprimir en cualquier impresora común, con cuadro de prueba de 3x3 cm.</p>
           </div>
           <div class="benefit-card">
             <div class="benefit-icon"><i data-lucide="video" class="ui-icon"></i></div>
@@ -202,9 +202,11 @@
                 <br>
                 <br>
                 • Pagando por Transferencia Bancaria: Una vez realizada la transferencia, podés adjuntar el comprobante
-                en el checkout o enviarlo por WhatsApp. Verificamos el pago y habilitamos la descarga directa en un <strong>plazo de 24 a 48 horas hábiles.</strong>
+                en el checkout o enviarlo por WhatsApp. Verificamos el pago y habilitamos la descarga directa en un
+                <strong>plazo de 24 a 48 horas hábiles.</strong>
                 <br>
-                Asegurate de ingresar correctamente tu correo electrónico al momento de la compra y de revisar tu bandeja de spam.
+                Asegurate de ingresar correctamente tu correo electrónico al momento de la compra y de revisar tu
+                bandeja de spam.
               </p>
             </div>
           </details>
@@ -234,7 +236,9 @@
             </summary>
             <div class="faq-answer">
               <p><strong>¡Sí, totalmente!</strong> Todos nuestros moldes de costura creativa ya incluyen los márgenes de
-                costura. Dependiendo de la estructura y el armado de cada proyecto, trabajamos con un margen de 1 cm o de 0,7 cm estándar a pie de prensatelas. En la descripción de cada producto vas a encontrar especificado qué margen corresponde a ese diseño.
+                costura. Dependiendo de la estructura y el armado de cada proyecto, trabajamos con un margen de 1 cm o
+                de 0,7 cm estándar a pie de prensatelas. En la descripción de cada producto vas a encontrar especificado
+                qué margen corresponde a ese diseño.
               </p>
             </div>
           </details>
@@ -323,7 +327,8 @@
           <form id="form-admin-login" onsubmit="event.preventDefault(); iniciarSesionAdmin();" class="admin-login-form">
             <div class="form-group">
               <label for="admin-login-usuario">Usuario o Correo Electrónico</label>
-              <input type="text" id="admin-login-usuario" required placeholder="admin o cosecongiu@gmail.com" autocomplete="username">
+              <input type="text" id="admin-login-usuario" required placeholder="admin o cosecongiu@gmail.com"
+                autocomplete="username">
             </div>
             <div class="form-group">
               <label for="admin-login-password">Contraseña</label>
@@ -495,20 +500,27 @@
               </div>
 
               <div class="form-group">
-                <label for="producto-imagen" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                <label for="producto-imagen"
+                  style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
                   <i data-lucide="images" class="ui-icon-xs"></i> Imágenes del molde:
                 </label>
-                <input type="file" id="producto-imagen" accept="image/*" multiple onchange="manejarSeleccionImagenesMultiples(this)">
+                <input type="file" id="producto-imagen" accept="image/*" multiple
+                  onchange="manejarSeleccionImagenesMultiples(this)">
                 <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
-                  📸 Podés seleccionar una o varias imágenes. Se armará un carrusel interactivo en el catálogo y en el detalle del producto. La primera foto será la portada.
+                  📸 Podés seleccionar una o varias imágenes. Se armará un carrusel interactivo en el catálogo y en el
+                  detalle del producto. La primera foto será la portada.
                 </small>
-                <div id="producto-imagenes-preview-grid" class="admin-images-preview-grid" style="display: none; margin-top: 0.75rem;"></div>
+                <div id="producto-imagenes-preview-grid" class="admin-images-preview-grid"
+                  style="display: none; margin-top: 0.75rem;"></div>
               </div>
 
               <!-- Casilla de Molde Gratuito -->
-              <div class="form-group" style="margin-bottom: 0.85rem; padding: 0.65rem 0.85rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
-                <label style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; margin: 0; font-weight: 600; color: #15803d;">
-                  <input type="checkbox" id="producto-es-gratuito" onchange="alternarCamposMoldeGratuito(this.checked)" style="width: 1.15rem; height: 1.15rem; cursor: pointer;">
+              <div class="form-group"
+                style="margin-bottom: 0.85rem; padding: 0.65rem 0.85rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                <label
+                  style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; margin: 0; font-weight: 600; color: #15803d;">
+                  <input type="checkbox" id="producto-es-gratuito" onchange="alternarCamposMoldeGratuito(this.checked)"
+                    style="width: 1.15rem; height: 1.15rem; cursor: pointer;">
                   <span>🎁 Marcar como Molde Gratuito</span>
                 </label>
               </div>
@@ -547,34 +559,44 @@
 
               <!-- Archivos del Molde: Subida Dual de PDFs (Molde + Especificaciones) + Video YouTube -->
               <div class="form-row" style="gap: 1rem; margin-bottom: 1rem;">
-                <div class="form-group" style="flex: 1; background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0;">
-                  <label for="producto-archivo-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                <div class="form-group"
+                  style="flex: 1; background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0;">
+                  <label for="producto-archivo-file"
+                    style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
                     <i data-lucide="file-up" class="ui-icon-xs"></i> 1. Archivo del Molde (PDF):
                   </label>
                   <input type="file" id="producto-archivo-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
                   <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
                     Molde para imprimir en hojas A4.
                   </small>
-                  <div id="producto-archivo-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
+                  <div id="producto-archivo-info"
+                    style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;">
+                  </div>
                 </div>
 
-                <div class="form-group" style="flex: 1; background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0;">
-                  <label for="producto-specs-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                <div class="form-group"
+                  style="flex: 1; background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0;">
+                  <label for="producto-specs-file"
+                    style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
                     <i data-lucide="file-text" class="ui-icon-xs"></i> 2. Especificaciones y Materiales (PDF):
                   </label>
                   <input type="file" id="producto-specs-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
                   <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
                     Guía de armado, lista de materiales y recomendaciones.
                   </small>
-                  <div id="producto-specs-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
+                  <div id="producto-specs-info"
+                    style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;">
+                  </div>
                 </div>
               </div>
 
               <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="producto-link-video" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                <label for="producto-link-video"
+                  style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
                   <i data-lucide="video" class="ui-icon-xs"></i> Video Tutorial en YouTube:
                 </label>
-                <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                <input type="url" id="producto-link-video" placeholder="https://www.youtube.com/watch?v=..."
+                  autocomplete="off">
                 <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
                   Enlace al video de YouTube. Se comparte automáticamente al completar la compra o descarga gratuita.
                 </small>
@@ -722,7 +744,8 @@
               <i data-lucide="credit-card" class="ui-icon" style="color: #009ee3;"></i> Mercado Pago
             </h4>
             <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem;">
-              Los cobros con tarjeta y dinero en cuenta se gestionan automáticamente a través de la pasarela oficial. Si deseas recibir transferencias directas a tu CVU de MP, especifica tu alias aquí:
+              Los cobros con tarjeta y dinero en cuenta se gestionan automáticamente a través de la pasarela oficial. Si
+              deseas recibir transferencias directas a tu CVU de MP, especifica tu alias aquí:
             </p>
 
             <div class="form-row">
@@ -830,7 +853,8 @@
                 <strong>Acreditación instantánea 100% automatizada</strong>
               </div>
               <p class="mp-callout-desc">
-                Al presionar el botón se abrirá la pasarela oficial de Mercado Pago para pagar de forma segura con tarjeta de crédito, débito o dinero en cuenta.
+                Al presionar el botón se abrirá la pasarela oficial de Mercado Pago para pagar de forma segura con
+                tarjeta de crédito, débito o dinero en cuenta.
               </p>
               <div class="mp-payment-badges">
                 <span class="tag-chip">Visa</span>
@@ -887,8 +911,7 @@
             <div class="comprobante-compact-wrap">
               <div class="form-group" style="margin-bottom: 0.6rem;">
                 <label for="checkout-num-operacion">N° de Operación Bancaria:</label>
-                <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230"
-                  autocomplete="off">
+                <input type="text" id="checkout-num-operacion" placeholder="Ej: 14859230" autocomplete="off">
               </div>
 
               <div class="dropzone-compact" id="dropzone-comprobante"
@@ -912,7 +935,8 @@
 
               <div class="verification-note">
                 <i data-lucide="clock" class="ui-icon-xs"></i>
-                <span>Verificación manual: te enviaremos la confirmación a tu correo en un plazo de hasta 48 hs hábiles.</span>
+                <span>Verificación manual: te enviaremos la confirmación a tu correo en un plazo de hasta 48 hs
+                  hábiles.</span>
               </div>
             </div>
           </div>
@@ -1013,7 +1037,8 @@
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label for="input-descargas-email">Correo Electrónico *</label>
-              <input type="email" id="input-descargas-email" placeholder="tu-correo@email.com" required autocomplete="off">
+              <input type="email" id="input-descargas-email" placeholder="tu-correo@email.com" required
+                autocomplete="off">
             </div>
           </div>
           <div style="margin-top: 0.85rem; display: flex; justify-content: flex-end;">
@@ -1026,7 +1051,8 @@
         <!-- Contenedor Dinámico de Resultados de Descargas -->
         <div id="contenedor-resultado-descargas">
           <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
-            <i data-lucide="file-text" style="width: 2.8rem; height: 2.8rem; stroke-width: 1.5; color: var(--primary); opacity: 0.5; margin-bottom: 0.5rem;"></i>
+            <i data-lucide="file-text"
+              style="width: 2.8rem; height: 2.8rem; stroke-width: 1.5; color: var(--primary); opacity: 0.5; margin-bottom: 0.5rem;"></i>
             <p style="margin: 0; font-size: 0.92rem;">
               Ingresa el código que recibiste al comprar y tu correo electrónico para desbloquear tus archivos.
             </p>
@@ -1044,7 +1070,8 @@
   <div id="modal-molde-gratis" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
     style="display: none;" onclick="if(event.target === this) cerrarModalMoldeGratis();">
     <div class="modal-box" role="document" style="max-width: 520px;">
-      <div class="modal-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-bottom: 1px solid #bbf7d0;">
+      <div class="modal-header"
+        style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-bottom: 1px solid #bbf7d0;">
         <div>
           <h3 style="margin: 0; color: #15803d; display: flex; align-items: center; gap: 0.45rem;">
             <i data-lucide="gift" class="ui-icon"></i> ¡Descarga tu Molde Gratis!
@@ -1058,13 +1085,14 @@
 
       <div class="modal-body" style="padding: 1.25rem;">
         <!-- Previa del molde gratuito -->
-        <div id="molde-gratis-preview" style="display: flex; align-items: center; gap: 1rem; background: var(--bg-page); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.25rem;">
+        <div id="molde-gratis-preview"
+          style="display: flex; align-items: center; gap: 1rem; background: var(--bg-page); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.25rem;">
           <!-- Generado dinámicamente -->
         </div>
 
         <form id="form-molde-gratis" onsubmit="event.preventDefault(); confirmarDescargaGratis();">
           <input type="hidden" id="molde-gratis-id">
-          
+
           <div class="form-group" style="margin-bottom: 0.85rem;">
             <label for="molde-gratis-nombre">Nombre y Apellido *</label>
             <input type="text" id="molde-gratis-nombre" placeholder="Ej: María González" required autocomplete="name">
@@ -1083,7 +1111,8 @@
           </div>
 
           <div class="form-buttons" style="margin-top: 1.25rem;">
-            <button type="submit" class="btn btn-primary btn-block" id="btn-submit-molde-gratis" style="font-size: 1rem; padding: 0.75rem 1.25rem;">
+            <button type="submit" class="btn btn-primary btn-block" id="btn-submit-molde-gratis"
+              style="font-size: 1rem; padding: 0.75rem 1.25rem;">
               <i data-lucide="download" class="ui-icon"></i> Obtener Molde Gratis Ahora
             </button>
           </div>
@@ -1126,10 +1155,11 @@
 
           <div class="form-group" style="margin-top: 1rem;">
             <label for="input-supabase-anon">Project API Key (Publishable key / anon public) *</label>
-            <input type="password" id="input-supabase-anon" placeholder="sb_publishable_... o eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              autocomplete="off" required>
+            <input type="password" id="input-supabase-anon"
+              placeholder="sb_publishable_... o eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." autocomplete="off" required>
             <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
-              Encuéntrala en: <em>Settings → API Keys → Publishable key (sb_publishable_...) o en "View legacy API keys"</em>
+              Encuéntrala en: <em>Settings → API Keys → Publishable key (sb_publishable_...) o en "View legacy API
+                keys"</em>
             </small>
           </div>
 
@@ -1280,7 +1310,8 @@
           <span class="pay-chip">Visa</span>
           <span class="pay-chip">Mastercard</span>
           <span class="pay-chip">Naranja</span>
-          <span class="pay-chip"><i data-lucide="percent" class="ui-icon-xs"></i> Transferencia Bancaria (10% OFF)</span>
+          <span class="pay-chip"><i data-lucide="percent" class="ui-icon-xs"></i> Transferencia Bancaria (10%
+            OFF)</span>
         </div>
       </div>
     </div>
