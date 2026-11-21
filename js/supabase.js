@@ -572,6 +572,39 @@ async function supabaseSubirArchivoMolde(archivo, nombreMolde = "molde") {
 }
 
 /**
+ * Sube un archivo de especificaciones / recomendaciones (PDF, ZIP, etc.) al bucket privado "moldes-archivos"
+ * Solo permitido para administradores aprobados.
+ */
+async function supabaseSubirArchivoSpecs(archivo, nombreMolde = "especificaciones") {
+  const client = obtenerClienteSupabase();
+  if (!client || !archivo) return null;
+
+  try {
+    const extension = (archivo.name.split(".").pop() || "pdf").toLowerCase();
+    const nombreLimpio = (nombreMolde || archivo.name).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
+    const nombreUnico = `specs_${Date.now()}_${nombreLimpio}.${extension}`;
+
+    const { data, error } = await client.storage
+      .from("moldes-archivos")
+      .upload(nombreUnico, archivo, {
+        cacheControl: "3600",
+        contentType: archivo.type || (extension === "pdf" ? "application/pdf" : "application/zip"),
+        upsert: true
+      });
+
+    if (error) {
+      console.error("[Supabase Storage] Error al subir archivo de especificaciones:", error);
+      return null;
+    }
+
+    return nombreUnico;
+  } catch (err) {
+    console.error("[Supabase Storage] Excepción al subir archivo de especificaciones:", err);
+    return null;
+  }
+}
+
+/**
  * Genera una URL firmada de descarga temporal para un molde del bucket privado "moldes-archivos"
  */
 async function supabaseObtenerUrlDescargaMolde(archivoUrlOPath, segundosValidez = 86400) {
@@ -683,7 +716,7 @@ async function supabaseObtenerProductos() {
 
   try {
     const esAdmin = typeof estaAdminLogueado === "function" && estaAdminLogueado();
-    const colsPublicas = "id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, es_gratuito, created_at";
+    const colsPublicas = "id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, imagenes, es_gratuito, created_at";
     const columnas = esAdmin ? "*" : colsPublicas;
 
     let res = await client
@@ -707,23 +740,34 @@ async function supabaseObtenerProductos() {
     const data = res.data;
 
     // Mapeamos de snake_case (BD) a camelCase (UI)
-    return (data || []).map(p => ({
-      id: Number(p.id),
-      nombre: p.nombre,
-      descripcion: p.descripcion,
-      categoria: p.categoria || "Otros",
-      icono: p.icono || "scissors",
-      precio: Number(p.precio),
-      enPromo: Boolean(p.en_promo),
-      precioPromo: Number(p.precio_promo || 0),
-      precioUsd: Number(p.precio_usd || 0),
-      precioPromoUsd: Number(p.precio_promo_usd || 0),
-      imagen: p.imagen || null,
-      archivoUrl: p.archivo_url || null,
-      esGratuito: Boolean(p.es_gratuito),
-      linkArchivos: p.link_archivos || "",
-      linkVideo: p.link_video || ""
-    }));
+    return (data || []).map(p => {
+      const imagenesArray = Array.isArray(p.imagenes)
+        ? p.imagenes
+        : (p.imagen ? [p.imagen] : []);
+      const imagenPrincipal = imagenesArray.length > 0
+        ? imagenesArray[0]
+        : (p.imagen || null);
+
+      return {
+        id: Number(p.id),
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        categoria: p.categoria || "Otros",
+        icono: p.icono || "scissors",
+        precio: Number(p.precio),
+        enPromo: Boolean(p.en_promo),
+        precioPromo: Number(p.precio_promo || 0),
+        precioUsd: Number(p.precio_usd || 0),
+        precioPromoUsd: Number(p.precio_promo_usd || 0),
+        imagen: imagenPrincipal,
+        imagenes: imagenesArray,
+        archivoUrl: p.archivo_url || null,
+        archivoSpecsUrl: p.archivo_specs_url || null,
+        esGratuito: Boolean(p.es_gratuito),
+        linkArchivos: p.link_archivos || "",
+        linkVideo: p.link_video || ""
+      };
+    });
   } catch (err) {
     console.error("[Supabase] Excepción al obtener productos:", err);
     return null;
@@ -737,6 +781,13 @@ async function supabaseGuardarProducto(producto, esNuevo = false) {
   const client = obtenerClienteSupabase();
   if (!client) return false;
 
+  const imagenesArray = Array.isArray(producto.imagenes)
+    ? producto.imagenes
+    : (producto.imagen ? [producto.imagen] : []);
+  const imagenPrincipal = imagenesArray.length > 0
+    ? imagenesArray[0]
+    : (producto.imagen || null);
+
   const payload = {
     nombre: producto.nombre,
     descripcion: producto.descripcion,
@@ -747,8 +798,10 @@ async function supabaseGuardarProducto(producto, esNuevo = false) {
     precio_promo: producto.precioPromo,
     precio_usd: Number(producto.precioUsd || 0),
     precio_promo_usd: Number(producto.precioPromoUsd || 0),
-    imagen: producto.imagen,
+    imagen: imagenPrincipal,
+    imagenes: imagenesArray,
     archivo_url: producto.archivoUrl || null,
+    archivo_specs_url: producto.archivoSpecsUrl || null,
     es_gratuito: Boolean(producto.esGratuito),
     link_archivos: producto.linkArchivos || producto.archivoUrl || "",
     link_video: producto.linkVideo || ""
@@ -940,6 +993,8 @@ async function supabaseCrearPedido(pedido) {
         nombre: item.nombre,
         precio: item.precio,
         cantidad: item.cantidad || 1,
+        archivo_url: item.archivoUrl || item.archivo_url || null,
+        archivo_specs_url: item.archivoSpecsUrl || item.archivo_specs_url || null,
         link_archivos: item.archivoUrl || item.linkArchivos || "",
         link_video: item.linkVideo || ""
       }));

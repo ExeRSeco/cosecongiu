@@ -169,9 +169,9 @@
             <p>Cosemos la prenda juntas paso a paso en video para que disfrutes todo el proceso.</p>
           </div>
           <div class="benefit-card">
-            <div class="benefit-icon"><i data-lucide="ruler" class="ui-icon"></i></div>
-            <h4>Talles Reales con Margen</h4>
-            <p>Moldería probada en talles XS al XXL con márgenes de costura de 1 cm ya incluidos.</p>
+            <div class="benefit-icon"><i data-lucide="scissors" class="ui-icon"></i></div>
+            <h4>Costura Fácil y Clara</h4>
+            <p>Patrones de costura creativa con márgenes de costura incluidos y explicaciones claras.</p>
           </div>
         </div>
       </section>
@@ -457,7 +457,7 @@
 
               <div class="form-group">
                 <label for="producto-nombre">Nombre del molde o producto:</label>
-                <input type="text" id="producto-nombre" required placeholder="Ej: Vestido Solero Verano Talles S-XL">
+                <input type="text" id="producto-nombre" required placeholder="Ej: Bolso Sole Tote Bag">
               </div>
 
               <div class="form-row">
@@ -491,19 +491,18 @@
               <div class="form-group">
                 <label for="producto-descripcion">Descripción detallada del patrón:</label>
                 <input type="text" id="producto-descripcion" required
-                  placeholder="Ej: Molde en PDF con guía paso a paso, talles XS al XXL">
+                  placeholder="Ej: Molde en PDF con guía paso a paso y lista de materiales">
               </div>
 
               <div class="form-group">
-                <label for="producto-imagen">Imagen del molde</label>
-                <input type="file" id="producto-imagen" accept="image/*">
-                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">⚡
-                  Optimización automática: se comprime y convierte a WebP para ahorrar espacio y cargar ultra
-                  rápido.</small>
-                <div id="producto-preview-wrap" style="margin-top:0.5rem; display: none;">
-                  <img id="producto-preview" src="" alt="Vista previa del molde"
-                    style="max-width:120px; border-radius:8px; border:1px solid var(--border);">
-                </div>
+                <label for="producto-imagen" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                  <i data-lucide="images" class="ui-icon-xs"></i> Imágenes del molde:
+                </label>
+                <input type="file" id="producto-imagen" accept="image/*" multiple onchange="manejarSeleccionImagenesMultiples(this)">
+                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                  📸 Podés seleccionar una o varias imágenes. Se armará un carrusel interactivo en el catálogo y en el detalle del producto. La primera foto será la portada.
+                </small>
+                <div id="producto-imagenes-preview-grid" class="admin-images-preview-grid" style="display: none; margin-top: 0.75rem;"></div>
               </div>
 
               <!-- Casilla de Molde Gratuito -->
@@ -546,16 +545,29 @@
                 </div>
               </div>
 
-              <!-- Archivos del Molde: Subida a Storage Privado + Video YouTube -->
-              <div class="form-group" style="background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
-                <label for="producto-archivo-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
-                  <i data-lucide="file-up" class="ui-icon-xs"></i> Archivo del Molde:
-                </label>
-                <input type="file" id="producto-archivo-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
-                <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
-                  🔒 Almacenamiento seguro. Se habilitará para descarga directa una vez acreditado el pago o registro gratuito.
-                </small>
-                <div id="producto-archivo-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
+              <!-- Archivos del Molde: Subida Dual de PDFs (Molde + Especificaciones) + Video YouTube -->
+              <div class="form-row" style="gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group" style="flex: 1; background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0;">
+                  <label for="producto-archivo-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                    <i data-lucide="file-up" class="ui-icon-xs"></i> 1. Archivo del Molde (PDF):
+                  </label>
+                  <input type="file" id="producto-archivo-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
+                  <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
+                    Patrón para imprimir en hojas A4.
+                  </small>
+                  <div id="producto-archivo-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
+                </div>
+
+                <div class="form-group" style="flex: 1; background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0;">
+                  <label for="producto-specs-file" style="font-weight: 700; color: var(--primary-dark); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                    <i data-lucide="file-text" class="ui-icon-xs"></i> 2. Especificaciones y Materiales (PDF):
+                  </label>
+                  <input type="file" id="producto-specs-file" accept=".pdf,.zip,.rar" style="margin-top: 0.25rem;">
+                  <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.35rem;">
+                    Guía de armado, lista de materiales y recomendaciones.
+                  </small>
+                  <div id="producto-specs-info" style="margin-top: 0.45rem; display: none; font-size: 0.85rem; color: #15803d; font-weight: 600;"></div>
+                </div>
               </div>
 
               <div class="form-group" style="margin-bottom: 1rem;">

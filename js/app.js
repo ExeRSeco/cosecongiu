@@ -6,94 +6,8 @@
  */
 
 // 1. DATOS INICIALES POR DEFECTO
-// Estos moldes se cargarán automáticamente la primera vez que abras la web.
-const PRODUCTOS_POR_DEFECTO = [
-  {
-    id: 1,
-    nombre: "Molde Vestido Solero Verano",
-    descripcion: "Patrón descargable en talles XS al XXL con guía de confección paso a paso.",
-    categoria: "Vestidos",
-    precio: 2500,
-    enPromo: true,
-    precioPromo: 1800,
-    precioUsd: 2.50,
-    precioPromoUsd: 1.80,
-    icono: "scissors",
-    imagen: null,
-    archivoUrl: null,
-    esGratuito: false,
-    linkArchivos: "",
-    linkVideo: "https://www.youtube.com/watch?v=tutorial-vestido-solero"
-  },
-  {
-    id: 2,
-    nombre: "Molde Pantalón Palazzo con Cintura Elástica",
-    descripcion: "Corte holgado y cómodo, incluye instrucciones de corte y tabla de medidas.",
-    categoria: "Pantalones",
-    precio: 2200,
-    enPromo: false,
-    precioPromo: 0,
-    precioUsd: 2.20,
-    precioPromoUsd: 0,
-    icono: "layers",
-    imagen: null,
-    archivoUrl: null,
-    esGratuito: false,
-    linkArchivos: "",
-    linkVideo: "https://www.youtube.com/watch?v=tutorial-pantalon-palazzo"
-  },
-  {
-    id: 3,
-    nombre: "Molde Camisa Oversize Cuello Clásico",
-    descripcion: "Modelo unisex versátil en formato A4 listo para imprimir y pliego completo.",
-    categoria: "Camisas",
-    precio: 2900,
-    enPromo: true,
-    precioPromo: 2400,
-    precioUsd: 2.90,
-    precioPromoUsd: 2.40,
-    icono: "shirt",
-    imagen: null,
-    archivoUrl: null,
-    esGratuito: false,
-    linkArchivos: "",
-    linkVideo: "https://www.youtube.com/watch?v=tutorial-camisa-oversize"
-  },
-  {
-    id: 4,
-    nombre: "Molde Bolso Tote Bag y Neceser",
-    descripcion: "Ideal para principiantes en costura. Moldería paso a paso con forro interno.",
-    categoria: "Bolsos y Accesorios",
-    precio: 1500,
-    enPromo: false,
-    precioPromo: 0,
-    precioUsd: 1.50,
-    precioPromoUsd: 0,
-    icono: "shopping-bag",
-    imagen: null,
-    archivoUrl: null,
-    esGratuito: false,
-    linkArchivos: "",
-    linkVideo: "https://www.youtube.com/watch?v=tutorial-totebag-neceser"
-  },
-  {
-    id: 5,
-    nombre: "Molde Antifaz para Dormir & Scrunchie",
-    descripcion: "Patrón gratuito en PDF listo para imprimir en casa. ¡Ideal para aprovechar retazos de tela!",
-    categoria: "Bolsos y Accesorios",
-    precio: 0,
-    enPromo: false,
-    precioPromo: 0,
-    precioUsd: 0,
-    precioPromoUsd: 0,
-    icono: "sparkles",
-    imagen: null,
-    archivoUrl: null,
-    esGratuito: true,
-    linkArchivos: "",
-    linkVideo: "https://www.youtube.com/watch?v=tutorial-antifaz-scrunchie"
-  }
-];
+// En producción la tienda inicia limpia sin moldes demo precargados
+const PRODUCTOS_POR_DEFECTO = [];
 
 // Pedidos iniciales en producción (comienza vacío sin datos de prueba)
 const PEDIDOS_POR_DEFECTO = [];
@@ -398,31 +312,46 @@ function cargarDatosDesdeLocalStorage() {
   if (productosGuardados) {
     try {
       const parsed = JSON.parse(productosGuardados);
-      // Migración suave: asegurar campos para USD, archivo privado y moldes gratuitos
-      productos = parsed.map(p => {
-        const def = PRODUCTOS_POR_DEFECTO.find(d => d.id === p.id);
-        return {
-          ...p,
-          archivoUrl: p.archivoUrl || (def ? def.archivoUrl : null),
-          esGratuito: Boolean(p.esGratuito || p.precio === 0 || (def && def.esGratuito)),
-          precioUsd: (typeof p.precioUsd !== "undefined" && p.precioUsd !== null) ? Number(p.precioUsd) : (def ? def.precioUsd : 0),
-          precioPromoUsd: (typeof p.precioPromoUsd !== "undefined" && p.precioPromoUsd !== null) ? Number(p.precioPromoUsd) : (def ? def.precioPromoUsd : 0)
-        };
+      // Depuración de datos de prueba legacy: descartar productos mock precargados
+      const nombresDemo = [
+        "Molde Vestido Solero Verano",
+        "Molde Pantalón Palazzo con Cintura Elástica",
+        "Molde Camisa Oversize Cuello Clásico",
+        "Molde Bolso Tote Bag y Neceser",
+        "Molde Antifaz para Dormir & Scrunchie"
+      ];
+      const filtrados = (Array.isArray(parsed) ? parsed : []).filter(p => {
+        if (!p) return false;
+        if (nombresDemo.includes(p.nombre)) return false;
+        return true;
       });
 
-      // Si falta el molde gratuito de muestra, lo agregamos
-      if (!productos.some(p => p.esGratuito)) {
-        const freebie = PRODUCTOS_POR_DEFECTO.find(d => d.esGratuito);
-        if (freebie) {
-          productos.push({ ...freebie });
-          guardarProductosEnStorage();
-        }
-      }
+      productos = filtrados.map(p => {
+        const imagenesArray = Array.isArray(p.imagenes)
+          ? p.imagenes
+          : (p.imagen ? [p.imagen] : []);
+        const imagenPrincipal = imagenesArray.length > 0
+          ? imagenesArray[0]
+          : (p.imagen || null);
+
+        return {
+          ...p,
+          archivoUrl: p.archivoUrl || null,
+          archivoSpecsUrl: p.archivoSpecsUrl || null,
+          imagenes: imagenesArray,
+          imagen: imagenPrincipal,
+          esGratuito: Boolean(p.esGratuito || p.precio === 0),
+          precioUsd: (typeof p.precioUsd !== "undefined" && p.precioUsd !== null) ? Number(p.precioUsd) : 0,
+          precioPromoUsd: (typeof p.precioPromoUsd !== "undefined" && p.precioPromoUsd !== null) ? Number(p.precioPromoUsd) : 0
+        };
+      });
+      guardarProductosEnStorage();
     } catch (e) {
-      productos = [...PRODUCTOS_POR_DEFECTO];
+      productos = [];
+      guardarProductosEnStorage();
     }
   } else {
-    productos = [...PRODUCTOS_POR_DEFECTO];
+    productos = [];
     guardarProductosEnStorage();
   }
 
@@ -1543,6 +1472,78 @@ function cambiarVista(vista) {
 }
 
 /**
+ * ====================================================================
+ * GESTIÓN DE CARRUSELES INTERACTIVOS (CATÁLOGO Y VISTA DETALLE)
+ * ====================================================================
+ */
+let imagenesDetalleActuales = [];
+let indiceImagenDetalleActual = 0;
+
+function rotarImagenDetalle(delta) {
+  if (imagenesDetalleActuales.length <= 1) return;
+  const nuevoIdx = (indiceImagenDetalleActual + delta + imagenesDetalleActuales.length) % imagenesDetalleActuales.length;
+  irAImagenDetalle(nuevoIdx);
+}
+
+function irAImagenDetalle(idx) {
+  if (!imagenesDetalleActuales || imagenesDetalleActuales.length === 0) return;
+  indiceImagenDetalleActual = idx;
+  const mainImg = document.getElementById("detail-carousel-main-img");
+  if (mainImg) {
+    mainImg.src = imagenesDetalleActuales[idx];
+  }
+  const counter = document.getElementById("detail-carousel-counter");
+  if (counter) {
+    counter.textContent = `${idx + 1} / ${imagenesDetalleActuales.length}`;
+  }
+  const thumbs = document.querySelectorAll(".carousel-thumbnails-strip .thumb-btn");
+  thumbs.forEach((thumb, tIdx) => {
+    if (tIdx === idx) {
+      thumb.classList.add("active");
+    } else {
+      thumb.classList.remove("active");
+    }
+  });
+}
+
+function rotarImagenCard(productoId, delta) {
+  const container = document.getElementById(`card-carousel-slides-${productoId}`);
+  if (!container) return;
+  const imgs = container.querySelectorAll(".card-carousel-img");
+  if (imgs.length <= 1) return;
+  let activeIdx = 0;
+  imgs.forEach((img, idx) => {
+    if (img.classList.contains("active")) activeIdx = idx;
+  });
+  const nextIdx = (activeIdx + delta + imgs.length) % imgs.length;
+  irAImagenCard(productoId, nextIdx);
+}
+
+function irAImagenCard(productoId, nextIdx) {
+  const container = document.getElementById(`card-carousel-slides-${productoId}`);
+  if (!container) return;
+  const imgs = container.querySelectorAll(".card-carousel-img");
+  imgs.forEach((img, idx) => {
+    if (idx === nextIdx) {
+      img.classList.add("active");
+    } else {
+      img.classList.remove("active");
+    }
+  });
+  const card = container.closest(".product-card");
+  if (card) {
+    const dots = card.querySelectorAll(".card-dot");
+    dots.forEach((dot, idx) => {
+      if (idx === nextIdx) {
+        dot.classList.add("active");
+      } else {
+        dot.classList.remove("active");
+      }
+    });
+  }
+}
+
+/**
  * Muestra la vista dedicada con el detalle de un molde individual
  */
 function verDetalleProducto(productoId) {
@@ -1559,12 +1560,42 @@ function verDetalleProducto(productoId) {
   const precioFinal = esGratis ? 0 : (tieneDescuento ? producto.precioPromo : producto.precio);
   const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90 * 100) / 100;
 
+  const imgsProducto = (Array.isArray(producto.imagenes) && producto.imagenes.length > 0)
+    ? producto.imagenes
+    : (producto.imagen ? [producto.imagen] : []);
+  imagenesDetalleActuales = imgsProducto;
+  indiceImagenDetalleActual = 0;
+
   contenedor.innerHTML = `
     <div class="product-detail-visual">
-      ${esMasVendido ? '<span class="product-badge-bestseller" style="position: absolute; top: 1.25rem; left: 1.25rem;"><i data-lucide="sparkles" class="badge-icon"></i> Más Vendido</span>' : ''}
-      ${esGratis ? '<span class="product-badge-free" style="position: absolute; top: 1.25rem; right: 1.25rem;"><i data-lucide="gift" class="badge-icon"></i> ¡Gratis!</span>' : (tieneDescuento ? '<span class="product-badge-promo" style="position: absolute; top: 1.25rem; right: 1.25rem;"><i data-lucide="tag" class="badge-icon"></i> ¡Oferta!</span>' : '')}
-      ${producto.imagen ? `<div class="product-image-wrap"><img src="${producto.imagen}" alt="${escaparHTML(producto.nombre)}"></div>` : `<div class="product-detail-icon">${renderIconoMolde(producto.icono)}</div>`}
-      <span class="product-category-badge" style="font-size: 0.85rem; padding: 0.2rem 0.6rem; background: #ffffff; border-radius: 999px; border: 1px solid var(--border);">
+      ${esMasVendido ? '<span class="product-badge-bestseller" style="position: absolute; top: 1.25rem; left: 1.25rem; z-index: 6;"><i data-lucide="sparkles" class="badge-icon"></i> Más Vendido</span>' : ''}
+      ${esGratis ? '<span class="product-badge-free" style="position: absolute; top: 1.25rem; right: 1.25rem; z-index: 6;"><i data-lucide="gift" class="badge-icon"></i> ¡Gratis!</span>' : (tieneDescuento ? '<span class="product-badge-promo" style="position: absolute; top: 1.25rem; right: 1.25rem; z-index: 6;"><i data-lucide="tag" class="badge-icon"></i> ¡Oferta!</span>' : '')}
+      
+      ${imgsProducto.length > 0 ? `
+        <div class="product-detail-carousel">
+          <div class="carousel-main-wrap">
+            <img id="detail-carousel-main-img" src="${imgsProducto[0]}" alt="${escaparHTML(producto.nombre)}">
+            ${imgsProducto.length > 1 ? `
+              <button type="button" class="carousel-nav-btn prev" onclick="rotarImagenDetalle(-1)" aria-label="Foto anterior">‹</button>
+              <button type="button" class="carousel-nav-btn next" onclick="rotarImagenDetalle(1)" aria-label="Siguiente foto">›</button>
+              <span class="carousel-counter" id="detail-carousel-counter">1 / ${imgsProducto.length}</span>
+            ` : ''}
+          </div>
+          ${imgsProducto.length > 1 ? `
+            <div class="carousel-thumbnails-strip">
+              ${imgsProducto.map((img, idx) => `
+                <button type="button" class="thumb-btn ${idx === 0 ? 'active' : ''}" onclick="irAImagenDetalle(${idx})" aria-label="Ver foto ${idx + 1}">
+                  <img src="${img}" alt="Miniatura ${idx + 1}">
+                </button>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      ` : `
+        <div class="product-detail-icon">${renderIconoMolde(producto.icono)}</div>
+      `}
+
+      <span class="product-category-badge" style="font-size: 0.85rem; padding: 0.2rem 0.6rem; background: #ffffff; border-radius: 999px; border: 1px solid var(--border); margin-top: 0.5rem;">
         ${escaparHTML(producto.categoria || 'Moldería')}
       </span>
     </div>
@@ -1589,12 +1620,10 @@ function verDetalleProducto(productoId) {
 
       <div class="product-detail-specs-box">
         <h4>Detalles y Especificaciones del Molde:</h4>
-        <ul>
-          <li><i data-lucide="file-text" class="ui-icon"></i> <strong>Formato:</strong> PDF A4 y Pliego A0</li>
-          <li><i data-lucide="ruler" class="ui-icon"></i> <strong>Talles:</strong> XS, S, M, L, XL, XXL</li>
-          <li><i data-lucide="scissors" class="ui-icon"></i> <strong>Márgenes:</strong> 1 cm ya incluidos</li>
-          <li><i data-lucide="book-open" class="ui-icon"></i> <strong>Guía:</strong> Paso a paso de confección ilustrada</li>
-          <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> Confección guiada incluida</li>
+        <ul style="grid-template-columns: 1fr;">
+          <li><i data-lucide="file-text" class="ui-icon"></i> <strong>Formato:</strong> Archivo PDF listo para imprimir en hojas A4 a tamaño real</li>
+          <li><i data-lucide="book-open" class="ui-icon"></i> <strong>Guía:</strong> Paso a paso de confección ilustrada y lista de materiales</li>
+          <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> ${producto.linkVideo ? `<a href="${producto.linkVideo}" target="_blank" rel="noopener noreferrer" style="color: #dc2626; font-weight: 600; text-decoration: underline;">Confección guiada paso a paso en YouTube</a>` : 'Confección guiada paso a paso'}</li>
         </ul>
       </div>
 
@@ -1775,6 +1804,21 @@ function renderCatalogo() {
     }
   }
 
+  // Si el catálogo está completamente vacío (sin productos cargados aún)
+  if (productos.length === 0) {
+    catalogoGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 3.5rem 1.5rem; background: var(--bg-card); border-radius: var(--radius); border: 1px dashed var(--border);">
+        <div style="margin-bottom: 0.6rem;"><i data-lucide="sparkles" class="ui-icon-lg" style="color: var(--primary); width: 3rem; height: 3rem;"></i></div>
+        <h3>Catálogo de Moldes en Preparación</h3>
+        <p style="color: var(--text-muted); margin: 0.5rem auto 1.25rem auto; max-width: 480px;">
+          Próximamente publicaremos nuevos patrones y moldes de costura descargables en PDF.
+        </p>
+      </div>
+    `;
+    actualizarIconosLucide();
+    return;
+  }
+
   // Si no hay moldes que coincidan con la búsqueda o filtro
   if (listaFiltrada.length === 0) {
     catalogoGrid.innerHTML = `
@@ -1798,6 +1842,10 @@ function renderCatalogo() {
     const tieneDescuento = !esGratis && producto.enPromo && producto.precioPromo > 0;
     const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
 
+    const imgs = (Array.isArray(producto.imagenes) && producto.imagenes.length > 0)
+      ? producto.imagenes
+      : (producto.imagen ? [producto.imagen] : []);
+
     return `
       <article class="product-card ${esMasVendido ? 'card-bestseller' : ''} ${esGratis ? 'card-freebie' : ''}">
         <div class="product-badges-container">
@@ -1805,15 +1853,28 @@ function renderCatalogo() {
           ${esGratis ? '<span class="product-badge-free"><i data-lucide="gift" class="badge-icon"></i> ¡Gratis!</span>' : (tieneDescuento ? '<span class="product-badge-promo"><i data-lucide="tag" class="badge-icon"></i> ¡Oferta!</span>' : '')}
         </div>
         
-        ${producto.imagen ? `
+        ${imgs.length > 1 ? `
+        <div class="product-image-wrap product-card-carousel" onclick="verDetalleProducto(${producto.id})" style="cursor: pointer;" title="Ver detalle del molde">
+          <div class="card-carousel-slides" id="card-carousel-slides-${producto.id}">
+            ${imgs.map((img, idx) => `
+              <img src="${img}" alt="${escaparHTML(producto.nombre)} - Foto ${idx+1}" class="card-carousel-img ${idx === 0 ? 'active' : ''}" data-idx="${idx}">
+            `).join('')}
+          </div>
+          <button type="button" class="card-carousel-arrow prev" onclick="event.stopPropagation(); rotarImagenCard(${producto.id}, -1);" aria-label="Imagen anterior">‹</button>
+          <button type="button" class="card-carousel-arrow next" onclick="event.stopPropagation(); rotarImagenCard(${producto.id}, 1);" aria-label="Siguiente imagen">›</button>
+          <div class="card-carousel-dots">
+            ${imgs.map((_, idx) => `<span class="card-dot ${idx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); irAImagenCard(${producto.id}, ${idx});"></span>`).join('')}
+          </div>
+        </div>
+        ` : (imgs.length === 1 ? `
         <div class="product-image-wrap" onclick="verDetalleProducto(${producto.id})" style="cursor: pointer;" title="Ver detalle del molde">
-          <img src="${producto.imagen}" alt="${escaparHTML(producto.nombre)}">
+          <img src="${imgs[0]}" alt="${escaparHTML(producto.nombre)}">
         </div>
         ` : `
         <div class="product-icon-wrap" onclick="verDetalleProducto(${producto.id})" style="cursor: pointer;" title="Ver detalle del molde">
           ${renderIconoMolde(producto.icono)}
         </div>
-        `}
+        `)}
 
         <span class="product-category-badge">${escaparHTML(producto.categoria || 'Moldería')}</span>
 
@@ -2270,6 +2331,7 @@ async function confirmarPedido() {
         precio: itemPrecio,
         cantidad: item.cantidad,
         archivoUrl: prodOriginal.archivoUrl || null,
+        archivoSpecsUrl: prodOriginal.archivoSpecsUrl || null,
         linkArchivos: prodOriginal.linkArchivos || prodOriginal.archivoUrl || "",
         linkVideo: prodOriginal.linkVideo || ""
       };
@@ -2742,14 +2804,17 @@ window.descargarArchivoMolde = descargarArchivoMolde;
 
 /**
  * Descarga segura referenciada por índice para evitar problemas de comillas en HTML
+ * Permite seleccionar entre archivo de 'molde' o 'specs' (especificaciones)
  */
-window.descargarItemConsultado = function(index) {
+window.descargarItemConsultado = function(index, tipo = 'molde') {
   const item = (window.ultimasDescargasConsultadas || [])[index];
   if (!item) {
-    mostrarToast("No se pudo localizar el archivo del molde seleccionado.");
+    mostrarToast("No se pudo localizar el archivo seleccionado.");
     return;
   }
-  descargarArchivoMolde(item.linkDescarga, item.nombre);
+  const url = tipo === 'specs' ? (item.linkSpecs || item.archivo_specs_url) : item.linkDescarga;
+  const sufijo = tipo === 'specs' ? 'Especificaciones' : 'Molde';
+  descargarArchivoMolde(url, `${item.nombre} - ${sufijo}`);
 };
 
 /**
@@ -2757,6 +2822,57 @@ window.descargarItemConsultado = function(index) {
  * 4. PANEL DE ADMINISTRACIÓN (MOLDES, PRECIOS, PROMOCIONES)
  * ====================================================================
  */
+let imagenesAdminSeleccionadas = [];
+
+async function manejarSeleccionImagenesMultiples(input) {
+  if (!input || !input.files || input.files.length === 0) return;
+  mostrarToast(`Procesando ${input.files.length} ${input.files.length === 1 ? 'imagen' : 'imágenes'}...`);
+  
+  for (let i = 0; i < input.files.length; i++) {
+    const file = input.files[i];
+    try {
+      const opt = await optimizarImagen(file, 1200, 0.82);
+      imagenesAdminSeleccionadas.push({
+        file: opt.file,
+        dataUrl: opt.dataUrl,
+        urlStorage: null
+      });
+    } catch (e) {
+      console.warn("Error optimizando imagen:", e);
+    }
+  }
+
+  try { input.value = null; } catch (e) {}
+  renderizarPreviewImagenesAdmin();
+}
+
+function quitarImagenPreview(index) {
+  if (index >= 0 && index < imagenesAdminSeleccionadas.length) {
+    imagenesAdminSeleccionadas.splice(index, 1);
+    renderizarPreviewImagenesAdmin();
+  }
+}
+
+function renderizarPreviewImagenesAdmin() {
+  const grid = document.getElementById("producto-imagenes-preview-grid");
+  if (!grid) return;
+
+  if (imagenesAdminSeleccionadas.length === 0) {
+    grid.style.display = "none";
+    grid.innerHTML = "";
+    return;
+  }
+
+  grid.style.display = "grid";
+  grid.innerHTML = imagenesAdminSeleccionadas.map((item, idx) => `
+    <div class="admin-image-preview-item">
+      <img src="${item.dataUrl || item.urlStorage}" alt="Foto ${idx + 1}">
+      ${idx === 0 ? '<span class="admin-image-cover-badge">Portada</span>' : ''}
+      <button type="button" class="admin-image-preview-remove" onclick="quitarImagenPreview(${idx})" title="Eliminar foto">×</button>
+    </div>
+  `).join("");
+}
+
 function toggleCampoPromo() {
   const selectPromo = document.getElementById("producto-promo");
   const grupoPrecioPromo = document.getElementById("grupo-precio-promo");
@@ -2822,12 +2938,12 @@ async function guardarProducto(evento) {
   const esPromo = !esGratuito && (document.getElementById("producto-promo")?.value === "si");
   const precioPromo = esPromo ? parseFloat(document.getElementById("producto-precio-promo")?.value || 0) : 0;
   const precioPromoUsd = esPromo ? parseFloat(document.getElementById("producto-precio-promo-usd")?.value || 0) : 0;
-  
-  const fileInput = document.getElementById("producto-imagen");
-  const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
 
   const archivoMoldeInput = document.getElementById("producto-archivo-file");
   const archivoMoldeFile = archivoMoldeInput && archivoMoldeInput.files && archivoMoldeInput.files[0] ? archivoMoldeInput.files[0] : null;
+
+  const archivoSpecsInput = document.getElementById("producto-specs-file");
+  const archivoSpecsFile = archivoSpecsInput && archivoSpecsInput.files && archivoSpecsInput.files[0] ? archivoSpecsInput.files[0] : null;
 
   const linkArchivos = document.getElementById("producto-link-archivos") ? document.getElementById("producto-link-archivos").value.trim() : "";
   const linkVideo = document.getElementById("producto-link-video") ? document.getElementById("producto-link-video").value.trim() : "";
@@ -2842,14 +2958,38 @@ async function guardarProducto(evento) {
     return;
   }
 
-  // Subir archivo PDF a Supabase Storage privado si se seleccionó uno
+  // 1. Subir y optimizar imágenes seleccionadas
+  let urlsImagenesFinales = [];
+  if (imagenesAdminSeleccionadas.length > 0) {
+    for (let i = 0; i < imagenesAdminSeleccionadas.length; i++) {
+      const item = imagenesAdminSeleccionadas[i];
+      if (item.urlStorage && !item.file) {
+        urlsImagenesFinales.push(item.urlStorage);
+      } else if (item.file) {
+        let urlSubida = null;
+        if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseSubirImagenMolde === "function") {
+          mostrarToast(`Subiendo foto ${i + 1} de ${imagenesAdminSeleccionadas.length} a Supabase...`);
+          urlSubida = await supabaseSubirImagenMolde(item.file);
+        }
+        if (urlSubida) {
+          item.urlStorage = urlSubida;
+          urlsImagenesFinales.push(urlSubida);
+        } else {
+          urlsImagenesFinales.push(item.dataUrl);
+        }
+      } else if (item.dataUrl) {
+        urlsImagenesFinales.push(item.dataUrl);
+      }
+    }
+  }
+
+  // 2. Subir archivo PDF 1: Molde / Patrón
   let nuevoArchivoUrl = null;
   if (archivoMoldeFile) {
-    mostrarToast("Procesando archivo de moldería...");
+    mostrarToast("Procesando archivo del molde...");
     if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseSubirArchivoMolde === "function") {
       nuevoArchivoUrl = await supabaseSubirArchivoMolde(archivoMoldeFile, nombre);
     }
-    // Respaldo local si no está conectado a Supabase o falló la subida: guardar DataURL
     if (!nuevoArchivoUrl) {
       nuevoArchivoUrl = await leerArchivoComoDataURL(archivoMoldeFile);
     }
@@ -2858,8 +2998,23 @@ async function guardarProducto(evento) {
     }
   }
 
-  // Función interna para persistir producto una vez resuelta la imagen
-  async function aplicarGuardado(imagenData) {
+  // 3. Subir archivo PDF 2: Especificaciones y Materiales
+  let nuevoSpecsUrl = null;
+  if (archivoSpecsFile) {
+    mostrarToast("Procesando archivo de especificaciones...");
+    if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseSubirArchivoSpecs === "function") {
+      nuevoSpecsUrl = await supabaseSubirArchivoSpecs(archivoSpecsFile, nombre);
+    }
+    if (!nuevoSpecsUrl) {
+      nuevoSpecsUrl = await leerArchivoComoDataURL(archivoSpecsFile);
+    }
+    if (!nuevoSpecsUrl) {
+      nuevoSpecsUrl = archivoSpecsFile.name;
+    }
+  }
+
+  // Función interna para persistir producto una vez resueltos los archivos y fotos
+  async function aplicarGuardado() {
     let productoGuardado = null;
     const esNuevo = !idInput;
 
@@ -2881,7 +3036,14 @@ async function guardarProducto(evento) {
         productos[index].linkArchivos = linkArchivos;
         productos[index].linkVideo = linkVideo;
         if (nuevoArchivoUrl) productos[index].archivoUrl = nuevoArchivoUrl;
-        if (imagenData) productos[index].imagen = imagenData;
+        if (nuevoSpecsUrl) productos[index].archivoSpecsUrl = nuevoSpecsUrl;
+        if (urlsImagenesFinales.length > 0) {
+          productos[index].imagenes = urlsImagenesFinales;
+          productos[index].imagen = urlsImagenesFinales[0];
+        } else if (imagenesAdminSeleccionadas.length === 0) {
+          productos[index].imagenes = [];
+          productos[index].imagen = null;
+        }
         productoGuardado = productos[index];
         mostrarToast("Molde actualizado con éxito.");
       }
@@ -2901,9 +3063,11 @@ async function guardarProducto(evento) {
         precioPromoUsd: isNaN(precioPromoUsd) ? 0 : precioPromoUsd,
         esGratuito: esGratuito,
         archivoUrl: nuevoArchivoUrl || null,
+        archivoSpecsUrl: nuevoSpecsUrl || null,
         linkArchivos: linkArchivos,
         linkVideo: linkVideo,
-        imagen: imagenData || null
+        imagen: urlsImagenesFinales[0] || null,
+        imagenes: urlsImagenesFinales
       };
       productos.push(productoGuardado);
       mostrarToast("Nuevo molde guardado en el catálogo.");
@@ -2932,27 +3096,7 @@ async function guardarProducto(evento) {
     if (typeof renderCatalogoAdmin === "function") renderCatalogoAdmin();
   }
 
-  // Gestión de imagen: Optimizar automáticamente para reducir peso en un 90-98%
-  if (file) {
-    mostrarToast("Optimizando foto del molde...");
-    const opt = await optimizarImagen(file, 1200, 0.82);
-    const archivoParaSubir = opt.file;
-    const dataUrlFallback = opt.dataUrl;
-
-    if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
-      mostrarToast("Subiendo foto optimizada a Supabase Storage...");
-      const urlStorage = await supabaseSubirImagenMolde(archivoParaSubir);
-      if (urlStorage) {
-        await aplicarGuardado(urlStorage);
-        return;
-      }
-    }
-
-    // Fallback: guardar DataURL optimizada en local (ahora pesa ~150 KB en vez de 8 MB)
-    await aplicarGuardado(dataUrlFallback);
-  } else {
-    await aplicarGuardado(null);
-  }
+  await aplicarGuardado();
 }
 
 function editarProducto(id) {
@@ -2994,11 +3138,22 @@ function editarProducto(id) {
   const infoArchivo = document.getElementById("producto-archivo-info");
   if (infoArchivo) {
     if (producto.archivoUrl) {
-      infoArchivo.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> Archivo privado cargado: <code>${escaparHTML(producto.archivoUrl)}</code>`;
+      infoArchivo.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> 🔒 Molde PDF cargado: <code>${escaparHTML(producto.archivoUrl)}</code>`;
       infoArchivo.style.display = "block";
     } else {
       infoArchivo.style.display = "none";
       infoArchivo.textContent = "";
+    }
+  }
+
+  const infoSpecs = document.getElementById("producto-specs-info");
+  if (infoSpecs) {
+    if (producto.archivoSpecsUrl) {
+      infoSpecs.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> 📋 Especificaciones cargadas: <code>${escaparHTML(producto.archivoSpecsUrl)}</code>`;
+      infoSpecs.style.display = "block";
+    } else {
+      infoSpecs.style.display = "none";
+      infoSpecs.textContent = "";
     }
   }
 
@@ -3022,16 +3177,15 @@ function editarProducto(id) {
   // Hacer scroll hacia el formulario
   document.getElementById("admin-form-titulo").scrollIntoView({ behavior: "smooth" });
 
-  // Mostrar vista previa de imagen si existe
-  const previewWrap = document.getElementById("producto-preview-wrap");
-  const previewImg = document.getElementById("producto-preview");
-  if (producto.imagen && previewImg && previewWrap) {
-    previewImg.src = producto.imagen;
-    previewWrap.style.display = "block";
-  } else if (previewWrap) {
-    previewWrap.style.display = "none";
-    if (previewImg) previewImg.src = "";
+  // Cargar imágenes seleccionadas para admin
+  if (Array.isArray(producto.imagenes) && producto.imagenes.length > 0) {
+    imagenesAdminSeleccionadas = producto.imagenes.map(url => ({ dataUrl: url, urlStorage: url }));
+  } else if (producto.imagen) {
+    imagenesAdminSeleccionadas = [{ dataUrl: producto.imagen, urlStorage: producto.imagen }];
+  } else {
+    imagenesAdminSeleccionadas = [];
   }
+  renderizarPreviewImagenesAdmin();
 }
 
 async function eliminarProducto(id) {
@@ -3092,11 +3246,24 @@ function resetearFormulario() {
     infoArchivo.style.display = "none";
     infoArchivo.textContent = "";
   }
+  const fileSpecs = document.getElementById("producto-specs-file");
+  if (fileSpecs) {
+    try { fileSpecs.value = null; } catch (e) { /* ignore */ }
+  }
+  const infoSpecs = document.getElementById("producto-specs-info");
+  if (infoSpecs) {
+    infoSpecs.style.display = "none";
+    infoSpecs.textContent = "";
+  }
   toggleCampoPromo();
-  // Limpiar input file y vista previa
+
+  // Limpiar imágenes seleccionadas y previsualización
+  imagenesAdminSeleccionadas = [];
+  renderizarPreviewImagenesAdmin();
+
   const fileInput = document.getElementById("producto-imagen");
   if (fileInput) {
-    try { fileInput.value = null; } catch (e) { /* ignore for browsers that restrict setting file input */ }
+    try { fileInput.value = null; } catch (e) { /* ignore */ }
   }
   const previewWrap = document.getElementById("producto-preview-wrap");
   const previewImg = document.getElementById("producto-preview");
@@ -4040,15 +4207,20 @@ async function confirmarDescargaGratis() {
   const codigoPedido = "ORD-FREE-" + Math.floor(1000 + Math.random() * 9000);
   const fechaActual = obtenerFechaLocalHoraTexto(new Date());
 
-  // Resolver link de descarga directa (firmado si está en storage privado, o muestra)
+  // Resolver link de descarga directa de molde y de especificaciones
   let linkDescargaDirecta = producto.archivoUrl || null;
   if (producto.archivoUrl && typeof supabaseObtenerUrlDescargaMolde === "function") {
     const urlFirmada = await supabaseObtenerUrlDescargaMolde(producto.archivoUrl, 86400);
     if (urlFirmada) linkDescargaDirecta = urlFirmada;
   }
-  // Si no tiene archivo aún (o es de prueba), generamos un patrón PDF válido de prueba
   if (!linkDescargaDirecta || linkDescargaDirecta === "#") {
     linkDescargaDirecta = generarPdfMuestraBase64(producto.nombre);
+  }
+
+  let linkSpecsDirecta = producto.archivoSpecsUrl || null;
+  if (producto.archivoSpecsUrl && typeof supabaseObtenerUrlDescargaMolde === "function") {
+    const urlFirmadaSpecs = await supabaseObtenerUrlDescargaMolde(producto.archivoSpecsUrl, 86400);
+    if (urlFirmadaSpecs) linkSpecsDirecta = urlFirmadaSpecs;
   }
 
   const nuevoPedido = {
@@ -4066,9 +4238,11 @@ async function confirmarDescargaGratis() {
       precio: 0,
       cantidad: 1,
       archivoUrl: producto.archivoUrl || null,
+      archivoSpecsUrl: producto.archivoSpecsUrl || null,
       linkArchivos: producto.linkArchivos || "",
       linkVideo: producto.linkVideo || "",
       linkDescarga: linkDescargaDirecta,
+      linkSpecs: linkSpecsDirecta,
       esGratuito: true
     }],
     total: 0,
@@ -4108,9 +4282,14 @@ async function confirmarDescargaGratis() {
           También te enviamos una copia a <strong>${escaparHTML(email)}</strong>. Podés descargar tus archivos directamente aquí:
         </p>
         <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.75rem;">
-          <button type="button" class="btn btn-primary" onclick="descargarArchivoMolde('${linkDescargaDirecta}', '${escaparHTML(producto.nombre)}')" style="font-size: 0.95rem; justify-content: center; padding: 0.75rem 1rem; width: 100%;">
-            <i data-lucide="download" class="ui-icon"></i> Descargar Patrón en PDF
+          <button type="button" class="btn btn-primary" onclick="descargarArchivoMolde('${linkDescargaDirecta}', '${escaparHTML(producto.nombre)} - Molde')" style="font-size: 0.95rem; justify-content: center; padding: 0.75rem 1rem; width: 100%;">
+            <i data-lucide="download" class="ui-icon"></i> Descargar Molde (PDF)
           </button>
+          ${linkSpecsDirecta ? `
+            <button type="button" class="btn btn-secondary" onclick="descargarArchivoMolde('${linkSpecsDirecta}', '${escaparHTML(producto.nombre)} - Especificaciones')" style="font-size: 0.95rem; justify-content: center; padding: 0.75rem 1rem; width: 100%; border-color: var(--primary);">
+              <i data-lucide="file-text" class="ui-icon"></i> Descargar Especificaciones y Materiales (PDF)
+            </button>
+          ` : ''}
           ${producto.linkVideo ? `
             <a href="${producto.linkVideo}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.92rem; justify-content: center; color: #dc2626; border-color: #fca5a5;">
               <i data-lucide="youtube" class="ui-icon"></i> Ver Video Tutorial en YouTube
@@ -4230,10 +4409,12 @@ async function consultarDescargasDesdeModal() {
             return {
               id: item.id,
               nombre: item.nombre,
-              archivo_url: item.archivoUrl || prodRef.archivoUrl || null,
+              archivo_url: item.archivoUrl || item.archivo_url || prodRef.archivoUrl || null,
+              archivo_specs_url: item.archivoSpecsUrl || item.archivo_specs_url || prodRef.archivoSpecsUrl || null,
               link_archivos: item.linkArchivos || prodRef.linkArchivos || "",
               link_video: item.linkVideo || prodRef.linkVideo || "",
-              linkDescarga: item.linkDescarga || item.archivoUrl || prodRef.archivoUrl || "#"
+              linkDescarga: item.linkDescarga || item.archivoUrl || prodRef.archivoUrl || "#",
+              linkSpecs: item.linkSpecs || item.archivoSpecsUrl || prodRef.archivoSpecsUrl || ""
             };
           })
         };
@@ -4300,6 +4481,13 @@ async function consultarDescargasDesdeModal() {
         link = generarPdfMuestraBase64(item.nombre);
       }
       item.linkDescarga = link;
+
+      let linkSpecs = item.linkSpecs || item.archivo_specs_url || "";
+      if (item.archivo_specs_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!linkSpecs || linkSpecs.startsWith("specs_") || linkSpecs.startsWith("moldes-archivos/"))) {
+        const firmadaSpecs = await supabaseObtenerUrlDescargaMolde(item.archivo_specs_url, 86400);
+        if (firmadaSpecs) linkSpecs = firmadaSpecs;
+      }
+      item.linkSpecs = linkSpecs;
     }
 
     window.ultimasDescargasConsultadas = items;
@@ -4349,9 +4537,15 @@ async function consultarDescargasDesdeModal() {
           </div>
 
           <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.75rem;">
-            <button type="button" class="btn btn-primary" onclick="descargarItemConsultado(${index})" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
-              <i data-lucide="download" class="ui-icon"></i> Descargar Patrón
+            <button type="button" class="btn btn-primary" onclick="descargarItemConsultado(${index}, 'molde')" style="font-size: 0.88rem; padding: 0.6rem 1.1rem;">
+              <i data-lucide="download" class="ui-icon"></i> Descargar Molde (PDF)
             </button>
+
+            ${item.linkSpecs ? `
+              <button type="button" class="btn btn-secondary" onclick="descargarItemConsultado(${index}, 'specs')" style="font-size: 0.88rem; padding: 0.6rem 1.1rem; border-color: var(--primary);">
+                <i data-lucide="file-text" class="ui-icon"></i> Descargar Especificaciones (PDF)
+              </button>
+            ` : ''}
 
             ${linkVid ? `
               <a href="${linkVid}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.88rem; padding: 0.6rem 1.1rem; color: #dc2626; border-color: #fca5a5;">

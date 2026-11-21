@@ -29,7 +29,8 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
   const nombreCliente = (cliente && cliente.nombre) ? cliente.nombre.trim() : "Cliente";
   const listaItemsHtml = (items || []).map(item => {
     const nombre = item.nombre || "Molde Digital";
-    const linkDescarga = item.linkDescarga || item.linkArchivos || "#";
+    const linkDescarga = item.linkDescarga || item.linkArchivos || item.archivoUrl || "#";
+    const linkSpecs = item.linkSpecs || item.archivoSpecsUrl || item.archivo_specs_url || "";
     const linkVideo = item.linkVideo || "";
 
     return `
@@ -51,6 +52,13 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
               Archivo en preparación
             </span>
           `}
+
+          ${linkSpecs && linkSpecs !== "#" ? `
+            <a href="${linkSpecs}" target="_blank" rel="noopener noreferrer"
+               style="display: inline-block; background-color: #583387; color: #ffffff; text-decoration: none; padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(88, 51, 135, 0.25);">
+              📋 Especificaciones y Materiales
+            </a>
+          ` : ''}
 
           ${linkVideo ? `
             <a href="${linkVideo}" target="_blank" rel="noopener noreferrer"

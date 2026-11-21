@@ -668,6 +668,102 @@ svg.lucide {
   transform: scale(1.06);
 }
 
+/* Carrusel interactivo en tarjeta de producto */
+.product-card-carousel {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-carousel-slides {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.card-carousel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.card-carousel-img.active {
+  opacity: 1;
+  pointer-events: auto;
+  position: relative;
+}
+
+.card-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primary-dark);
+  border: 1px solid rgba(132, 94, 194, 0.2);
+  border-radius: 50%;
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  line-height: 1;
+  padding: 0;
+}
+
+.product-card:hover .card-carousel-arrow {
+  opacity: 1;
+}
+
+.card-carousel-arrow:hover {
+  background: #ffffff;
+  color: var(--primary);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.card-carousel-arrow.prev { left: 8px; }
+.card-carousel-arrow.next { right: 8px; }
+
+.card-carousel-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 5;
+  padding: 3px 7px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  backdrop-filter: blur(2px);
+}
+
+.card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-dot.active {
+  background: #ffffff;
+  width: 14px;
+  border-radius: 4px;
+}
+
 .product-icon-wrap {
   width: 100%;
   height: 165px;
@@ -853,6 +949,182 @@ svg.lucide {
   object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(37, 27, 51, 0.1);
+}
+
+/* Carrusel en Vista Detalle de Producto */
+.product-detail-carousel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.carousel-main-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  max-height: 480px;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(132, 94, 194, 0.08);
+}
+
+.carousel-main-wrap img {
+  max-width: 100%;
+  max-height: 460px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transition: opacity 0.25s ease;
+}
+
+.carousel-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(132, 94, 194, 0.25);
+  color: var(--primary-dark);
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+  z-index: 4;
+}
+
+.carousel-nav-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.carousel-nav-btn.prev { left: 12px; }
+.carousel-nav-btn.next { right: 12px; }
+
+.carousel-counter {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(37, 27, 51, 0.75);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+  z-index: 4;
+}
+
+.carousel-thumbnails-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: thin;
+  justify-content: center;
+}
+
+.thumb-btn {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.thumb-btn:hover {
+  opacity: 1;
+}
+
+.thumb-btn.active {
+  border-color: var(--primary);
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--primary-soft);
+}
+
+.thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Grilla de previsualización de imágenes múltiples en el panel admin */
+.admin-images-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.65rem;
+}
+
+.admin-image-preview-item {
+  position: relative;
+  width: 100%;
+  height: 85px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.admin-image-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-image-preview-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.88);
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.admin-image-preview-remove:hover {
+  background: #dc2626;
+  transform: scale(1.15);
+}
+
+.admin-image-cover-badge {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  background: rgba(132, 94, 194, 0.92);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1.2;
 }
 
 .product-detail-icon {

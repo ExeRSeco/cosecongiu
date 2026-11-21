@@ -1,30 +1,33 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 19/11/2026 — Corrección de persistencia de nuevos moldes y renderizado de descargas.
+Última actualización: 21/11/2026 — Carrusel de fotos, dualidad de PDFs (Molde + Especificaciones), sin talles y catálogo limpio.
 
 ## Estado actual
-- Descarga directa y entrega de moldes:
-  - Bucket privado Supabase `moldes-archivos` (PDF/ZIP): descargable con URLs firmadas (24h) tras validación estricta de orden pagada/aprobada (`obtener_descargas_pedido`).
-  - Videos tutoriales: exclusivos en YouTube (enlaces entregados al comprador).
-  - Admisión universal de correos: cualquier correo electrónico válido recibe comprobantes y enlaces.
-  - Moldes gratuitos: flujo express 1-click (Nombre + Correo), $0, descarga inmediata en pantalla y correo automático.
-  - Transferencias: Giu aprueba el pago en panel admin con 1 clic ("Aprobar y Enviar Moldes"), lo cual actualiza Supabase, genera links y dispara email.
-  - Modal "Mis Descargas": consulta con código de pedido y correo. Incluye botón directo de muestra si está pendiente y tarjetas de descarga segura por índice (`descargarItemConsultado`) cuando está aprobado.
-- Seguridad y persistencia:
-  - Nuevos moldes: Supabase inserta con ID autogenerado (`esNuevo`), evitando updates fallidos en IDs inexistentes que provocaban que los moldes desaparecieran al recargar.
-  - Sincronización robusta: fusión defensiva que preserva moldes locales y fallback relacional en `pedido_items` sin fallos de clave foránea.
-  - Aprobación flexible: `supabaseActualizarEstadoPedido` soporta tanto ID numérico como código `ORD-XXXX`.
+- Moldería de costura creativa: Sin talles en ningún componente, card, formulario ni modal.
+- Catálogo en producción: Inicia limpio sin productos demo precargados (`PRODUCTOS_POR_DEFECTO = []`).
+- Carrusel de fotos interactivo:
+  - Soporte de múltiples imágenes por molde en panel admin con previsualización y eliminación individual.
+  - Carrusel compacto en tarjeta de producto del catálogo con flechas stopPropagation y dots.
+  - Visor boutique en vista/modal de detalle con imagen principal, contador 1/N y tira de miniaturas.
+  - Specs simplificadas en detalle: sólo Formato (PDF A4), Guía (Materiales) y Video Tutorial (YouTube).
+- Subida y descarga dual de archivos PDF por molde:
+  - PDF 1: Molde / Patrón (`archivo_url` en Supabase Storage `moldes-archivos`).
+  - PDF 2: Especificaciones, materiales y recomendaciones (`archivo_specs_url`).
+  - Botones de descarga independientes para Molde y Especificaciones en "Mis Descargas", modal gratuito y correos.
+- Persistencia & Seguridad:
+  - Supabase Auth + RPC `obtener_descargas_pedido` y `aprobar_pedido_transferencia` con SECURITY DEFINER.
+  - URLs firmadas temporales para descargas anónimas autorizadas. 31/31 tests automatizados aprobados.
 
 ## Decisiones y por qué
-- Inserción vs Update en Supabase: Al dar de alta un producto no se debe enviar el ID local temporal en el update; se utiliza `insert` para que PostgreSQL asigne el ID real y se devuelva al frontend.
-- Snapshot de archivos en pedido: Se almacena `archivoUrl` directamente en los ítems del pedido para que la descarga esté siempre disponible incluso ante cambios en el catálogo.
+- Sin talles: Los moldes de la marca corresponden a proyectos de costura creativa/accesorios sin graduación de talles de indumentaria.
+- Array `imagenes` con fallback a `imagen`: Garantiza retrocompatibilidad total con moldes precargados previamente.
+- Dualidad de PDFs: Los clientes reciben por separado el trazado para imprimir (Molde) y la guía técnica (Especificaciones y Materiales).
 
 ## Aprendizajes y errores a evitar
-- Contraseña de aplicación Google: En `myaccount.google.com/apppasswords`, crear una con nombre "Tienda Cose con Giu" y copiar los 16 caracteres generados a la variable `GMAIL_APP_PASSWORD` en Vercel.
-- Project URL del proyecto `cosecongiu`: `https://obvboktbdbahgbvemlid.supabase.co`.
-- Dashboard Supabase: Usar siempre Publishable key (`sb_publishable_...`) o legacy `anonKey`. NUNCA `sb_secret_...` en el navegador.
+- Correos universales: No restringir a `@gmail.com`; el sistema entrega descargas web directas y envía correos a cualquier dominio.
+- En PowerShell encadenar comandos con `;` en lugar de `&&` para evitar SyntaxError.
+- Subida de archivos en Supabase: usar `supabaseSubirArchivoMolde` para patrones y `supabaseSubirArchivoSpecs` para especificaciones.
 
 ## Próximos pasos
-- Ejecutar la actualización de `sql/supabase-schema.sql` en el SQL Editor de Supabase si se desea actualizar la RPC en la nube.
-- Cargar `GMAIL_APP_PASSWORD` en Vercel.
+- Ejecutar la migración SQL en Supabase Editor para habilitar `imagenes` y `archivo_specs_url` en la base de datos PostgreSQL en la nube.

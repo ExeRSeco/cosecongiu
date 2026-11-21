@@ -26,11 +26,16 @@ CREATE TABLE IF NOT EXISTS public.productos (
   created_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Migración idempotente para precios en USD, archivo privado y moldes gratuitos
+-- Migración idempotente para precios en USD, archivo privado, moldes gratuitos, múltiples fotos y archivo de especificaciones
 ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS precio_usd NUMERIC(10,2) DEFAULT 0;
 ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS precio_promo_usd NUMERIC(10,2) DEFAULT 0;
 ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS archivo_url TEXT;
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS archivo_specs_url TEXT;
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS imagenes JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS es_gratuito BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE public.pedido_items ADD COLUMN IF NOT EXISTS archivo_url TEXT;
+ALTER TABLE public.pedido_items ADD COLUMN IF NOT EXISTS archivo_specs_url TEXT;
 
 COMMENT ON TABLE public.productos IS 'Catálogo de moldes de costura descargables en formato PDF con enlaces a Drive y video tutorial';
 
@@ -176,7 +181,7 @@ CREATE POLICY "Administración de productos solo por admins aprobados"
 -- Los visitantes anónimos solo pueden consultar las columnas de visualización del catálogo.
 -- Se revoca la lectura pública de las columnas privadas (archivo_url, link_archivos, link_video) para evitar descargas sin compra previa.
 REVOKE SELECT ON public.productos FROM anon;
-GRANT SELECT (id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, es_gratuito, created_at) ON public.productos TO anon;
+GRANT SELECT (id, nombre, descripcion, categoria, icono, precio, en_promo, precio_promo, precio_usd, precio_promo_usd, imagen, imagenes, es_gratuito, created_at) ON public.productos TO anon;
 GRANT SELECT ON public.productos TO authenticated, service_role;
 
 -- B) POLÍTICAS PARA PEDIDOS:
@@ -418,7 +423,8 @@ BEGIN
     jsonb_build_object(
       'id', pi.producto_id,
       'nombre', pi.nombre,
-      'archivo_url', COALESCE(pr.archivo_url, pi.link_archivos),
+      'archivo_url', COALESCE(pr.archivo_url, pi.archivo_url, pi.link_archivos),
+      'archivo_specs_url', COALESCE(pr.archivo_specs_url, pi.archivo_specs_url),
       'link_archivos', COALESCE(pr.link_archivos, pi.link_archivos),
       'link_video', COALESCE(pr.link_video, pi.link_video),
       'es_gratuito', COALESCE(pr.es_gratuito, false)
