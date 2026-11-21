@@ -1622,7 +1622,7 @@ function verDetalleProducto(productoId) {
         <h4>Detalles y Especificaciones del Molde:</h4>
         <ul style="grid-template-columns: 1fr;">
           <li><i data-lucide="file-text" class="ui-icon"></i> <strong>Formato:</strong> Archivo PDF listo para imprimir en hojas A4 a tamaño real</li>
-          <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> ${producto.linkVideo ? `<a href="${producto.linkVideo}" target="_blank" rel="noopener noreferrer" style="color: #dc2626; font-weight: 600; text-decoration: underline;">Confección guiada paso a paso en YouTube</a>` : 'Confección guiada paso a paso'}</li>
+          <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> Confección guiada paso a paso</li>
         </ul>
       </div>
 
