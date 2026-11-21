@@ -3904,7 +3904,8 @@ function formatearPrecio(numero) {
 function esCorreoValido(email) {
   if (!email || typeof email !== "string") return false;
   const normalizado = email.trim().toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizado);
+  if (normalizado.includes("..") || normalizado.startsWith(".") || normalizado.endsWith(".")) return false;
+  return /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/.test(normalizado);
 }
 
 // Alias para compatibilidad interna
