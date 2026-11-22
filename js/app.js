@@ -1690,25 +1690,6 @@ function verDetalleProducto(productoId) {
       <h2 class="product-detail-title">${escaparHTML(producto.nombre)}</h2>
       <p class="product-detail-desc">${escaparHTML(producto.descripcion)}</p>
 
-      <div class="product-detail-specs-box">
-        <h4>Detalles y Especificaciones del Molde:</h4>
-        <ul style="grid-template-columns: 1fr;">
-          <li><i data-lucide="file-text" class="ui-icon"></i> <strong>Formato:</strong> Archivo PDF listo para imprimir en hojas A4 a tamaño real</li>
-          <li><i data-lucide="book-open" class="ui-icon"></i> <strong>Guía:</strong> Paso a paso de confección ilustrada y lista de materiales</li>
-          <li><i data-lucide="video" class="ui-icon"></i> <strong>Video Tutorial:</strong> Confección guiada paso a paso</li>
-        </ul>
-      </div>
-
-      <div class="product-print-tip-box">
-        <div class="print-tip-header">
-          <i data-lucide="printer" class="ui-icon"></i>
-          <strong>Impresión fácil en casa (Hojas A4)</strong>
-        </div>
-        <p>
-          Configura tu impresora en <strong>"Escala 100%" o "Tamaño Real"</strong> (sin ajustar a página). La primera página incluye un <strong>cuadrado de calibración de 5x5 cm</strong> para verificar con regla antes de cortar.
-        </p>
-      </div>
-
       <div class="product-price-box" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
         ${esGratis ? `
           <div style="margin-bottom: 0.5rem;">
@@ -3265,6 +3246,11 @@ function editarProducto(id) {
   document.getElementById("btn-guardar-producto").textContent = "Actualizar Molde";
   document.getElementById("btn-cancelar-edicion").style.display = "inline-flex";
 
+  // Resaltar visualmente la tarjeta que se está editando en la lista
+  document.querySelectorAll(".admin-inventory-item").forEach(el => el.classList.remove("editing"));
+  const itemEl = document.getElementById(`admin-prod-item-${producto.id}`);
+  if (itemEl) itemEl.classList.add("editing");
+
   // Hacer scroll suave hacia el formulario respetando el margen del encabezado fijo
   const formCard = document.querySelector(".admin-form-card");
   if (formCard) {
@@ -3322,6 +3308,7 @@ function resetearFormulario() {
   document.getElementById("admin-form-titulo").textContent = "Agregar Nuevo Molde";
   document.getElementById("btn-guardar-producto").textContent = "Guardar Molde";
   document.getElementById("btn-cancelar-edicion").style.display = "none";
+  document.querySelectorAll(".admin-inventory-item").forEach(el => el.classList.remove("editing"));
   if (document.getElementById("producto-categoria")) {
     document.getElementById("producto-categoria").value = categorias[0] || "Vestidos";
   }
@@ -4083,12 +4070,12 @@ function restablecerModoLocalSupabase() {
 }
 
 /**
- * Renderiza la tabla de moldes registrados en el catálogo con enlaces directos
+ * Renderiza la lista moderna de moldes registrados en el catálogo con enlaces directos
  */
 function renderCatalogoAdmin() {
-  const tabla = document.getElementById("tabla-admin-productos");
+  const contenedor = document.getElementById("tabla-admin-productos");
   const contador = document.getElementById("total-productos-count");
-  if (!tabla) return;
+  if (!contenedor) return;
 
   // Filtrado por búsqueda en admin si aplica
   let moldesFiltrados = productos;
@@ -4105,65 +4092,91 @@ function renderCatalogoAdmin() {
   if (contador) contador.textContent = moldesFiltrados.length;
 
   if (moldesFiltrados.length === 0) {
-    tabla.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align: center; padding: 1.5rem; color: var(--text-muted);">
-          No se encontraron moldes en el catálogo con ese término de búsqueda.
-        </td>
-      </tr>
+    contenedor.innerHTML = `
+      <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--bg-page); border-radius: 12px; border: 1px dashed var(--border);">
+        <i data-lucide="package-search" style="width: 2.2rem; height: 2.2rem; color: var(--primary); margin-bottom: 0.5rem; opacity: 0.7;"></i>
+        <p style="margin: 0; font-size: 0.9rem;">No se encontraron moldes en el catálogo con ese término de búsqueda.</p>
+      </div>
     `;
+    actualizarIconosLucide();
     return;
   }
 
-  tabla.innerHTML = moldesFiltrados.map(producto => `
-    <tr>
-      <td>
-        <div style="display:flex; align-items:center; gap:0.6rem;">
-          ${producto.imagen ? `<img src="${producto.imagen}" alt="${escaparHTML(producto.nombre)}" style="width:56px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);">` : `<span class="table-icon-thumb" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:var(--primary-soft);">${renderIconoMolde(producto.icono)}</span>`}
-          <div style="flex:1;">
-            <a href="#" class="table-product-link" onclick="verDetalleProducto(${producto.id}); return false;" title="Ver página y detalle de este molde">
+  const idEdicionActiva = Number(document.getElementById("producto-id")?.value) || null;
+
+  contenedor.innerHTML = moldesFiltrados.map(producto => {
+    const tieneFotos = Array.isArray(producto.imagenes) && producto.imagenes.length > 0;
+    const fotoPrincipal = tieneFotos ? producto.imagenes[0] : (producto.imagen || "");
+    const esGratis = Boolean(producto.esGratuito || producto.precio === 0);
+    const precioFinal = (producto.enPromo && Number(producto.precioPromo) > 0)
+      ? Number(producto.precioPromo)
+      : Number(producto.precio);
+    const tienePdf = Boolean(producto.archivoUrl || producto.linkArchivos);
+    const tieneSpecs = Boolean(producto.archivoSpecsUrl);
+    const tieneVideo = Boolean(producto.linkVideo);
+    const estaEditando = idEdicionActiva === producto.id;
+
+    return `
+      <div class="admin-inventory-item ${estaEditando ? 'editing' : ''}" id="admin-prod-item-${producto.id}">
+        <div class="admin-inventory-thumb-wrap" onclick="verDetalleProducto(${producto.id})" style="cursor: pointer;" title="Ver molde en la tienda">
+          ${fotoPrincipal ? `
+            <img src="${escaparHTML(fotoPrincipal)}" alt="${escaparHTML(producto.nombre)}" class="admin-inventory-thumb">
+          ` : `
+            <span class="admin-inventory-thumb-icon">${renderIconoMolde(producto.icono)}</span>
+          `}
+          ${tieneFotos && producto.imagenes.length > 1 ? `
+            <span class="admin-inventory-photo-count" title="${producto.imagenes.length} fotos cargadas">
+              <i data-lucide="camera" style="width: 10px; height: 10px;"></i>${producto.imagenes.length}
+            </span>
+          ` : ''}
+        </div>
+
+        <div class="admin-inventory-info">
+          <div class="admin-inventory-top">
+            <a href="#" class="admin-inventory-name" onclick="verDetalleProducto(${producto.id}); return false;" title="Ver página del molde en la tienda">
               <strong>${escaparHTML(producto.nombre)}</strong> ↗
             </a>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">${escaparHTML(producto.descripcion)}</div>
+            <span class="category-chip-mini">${escaparHTML(producto.categoria || 'Otros')}</span>
+            ${esGratis ? `
+              <span class="free-badge-mini"><i data-lucide="gift" class="ui-icon-xs"></i> GRATIS</span>
+            ` : (producto.enPromo ? `
+              <span class="promo-badge-mini"><i data-lucide="percent" class="ui-icon-xs"></i> 10% OFF</span>
+            ` : '')}
+          </div>
+
+          <div class="admin-inventory-meta">
+            ${esGratis ? `
+              <span class="admin-inventory-price free">¡Molde Gratuito!</span>
+            ` : `
+              <span class="admin-inventory-price ${producto.enPromo ? 'promo' : ''}">
+                $${formatearPrecio(precioFinal)} <small style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">ARS</small>
+              </span>
+              ${producto.enPromo ? `
+                <del class="admin-inventory-price-old">$${formatearPrecio(producto.precio)}</del>
+              ` : ''}
+              ${Number(producto.precioUsd) > 0 ? `
+                <span class="admin-inventory-usd">· USD $${Number(producto.enPromo && producto.precioPromoUsd > 0 ? producto.precioPromoUsd : producto.precioUsd).toFixed(2)}</span>
+              ` : ''}
+            `}
+            <span class="admin-inventory-indicators">
+              ${tienePdf ? `<span class="indicator-tag ready" title="Molde PDF listo"><i data-lucide="file-check" class="ui-icon-xs"></i> PDF</span>` : `<span class="indicator-tag missing" title="Sin PDF cargado"><i data-lucide="alert-circle" class="ui-icon-xs"></i> Sin PDF</span>`}
+              ${tieneSpecs ? `<span class="indicator-tag ready" title="Guía de armado / specs lista"><i data-lucide="clipboard-list" class="ui-icon-xs"></i> Specs</span>` : ''}
+              ${tieneVideo ? `<span class="indicator-tag video" title="Tutorial en YouTube vinculado"><i data-lucide="video" class="ui-icon-xs"></i> Video</span>` : ''}
+            </span>
           </div>
         </div>
-      </td>
-      <td>
-        <span class="product-category-badge">${escaparHTML(producto.categoria || 'Moldería')}</span>
-      </td>
-      <td>
-        <div>
-          ${producto.enPromo && producto.precioPromo > 0 ? `
-            <strong>$${formatearPrecio(producto.precioPromo)} <small style="font-size:0.75rem;color:var(--text-muted);">ARS</small></strong>
-            <span style="text-decoration: line-through; font-size: 0.8rem; color: var(--text-muted); display: block;">$${formatearPrecio(producto.precio)}</span>
-          ` : `
-            <strong>$${formatearPrecio(producto.precio)} <small style="font-size:0.75rem;color:var(--text-muted);">ARS</small></strong>
-          `}
-          <div style="font-size: 0.82rem; color: #003087; font-weight: 600; margin-top: 0.2rem;">
-            ${producto.enPromo && producto.precioPromoUsd > 0
-      ? `USD $${producto.precioPromoUsd.toFixed(2)} <span style="text-decoration: line-through; font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">$${(producto.precioUsd || 0).toFixed(2)}</span>`
-      : (producto.precioUsd > 0 ? `USD $${Number(producto.precioUsd).toFixed(2)}` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Sin USD</span>')
-    }
-          </div>
-        </div>
-      </td>
-      <td>
-        <span class="promo-badge-pill ${producto.enPromo ? 'si' : 'no'}">
-          ${producto.enPromo ? 'En promoción' : 'Normal'}
-        </span>
-      </td>
-      <td>
-        <div class="actions-cell">
-          <button class="btn btn-secondary btn-sm" onclick="editarProducto(${producto.id})" title="Editar precio, categoría o promoción">
-            <i data-lucide="edit-3" class="ui-icon"></i> Editar
+
+        <div class="admin-inventory-actions">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="editarProducto(${producto.id})" title="Editar este molde">
+            <i data-lucide="edit-3" class="ui-icon"></i> <span class="action-btn-text">Editar</span>
           </button>
-          <button class="btn btn-danger btn-sm" onclick="eliminarProducto(${producto.id})" title="Eliminar del catálogo">
-            <i data-lucide="trash-2" class="ui-icon"></i> Borrar
+          <button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto(${producto.id})" title="Eliminar del catálogo">
+            <i data-lucide="trash-2" class="ui-icon"></i> <span class="action-btn-text">Borrar</span>
           </button>
         </div>
-      </td>
-    </tr>
-  `).join("");
+      </div>
+    `;
+  }).join("");
 
   actualizarIconosLucide();
 }

@@ -2292,6 +2292,262 @@ select:focus {
 }
 
 /* ==========================================================
+   CATÁLOGO DE MOLDES EN PANEL ADMIN (INVENTARIO MODERNO)
+   ========================================================== */
+.admin-inventory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.admin-inventory-item {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(37, 27, 51, 0.03);
+}
+
+.admin-inventory-item:hover {
+  border-color: var(--primary-border);
+  background: #fdfaff;
+  box-shadow: 0 4px 12px rgba(132, 94, 194, 0.08);
+}
+
+.admin-inventory-item.editing {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 2px rgba(132, 94, 194, 0.25);
+}
+
+.admin-inventory-thumb-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-inventory-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-inventory-thumb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--primary);
+  font-size: 1.4rem;
+}
+
+.admin-inventory-photo-count {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(37, 27, 51, 0.8);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+
+.admin-inventory-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-inventory-top {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.admin-inventory-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  text-decoration: none;
+  line-height: 1.3;
+  transition: color 0.15s ease;
+  word-break: break-word;
+}
+
+.admin-inventory-name:hover {
+  color: var(--primary);
+}
+
+.category-chip-mini {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.promo-badge-mini {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--promo-color);
+  background: var(--promo-bg);
+  border: 1px solid #f0abfc;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.free-badge-mini {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.admin-inventory-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin-inventory-price {
+  font-weight: 800;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.admin-inventory-price.promo {
+  color: var(--promo-color);
+}
+
+.admin-inventory-price.free {
+  color: #15803d;
+}
+
+.admin-inventory-price-old {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.admin-inventory-usd {
+  color: #0369a1;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.admin-inventory-indicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.indicator-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.indicator-tag.ready {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.indicator-tag.missing {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.indicator-tag.video {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.admin-inventory-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.admin-inventory-actions .btn {
+  padding: 0.42rem 0.7rem;
+  font-size: 0.8rem !important;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+@media (max-width: 640px) {
+  .admin-inventory-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .admin-inventory-thumb-wrap {
+    width: 48px;
+    height: 48px;
+  }
+
+  .admin-inventory-actions {
+    width: 100%;
+    justify-content: flex-end;
+    border-top: 1px dashed var(--border);
+    padding-top: 0.5rem;
+  }
+}
+
+/* ==========================================================
    MODAL DE CHECKOUT (TRANSFERENCIA BANCARIA)
    ========================================================== */
 .modal-backdrop {

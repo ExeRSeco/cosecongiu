@@ -649,27 +649,15 @@
         <!-- Listado de moldes en el inventario -->
         <div class="card admin-list-card">
           <div class="admin-list-header">
-            <h3>Moldes en Catálogo (<span id="total-productos-count">0</span>)</h3>
+            <div>
+              <h3 style="margin: 0; font-size: 1.15rem;">Moldes en Catálogo (<span id="total-productos-count">0</span>)</h3>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">
+                Inventario de moldería digital disponible en la tienda
+              </p>
+            </div>
           </div>
-          <div class="table-scroll-hint">
-            <i data-lucide="chevrons-left-right" class="ui-icon" style="width: 14px; height: 14px;"></i>
-            <span>Desliza la tabla hacia los lados para ver todas las columnas</span>
-          </div>
-          <div class="table-responsive">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Molde (clic para ver)</th>
-                  <th>Categoría</th>
-                  <th>Precio ARS / USD</th>
-                  <th>Promoción</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tabla-admin-productos">
-                <!-- Filas renderizadas desde app.js -->
-              </tbody>
-            </table>
+          <div id="tabla-admin-productos" class="admin-inventory-list">
+            <!-- Filas renderizadas desde app.js -->
           </div>
         </div>
       </div>
