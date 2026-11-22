@@ -63,7 +63,7 @@ body {
 
 .container {
   width: 100%;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
 }
@@ -1894,8 +1894,16 @@ svg.lucide {
 
 .admin-layout {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
 }
 
 .admin-sidebar-col {
@@ -2102,6 +2110,9 @@ input[type="file"] {
   cursor: pointer;
   box-sizing: border-box;
   font-family: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 input:focus,
@@ -2145,15 +2156,15 @@ select:focus {
 
 .table {
   width: 100%;
-  min-width: 580px;
+  min-width: 480px;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   text-align: left;
 }
 
 .table th,
 .table td {
-  padding: 0.75rem 0.6rem;
+  padding: 0.65rem 0.5rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
