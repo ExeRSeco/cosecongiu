@@ -310,11 +310,21 @@ svg.lucide {
   border-color: var(--primary-border);
   color: var(--primary-dark);
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
 }
 
 .nav-btn-cart:hover {
   background: #ecdffc;
   border-color: var(--primary);
+}
+
+.nav-btn.active .badge {
+  background-color: #ffffff;
+  color: var(--primary-dark);
 }
 
 .nav-btn-admin {
@@ -657,7 +667,8 @@ svg.lucide {
 /* Imagen profesional para producto estilo Tiendanube */
 .product-image-wrap {
   width: 100%;
-  height: 185px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   border-radius: 14px;
   overflow: hidden;
   background: #faf7fd;
@@ -674,6 +685,7 @@ svg.lucide {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -685,6 +697,7 @@ svg.lucide {
 .product-card-carousel {
   position: relative;
   overflow: hidden;
+  display: block;
 }
 
 .card-carousel-slides {
@@ -697,6 +710,7 @@ svg.lucide {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   position: absolute;
   top: 0;
   left: 0;
@@ -708,7 +722,6 @@ svg.lucide {
 .card-carousel-img.active {
   opacity: 1;
   pointer-events: auto;
-  position: relative;
 }
 
 .card-carousel-arrow {
@@ -784,7 +797,9 @@ svg.lucide {
 
 .product-icon-wrap {
   width: 100%;
-  height: 165px;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  max-height: 280px;
   background: linear-gradient(135deg, #fcfaff 0%, #f4ecfd 100%);
   color: var(--primary);
   border: 1px dashed var(--primary-border);
@@ -953,6 +968,7 @@ svg.lucide {
 
 .product-detail-visual .product-image-wrap {
   width: 100%;
+  aspect-ratio: auto;
   height: 280px;
   background: transparent;
   border: none;
@@ -2899,10 +2915,18 @@ select:focus {
   .top-announcement-bar {
     font-size: 0.72rem;
     padding: 0.35rem 0.5rem;
+    text-align: center;
   }
 
   .announcement-content {
     gap: 0.35rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .announcement-item {
+    justify-content: center;
+    text-align: center;
   }
 
   .announcement-dot {
@@ -2912,14 +2936,15 @@ select:focus {
   /* Encabezado y Navbar */
   .header-container {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     gap: 0.65rem;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
   }
 
   .logo {
-    justify-content: flex-start;
+    justify-content: center;
+    text-align: center;
     gap: 0.65rem;
   }
 
@@ -2935,12 +2960,16 @@ select:focus {
   .tagline {
     font-size: 0.76rem;
     line-height: 1.2;
+    text-align: center;
   }
 
   .nav {
     display: flex;
     gap: 0.35rem;
     width: 100%;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
   .nav-btn,
@@ -2956,6 +2985,11 @@ select:focus {
     display: inline-flex;
     align-items: center;
     text-decoration: none;
+  }
+
+  .nav-btn-cart {
+    flex: 0 0 auto;
+    padding: 0.52rem 0.75rem;
   }
 
   .nav-btn .ui-icon {
@@ -2989,6 +3023,7 @@ select:focus {
 
   .hero-chips-row {
     gap: 0.35rem;
+    justify-content: center;
   }
 
   .hero-chip {
@@ -3024,8 +3059,7 @@ select:focus {
     gap: 0.75rem;
   }
 
-  /* Chips de categorías: en lugar de un slider que corta el texto, se organizan
-     como tags envolventes limpios y fáciles de tocar */
+  /* Chips de categorías centrados en móvil */
   .category-chips-scroll {
     display: flex;
     flex-wrap: wrap;
@@ -3034,6 +3068,7 @@ select:focus {
     min-width: 0;
     gap: 0.45rem;
     padding-bottom: 0;
+    justify-content: center;
   }
 
   .category-chip {
@@ -3043,12 +3078,12 @@ select:focus {
     text-align: center;
   }
 
-  /* Selector de ordenamiento: fila independiente alineada a ancho completo */
+  /* Selector de ordenamiento: centrado y ordenado en móvil */
   .sort-select-wrap {
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 0.5rem;
     padding-top: 0.65rem;
     margin-top: 0.15rem;
@@ -3073,10 +3108,14 @@ select:focus {
   .catalogo-status-bar {
     margin-top: 0.55rem;
     font-size: 0.78rem;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
   }
 
   /* ==========================================================
-     TARJETAS DE PRODUCTO EN CATÁLOGO
+     TARJETAS DE PRODUCTO EN CATÁLOGO MOBILE
      ========================================================== */
   .catalogo-grid {
     grid-template-columns: 1fr;
@@ -3085,28 +3124,65 @@ select:focus {
 
   .product-card {
     padding: 1.15rem;
+    text-align: center;
+  }
+
+  .product-card .product-category-badge {
+    margin: 0 auto 0.45rem auto;
+    display: inline-block;
   }
 
   .product-title {
     font-size: 1.1rem;
-    padding-right: 2.25rem;
+    padding-right: 0;
+    text-align: center;
   }
 
   .product-desc {
     font-size: 0.85rem;
     margin-bottom: 0.95rem;
+    text-align: center;
   }
 
+  /* Imagen cuadrada en móvil: sin recorte agresivo ni zoom indeseado */
   .product-image-wrap {
-    height: 165px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    max-height: 420px;
     margin-bottom: 0.85rem;
+  }
+
+  .product-image-wrap img,
+  .card-carousel-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .card-carousel-arrow {
+    opacity: 0.85;
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
   }
 
   .product-icon-wrap {
     width: 100%;
-    height: 140px;
+    aspect-ratio: 1 / 1;
+    max-height: 240px;
     margin-bottom: 0.85rem;
     font-size: 2.8rem;
+  }
+
+  .product-price-row {
+    justify-content: center;
+  }
+
+  .price-free-subtext {
+    justify-content: center;
+    text-align: center;
   }
 
   .price-regular,

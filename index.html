@@ -79,8 +79,9 @@
           title="Descargar moldes adquiridos previamente">
           <i data-lucide="download-cloud" class="ui-icon"></i> <span class="nav-descargas-text">Mis Descargas</span>
         </button>
-        <button id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')">
-          <i data-lucide="shopping-bag" class="ui-icon"></i> Carrito <span id="cart-badge" class="badge">0</span>
+        <button id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')"
+          title="Ver Carrito de Compras" aria-label="Carrito de compras">
+          <i data-lucide="shopping-cart" class="ui-icon"></i> <span id="cart-badge" class="badge">0</span>
         </button>
         <button id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')"
           title="Acceso a Administración">
@@ -1256,7 +1257,7 @@
                 class="ui-icon"></i> Catálogo de Moldes</a></li>
           <li><a href="#seccion-faq" onclick="cambiarVista('catalogo')"><i data-lucide="help-circle"
                 class="ui-icon"></i> Preguntas Frecuentes</a></li>
-          <li><a href="javascript:void(0)" onclick="cambiarVista('carrito')"><i data-lucide="shopping-bag"
+          <li><a href="javascript:void(0)" onclick="cambiarVista('carrito')"><i data-lucide="shopping-cart"
                 class="ui-icon"></i> Ver mi Carrito</a></li>
         </ul>
       </div>

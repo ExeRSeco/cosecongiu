@@ -1,9 +1,10 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 22/11/2026 — Promo 10% OFF en admin, retiro de 10% transfer y resolución de vulnerabilidades.
+Última actualización: 22/11/2026 — Optimización responsive mobile: centrado de elementos, botón carrito con icono y fotos en 1:1.
 
 ## Estado actual
+- Responsive Mobile & UI: Botón de carrito actualizado a icono `shopping-cart` + badge numérico (desktop y mobile). Elementos centrados en vista móvil (logo, chips de categorías, ordenamiento, contador y textos de tarjetas). Imágenes del catálogo en `aspect-ratio: 1 / 1` evitando recorte/zoom agresivo.
 - Precios y Promociones: Retirado el descuento automático del 10% por transferencia bancaria. Añadida la opción "10% OFF" al dropdown de promociones (`#producto-promo`), que calcula automáticamente el precio rebajado en tiempo real.
 - Panel Admin 50/50 blindado: "Agregar/Editar Molde" y "Moldes en Catálogo" con `min-width: 0; width: 100%;` en grid simétrica, evitando cualquier desborde al editar o cargar PDFs.
 - Seguridad y Vulnerabilidades:
