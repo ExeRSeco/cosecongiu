@@ -2939,7 +2939,7 @@ function alternarCamposMoldeGratuito(esGratuito) {
       inPrecio.value = "0";
     }
   } else {
-    if (bloquePrecios) bloquePrecios.style.display = "flex";
+    if (bloquePrecios) bloquePrecios.style.display = "grid";
     if (bloquePromo) bloquePromo.style.display = "block";
     if (inPrecio) {
       inPrecio.required = true;
@@ -3169,8 +3169,8 @@ function editarProducto(id) {
   const infoArchivo = document.getElementById("producto-archivo-info");
   if (infoArchivo) {
     if (producto.archivoUrl) {
-      infoArchivo.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> 🔒 Molde PDF cargado: <code>${escaparHTML(producto.archivoUrl)}</code>`;
-      infoArchivo.style.display = "block";
+      infoArchivo.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> <span>🔒 Molde PDF cargado:</span> <code>${escaparHTML(producto.archivoUrl)}</code>`;
+      infoArchivo.style.display = "flex";
     } else {
       infoArchivo.style.display = "none";
       infoArchivo.textContent = "";
@@ -3180,13 +3180,15 @@ function editarProducto(id) {
   const infoSpecs = document.getElementById("producto-specs-info");
   if (infoSpecs) {
     if (producto.archivoSpecsUrl) {
-      infoSpecs.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> 📋 Especificaciones cargadas: <code>${escaparHTML(producto.archivoSpecsUrl)}</code>`;
-      infoSpecs.style.display = "block";
+      infoSpecs.innerHTML = `<i data-lucide="check-circle" class="ui-icon-xs"></i> <span>📋 Especificaciones cargadas:</span> <code>${escaparHTML(producto.archivoSpecsUrl)}</code>`;
+      infoSpecs.style.display = "flex";
     } else {
       infoSpecs.style.display = "none";
       infoSpecs.textContent = "";
     }
   }
+
+  actualizarIconosLucide();
 
   const selectPromo = document.getElementById("producto-promo");
   selectPromo.value = producto.enPromo ? "si" : "no";
@@ -3205,8 +3207,13 @@ function editarProducto(id) {
   document.getElementById("btn-guardar-producto").textContent = "Actualizar Molde";
   document.getElementById("btn-cancelar-edicion").style.display = "inline-flex";
 
-  // Hacer scroll hacia el formulario
-  document.getElementById("admin-form-titulo").scrollIntoView({ behavior: "smooth" });
+  // Hacer scroll suave hacia el formulario respetando el margen del encabezado fijo
+  const formCard = document.querySelector(".admin-form-card");
+  if (formCard) {
+    formCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    document.getElementById("admin-form-titulo").scrollIntoView({ behavior: "smooth" });
+  }
 
   // Cargar imágenes seleccionadas para admin
   if (Array.isArray(producto.imagenes) && producto.imagenes.length > 0) {

@@ -3,31 +3,42 @@
    ========================================================== */
 :root {
   /* Paleta inspirada directamente en el logo de Cosé con Giu */
-  --primary: #845ec2;            /* Tono violeta/lila de la marca */
-  --primary-hover: #7047a3;      /* Violeta intenso para estados hover */
-  --primary-dark: #583387;       /* Violeta profundo para títulos y contrastes */
-  --primary-soft: #f4ecfd;       /* Fondo lila muy suave para tarjetas y chips */
-  --primary-border: #dac5f3;     /* Borde lila sutil */
-  
-  --accent-gold: #c7a138;        /* Tono dorado de la aguja del logo */
+  --primary: #845ec2;
+  /* Tono violeta/lila de la marca */
+  --primary-hover: #7047a3;
+  /* Violeta intenso para estados hover */
+  --primary-dark: #583387;
+  /* Violeta profundo para títulos y contrastes */
+  --primary-soft: #f4ecfd;
+  /* Fondo lila muy suave para tarjetas y chips */
+  --primary-border: #dac5f3;
+  /* Borde lila sutil */
+
+  --accent-gold: #c7a138;
+  /* Tono dorado de la aguja del logo */
   --accent-gold-hover: #b08d27;
-  --accent-gold-soft: #fef9e8;   /* Fondo dorado suave para badge Más Vendido */
+  --accent-gold-soft: #fef9e8;
+  /* Fondo dorado suave para badge Más Vendido */
   --accent-gold-border: #f6e3a4;
-  
+
   --secondary: #4b5563;
   --secondary-hover: #374151;
   --accent-green: #15803d;
   --accent-green-bg: #dcfce7;
-  
-  --promo-color: #d946ef;        /* Fucsia/magenta armónico para ofertas */
+
+  --promo-color: #d946ef;
+  /* Fucsia/magenta armónico para ofertas */
   --promo-bg: #fae8ff;
   --promo-border: #f0abfc;
-  
-  --bg-page: #faf7fd;            /* Fondo de página con levísimo tinte lila limpio */
+
+  --bg-page: #faf7fd;
+  /* Fondo de página con levísimo tinte lila limpio */
   --bg-card: #ffffff;
-  --text-main: #251b33;          /* Texto principal oscuro con matiz violeta neutro */
+  --text-main: #251b33;
+  /* Texto principal oscuro con matiz violeta neutro */
   --text-muted: #6c617b;
-  --border: #e8def2;             /* Bordes suaves armonizados */
+  --border: #e8def2;
+  /* Bordes suaves armonizados */
   --radius: 12px;
   --shadow-sm: 0 1px 3px rgba(112, 71, 163, 0.06);
   --shadow-md: 0 4px 14px rgba(112, 71, 163, 0.08);
@@ -42,7 +53,9 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: inherit;
   margin: 0;
   padding: 0;
@@ -732,8 +745,13 @@ svg.lucide {
   transform: translateY(-50%) scale(1.1);
 }
 
-.card-carousel-arrow.prev { left: 8px; }
-.card-carousel-arrow.next { right: 8px; }
+.card-carousel-arrow.prev {
+  left: 8px;
+}
+
+.card-carousel-arrow.next {
+  right: 8px;
+}
 
 .card-carousel-dots {
   position: absolute;
@@ -1010,8 +1028,13 @@ svg.lucide {
   transform: translateY(-50%) scale(1.08);
 }
 
-.carousel-nav-btn.prev { left: 12px; }
-.carousel-nav-btn.next { right: 12px; }
+.carousel-nav-btn.prev {
+  left: 12px;
+}
+
+.carousel-nav-btn.next {
+  right: 12px;
+}
 
 .carousel-counter {
   position: absolute;
@@ -1699,8 +1722,15 @@ svg.lucide {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .order-detail-grid {
@@ -2056,9 +2086,42 @@ svg.lucide {
   text-decoration: underline;
 }
 
+.admin-form-card {
+  scroll-margin-top: 95px;
+}
+
 .admin-form-card h3 {
   margin-bottom: 1.2rem;
   font-size: 1.2rem;
+  scroll-margin-top: 95px;
+}
+
+.admin-file-loaded-badge {
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #15803d;
+  font-weight: 600;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.admin-file-loaded-badge code {
+  background: #dcfce7;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  color: #166534;
 }
 
 .form-group {
@@ -2631,9 +2694,21 @@ select:focus {
 
 /* Animación de error en input */
 @keyframes shakeInput {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
 }
 
 .input-error-shake {
@@ -2672,9 +2747,19 @@ select:focus {
 }
 
 @keyframes bounceInSuccess {
-  0% { transform: scale(0.3); opacity: 0; }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .order-success-code-pill {
@@ -2776,6 +2861,7 @@ select:focus {
 
 /* 1. Tablets y Móviles (Pantallas <= 768px) */
 @media (max-width: 768px) {
+
   /* Contenedor general */
   .container {
     padding-left: 0.85rem;
@@ -2915,7 +3001,8 @@ select:focus {
   }
 
   .search-input-wrap input {
-    font-size: 1rem !important; /* Mínimo 16px para evitar auto-zoom molesto en iOS */
+    font-size: 1rem !important;
+    /* Mínimo 16px para evitar auto-zoom molesto en iOS */
     padding-top: 0.65rem !important;
     padding-bottom: 0.65rem !important;
     border-radius: 8px;
@@ -3084,7 +3171,7 @@ select:focus {
   .cart-item {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    grid-template-areas: 
+    grid-template-areas:
       "info info info"
       "qty subtotal delete";
     align-items: center;
@@ -3113,7 +3200,7 @@ select:focus {
     min-width: 0;
   }
 
-  .cart-item > .btn-danger {
+  .cart-item>.btn-danger {
     grid-area: delete;
     justify-self: end;
   }
@@ -3431,7 +3518,7 @@ select:focus {
   }
 
   .table-responsive .table {
-    min-width: 580px;
+    min-width: 480px;
     width: 100%;
   }
 
@@ -3546,7 +3633,8 @@ select:focus {
   height: 9px;
   border-radius: 50%;
   display: inline-block;
-  background: #f59e0b; /* Ámbar por defecto (modo local) */
+  background: #f59e0b;
+  /* Ámbar por defecto (modo local) */
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
@@ -5156,32 +5244,40 @@ select:focus {
     border-radius: 14px !important;
     width: 98% !important;
   }
+
   .checkout-modal-header,
   .checkout-modal-body,
   .checkout-modal-footer {
     padding: 0.85rem 1rem !important;
   }
+
   .metodo-pago-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.45rem;
   }
+
   .tab-pago {
     padding: 0.65rem 0.2rem;
     gap: 0.25rem;
   }
+
   .tab-icon {
     font-size: 1.2rem;
   }
+
   .tab-name {
     font-size: 0.74rem;
   }
+
   .pill-badge {
     font-size: 0.58rem;
     padding: 0.1rem 0.3rem;
   }
+
   .bank-details-grid {
     grid-template-columns: 1fr;
   }
+
   .bank-grid-item.b-action-item {
     grid-column: span 1;
   }
@@ -5192,6 +5288,7 @@ select:focus {
     grid-template-columns: 1fr;
     gap: 0.45rem;
   }
+
   .tab-pago {
     flex-direction: row;
     justify-content: flex-start;
@@ -5276,4 +5373,3 @@ select:focus {
     display: none;
   }
 }
-
