@@ -141,6 +141,41 @@ let filtrosAdmin = {
 let pedidosExpandidos = new Set();
 
 /**
+ * Restaura la vista correspondiente según el hash de la URL.
+ * Permite deep linking: recargar la página mantiene la vista actual.
+ * Soporta hashes como #producto-5, #carrito, #admin.
+ */
+function restaurarVistaDesdeHash() {
+  const hash = location.hash;
+  if (!hash || hash === "#catalogo") {
+    // Si la vista actual no es catálogo (ej. usuario presionó "Atrás" en el navegador), volver al catálogo
+    const viewCatalogo = document.getElementById("view-catalogo");
+    if (viewCatalogo && viewCatalogo.style.display === "none") {
+      cambiarVista("catalogo");
+    }
+    return;
+  }
+
+  if (hash.startsWith("#producto-")) {
+    const idStr = hash.replace("#producto-", "");
+    const productoId = parseInt(idStr, 10);
+    if (!isNaN(productoId)) {
+      const producto = productos.find(p => p.id === productoId);
+      if (producto) {
+        verDetalleProducto(productoId);
+        return;
+      }
+    }
+  } else if (hash === "#carrito") {
+    cambiarVista("carrito");
+    return;
+  } else if (hash === "#admin") {
+    cambiarVista("admin");
+    return;
+  }
+}
+
+/**
  * ====================================================================
  * INICIALIZACIÓN
  * ====================================================================
@@ -157,6 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarIconosLucide();
   actualizarBadgeSupabaseUI();
   inicializarAuthAdmin();
+
+  // Restaurar vista según el hash de la URL (deep linking: permite recargar sin perder la vista actual)
+  restaurarVistaDesdeHash();
+
+  // Escuchar cambios de hash y navegación con botones "Atrás/Adelante" del navegador
+  window.addEventListener("hashchange", restaurarVistaDesdeHash);
+  window.addEventListener("popstate", restaurarVistaDesdeHash);
 
   // Procesar retorno automático de pago con Mercado Pago si la URL contiene parámetros
   procesarRetornoMercadoPago();
@@ -278,6 +320,9 @@ async function sincronizarConSupabaseSiAplica() {
         renderCategoriasChips();
         renderCatalogo();
         renderCatalogoAdmin();
+
+        // Reintentar deep linking: si el hash apunta a un producto que ahora sí existe tras la sincronización
+        restaurarVistaDesdeHash();
       }
     }
 
@@ -1519,14 +1564,22 @@ function cambiarVista(vista) {
     document.getElementById("btn-nav-catalogo").classList.add("active");
     renderCategoriasChips();
     renderCatalogo();
+    // Actualizar hash de la URL sin disparar hashchange adicional
+    if (location.hash !== "" && location.hash !== "#catalogo") {
+      history.pushState(null, "", location.pathname + location.search);
+    }
   } else if (vista === "producto") {
     if (document.getElementById("view-producto")) {
       document.getElementById("view-producto").style.display = "block";
     }
+    // El hash se establece en verDetalleProducto() antes de llamar aquí
   } else if (vista === "carrito") {
     document.getElementById("view-carrito").style.display = "block";
     document.getElementById("btn-nav-carrito").classList.add("active");
     renderCarrito();
+    if (location.hash !== "#carrito") {
+      history.pushState(null, "", location.pathname + location.search + "#carrito");
+    }
   } else if (vista === "admin") {
     document.getElementById("btn-nav-admin").classList.add("active");
     if (estaAdminLogueado()) {
@@ -1536,6 +1589,9 @@ function cambiarVista(vista) {
     } else if (document.getElementById("view-admin-login")) {
       document.getElementById("view-admin-login").style.display = "block";
       mostrarErrorLoginAdmin("");
+    }
+    if (location.hash !== "#admin") {
+      history.pushState(null, "", location.pathname + location.search + "#admin");
     }
   }
 
@@ -1709,13 +1765,13 @@ function verDetalleProducto(productoId) {
           </div>
 
           <!-- Cuadro aclaratorio de medios de pago y plazos de entrega -->
-          <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem; background: var(--bg-page); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45;">
-            <div style="display: flex; align-items: center; gap: 0.4rem; color: #0284c7; font-weight: 600; margin-bottom: 0.25rem;">
-              <i data-lucide="zap" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+          <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem; background: var(--bg-page); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45; word-break: break-word;">
+            <div style="display: flex; align-items: flex-start; gap: 0.4rem; color: #0284c7; font-weight: 600; margin-bottom: 0.25rem;">
+              <i data-lucide="zap" style="width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px;"></i>
               <span><strong>Mercado Pago:</strong> Acreditación y entrega inmediata.</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.4rem; color: #b45309; font-weight: 600;">
-              <i data-lucide="clock" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+            <div style="display: flex; align-items: flex-start; gap: 0.4rem; color: #b45309; font-weight: 600;">
+              <i data-lucide="clock" style="width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px;"></i>
               <span><strong>Transferencia Bancaria:</strong> Acceso con verificación de hasta 48 horas hábiles.</span>
             </div>
           </div>
@@ -1738,6 +1794,11 @@ function verDetalleProducto(productoId) {
       </div>
     </div>
   `;
+
+  // Actualizar el hash de la URL para deep linking (permitir recargar y volver a este producto)
+  if (location.hash !== "#producto-" + productoId) {
+    history.pushState(null, "", location.pathname + location.search + "#producto-" + productoId);
+  }
 
   actualizarIconosLucide();
   cambiarVista("producto");
