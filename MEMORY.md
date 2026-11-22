@@ -1,7 +1,7 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 21/11/2026 — Renombrado "patrón/patrones" → "molde/moldes" en todos los textos visibles. Commit d94362b pusheado a main.
+Última actualización: 21/11/2026 — Fix crash RangeError localStorage al subir PDFs grandes. Commit 487dff3.
 
 ## Estado actual
 - Moldería de costura creativa: Sin talles en ningún componente, card, formulario ni modal.
