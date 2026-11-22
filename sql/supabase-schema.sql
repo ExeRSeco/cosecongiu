@@ -118,9 +118,6 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.administradores
     WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
-  ) OR (
-    -- Todo usuario autenticado en Supabase Auth se considera administrador oficial
-    auth.role() = 'authenticated'
   );
 $$;
 
@@ -194,10 +191,9 @@ CREATE POLICY "Clientes pueden registrar pedidos desde checkout"
     (estado = 'pendiente' AND archivos_enviados = false AND total >= 0)
   );
 
+-- Eliminada la consulta pública abierta: La privacidad de clientes (PII) está protegida.
+-- Las descargas de pedidos para clientes se realizan exclusivamente a través de la función RPC segura 'obtener_descargas_pedido'.
 DROP POLICY IF EXISTS "Clientes pueden consultar sus pedidos por codigo" ON public.pedidos;
-CREATE POLICY "Clientes pueden consultar sus pedidos por codigo"
-  ON public.pedidos FOR SELECT
-  USING (true);
 
 -- Lectura, actualización y eliminación de pedidos restringida solo a administradores aprobados
 DROP POLICY IF EXISTS "Gestión de pedidos solo por admins aprobados" ON public.pedidos;
@@ -206,7 +202,9 @@ CREATE POLICY "Gestión de pedidos solo por admins aprobados"
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
-GRANT SELECT, INSERT ON public.pedidos TO anon, authenticated, service_role;
+REVOKE SELECT ON public.pedidos FROM anon;
+GRANT INSERT ON public.pedidos TO anon;
+GRANT ALL ON public.pedidos TO authenticated, service_role;
 
 -- C) POLÍTICAS PARA PEDIDO_ITEMS:
 -- Clientes pueden registrar ítems comprados desde el checkout con validación de montos
@@ -219,9 +217,6 @@ CREATE POLICY "Inserción de ítems de pedido desde checkout"
   );
 
 DROP POLICY IF EXISTS "Lectura de items de pedidos" ON public.pedido_items;
-CREATE POLICY "Lectura de items de pedidos"
-  ON public.pedido_items FOR SELECT
-  USING (true);
 
 -- Consulta y gestión de ítems de compra restringida a administradores aprobados
 DROP POLICY IF EXISTS "Gestión de ítems solo por admins aprobados" ON public.pedido_items;
@@ -230,7 +225,9 @@ CREATE POLICY "Gestión de ítems solo por admins aprobados"
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
-GRANT SELECT, INSERT ON public.pedido_items TO anon, authenticated, service_role;
+REVOKE SELECT ON public.pedido_items FROM anon;
+GRANT INSERT ON public.pedido_items TO anon;
+GRANT ALL ON public.pedido_items TO authenticated, service_role;
 
 -- D) POLÍTICAS PARA ADMINISTRADORES:
 -- Consulta de administradores solo para usuarios autenticados
@@ -244,13 +241,21 @@ CREATE POLICY "Gestión completa de administradores"
   USING (auth.role() = 'authenticated' AND public.es_admin_aprobado())
   WITH CHECK (auth.role() = 'authenticated' AND public.es_admin_aprobado());
 
--- 8. TRIGGER DE AUTORREGISTRO EN ADMINISTRADORES
+-- 8. TRIGGER DE CONTROL DE REGISTRO EN ADMINISTRADORES
+-- Solo el correo maestro oficial obtiene superadmin inmediato.
+-- Cualquier otra cuenta que se registre queda pendiente de aprobación manual (aprobado = FALSE).
 CREATE OR REPLACE FUNCTION public.handle_nuevo_usuario_admin()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
-  VALUES (NEW.id, LOWER(NEW.email), 'superadmin', TRUE, 'Registrado en Supabase Auth')
-  ON CONFLICT (email) DO UPDATE SET user_id = EXCLUDED.user_id, aprobado = TRUE;
+  IF LOWER(NEW.email) = 'cosecongiu@gmail.com' THEN
+    INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
+    VALUES (NEW.id, LOWER(NEW.email), 'superadmin', TRUE, 'Administrador principal oficial')
+    ON CONFLICT (email) DO UPDATE SET user_id = EXCLUDED.user_id, aprobado = TRUE, rol = 'superadmin';
+  ELSE
+    INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
+    VALUES (NEW.id, LOWER(NEW.email), 'admin', FALSE, 'Registrado en Supabase Auth - Pendiente de aprobación')
+    ON CONFLICT (email) DO UPDATE SET user_id = EXCLUDED.user_id;
+  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -260,11 +265,10 @@ CREATE TRIGGER on_auth_user_created_admin
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_nuevo_usuario_admin();
 
--- Sincronizar y aprobar inmediatamente a todos los usuarios que ya existan en Supabase Auth
-INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
-SELECT id, LOWER(email), 'superadmin', true, 'Aprobado automáticamente de Supabase Auth'
-FROM auth.users
-ON CONFLICT (email) DO UPDATE SET aprobado = true, rol = 'superadmin', user_id = EXCLUDED.user_id;
+-- Inicialización del administrador principal oficial
+INSERT INTO public.administradores (email, rol, aprobado, notas)
+VALUES ('cosecongiu@gmail.com', 'superadmin', true, 'Administrador principal oficial')
+ON CONFLICT (email) DO UPDATE SET aprobado = true, rol = 'superadmin';
 
 -- 9. CONFIGURACIÓN DEL BUCKET DE IMÁGENES (SUPABASE STORAGE)
 INSERT INTO storage.buckets (id, name, public)
@@ -393,10 +397,14 @@ CREATE POLICY "Subida y edición de moldes solo por admins aprobados"
     public.es_admin_aprobado()
   );
 
--- Permite la consulta de metadatos para generar URLs firmadas temporales (el bucket es privado, solo se accede mediante token firmado)
-CREATE POLICY "Permitir lectura y generacion de signed URLs en moldes-archivos"
+-- Lectura y gestión de moldes en storage restringida estrictamente a administradores aprobados
+CREATE POLICY "Lectura de moldes en storage por admins aprobados"
   ON storage.objects FOR SELECT
-  USING (bucket_id = 'moldes-archivos');
+  USING (
+    bucket_id = 'moldes-archivos' AND
+    auth.role() = 'authenticated' AND
+    public.es_admin_aprobado()
+  );
 
 -- 13. FUNCIÓN RPC PARA OBTENER DESCARGAS SEGURAS DE UN PEDIDO COMPLETADO
 CREATE OR REPLACE FUNCTION public.obtener_descargas_pedido(p_codigo TEXT, p_email TEXT)

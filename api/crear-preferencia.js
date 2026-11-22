@@ -20,7 +20,6 @@ function verificarRateLimit(ip) {
 
 module.exports = async (req, res) => {
   // Configuración de cabeceras CORS
-  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
   res.setHeader(
@@ -119,11 +118,13 @@ module.exports = async (req, res) => {
                   ? Number(prodDb.precio_promo)
                   : Number(prodDb.precio);
 
-                // Si el cliente envía un precio menor al oficial de la base de datos, forzamos el oficial
-                if (item.unit_price < precioOficial) {
-                  console.warn(`[Crear Preferencia] Discrepancia de precio detectada para molde ID ${item.id} ("${item.title}"): cliente=$${item.unit_price}, oficial=$${precioOficial}. Se aplica el precio oficial.`);
+                // Forzar siempre el precio oficial registrado en la base de datos
+                if (item.unit_price !== precioOficial) {
+                  console.info(`[Crear Preferencia] Sincronizando precio oficial para molde ID ${item.id}: $${precioOficial} (enviado: $${item.unit_price})`);
                   item.unit_price = precioOficial;
                 }
+              } else {
+                return res.status(400).json({ error: `El producto ID "${item.id}" no existe en el catálogo oficial.` });
               }
             }
           }

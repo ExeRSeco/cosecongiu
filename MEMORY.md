@@ -1,33 +1,24 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 21/11/2026 — Corrección visual formulario al editar molde (stacking PDFs y scroll-margin).
+Última actualización: 22/11/2026 — Promo 10% OFF en admin, retiro de 10% transfer y resolución de vulnerabilidades.
 
 ## Estado actual
-- Panel Admin: "Agregar Nuevo Molde" y "Moldes en Catálogo" tienen el mismo ancho (50% / 50%).
-- Formulario de Molde: Bloques de subida de PDF apilados verticalmente a ancho completo con `word-break: break-all` para nombres largos y `scroll-margin-top` que evita que el header tape el título al editar.
-- Moldería de costura creativa: Sin talles en ningún componente, card, formulario ni modal.
-- Catálogo en producción: Inicia limpio sin productos demo precargados (`PRODUCTOS_POR_DEFECTO = []`).
-- Carrusel de fotos interactivo en tarjetas y vista detalle con miniaturas.
-- Subida y descarga dual de archivos PDF por molde:
-  - PDF 1: Molde (`archivo_url` en Supabase Storage `moldes-archivos`).
-  - PDF 2: Especificaciones, materiales y recomendaciones (`archivo_specs_url`).
-  - Botones de descarga independientes para Molde y Especificaciones en "Mis Descargas", modal gratuito y correos.
-- Resiliencia y auto-reparación:
-  - `supabaseCrearPedido`: intenta RPC atómica `registrar_pedido_checkout`; si fallan columnas extendidas, serializa molde y specs en `link_archivos` (JSON) y asegura inserción de ítems.
-  - `supabaseObtenerProductos` y `supabaseGuardarProducto`: auto-reintento con columnas base si la migración de `imagenes` o `archivo_specs_url` aún no fue corrida en PostgreSQL.
-  - `consultarDescargasDesdeModal`: si la BD devuelve 0 ítems por migración pendiente, auto-recupera del pedido local y genera URLs firmadas para ambos PDFs.
-  - `enviarCorreoConfirmacion`: genera URLs firmadas con 7 días de validez y resuelve ítems locales si la orden en Supabase no los tenía.
+- Precios y Promociones: Retirado el descuento automático del 10% por transferencia bancaria. Añadida la opción "10% OFF" al dropdown de promociones (`#producto-promo`), que calcula automáticamente el precio rebajado en tiempo real.
+- Panel Admin 50/50 blindado: "Agregar/Editar Molde" y "Moldes en Catálogo" con `min-width: 0; width: 100%;` en grid simétrica, evitando cualquier desborde al editar o cargar PDFs.
+- Seguridad y Vulnerabilidades:
+  - SQL: RLS reforzado en `pedidos` y `moldes-archivos` para proteger PII y acceso a PDFs; `es_admin_aprobado` y trigger corregidos para evitar auto-aprobación no autorizada.
+  - XSS y Sanitización: Reemplazado paso de strings en `onclick` inline por `verComprobantePorId(id)`; sanitización de URLs seguras (`esUrlSegura`).
+  - Códigos de pedido: Implementado `generarCodigoPedido()` con base36 y entropía aleatoria para evitar colisiones en PostgreSQL.
+  - Serverless: `api/crear-preferencia.js` verifica precios oficiales contra Supabase; `api/enviar-email.js` valida existencia del pedido y sanitiza HTML.
+  - CDN y CSP: Versiones fijadas de Lucide y Supabase JS; sincronización de dominios Mercado Pago en `netlify.toml`.
+- Subida y descarga dual de archivos PDF por molde (Molde + Especificaciones).
 
 ## Decisiones y por qué
-- Columnas Admin 50/50: Se cambió de `1fr 1.5fr` a `repeat(2, minmax(0, 1fr))` para que el formulario de carga tenga suficiente ancho y no se comprima la sección de subida de archivos ni los campos de precios.
-- Sin talles: Los moldes de la marca corresponden a proyectos de costura creativa/accesorios sin graduación de talles de indumentaria.
-- Serialización de respaldo en `link_archivos`: Permite almacenar tanto Molde como Especificaciones incluso si la base de datos no tiene las nuevas columnas agregadas.
-- RPC `registrar_pedido_checkout`: Permite que visitantes anónimos inserten cabecera e ítems en una sola transacción sin problemas de RLS ni `RETURNING`.
+- Opción 10% OFF en producto: Permite a Giu aplicar promociones del 10% a nivel catálogo a los moldes que desee, sin atar los descuentos de forma global al método de pago por transferencia.
+- Función `verComprobantePorId`: Elimina la inyección de atributos HTML en renderizado dinámico al no interpolar URLs o textos directamente en `onclick`.
+- Verificación de precios en backend: Previene la manipulación de precios desde las herramientas de desarrollador del navegador en el checkout de Mercado Pago.
 
 ## Aprendizajes y errores a evitar
-- PostgREST devuelve PGRST204 cuando se intenta insertar columnas que no existen en el schema cache. Todo payload debe tener fallback limpiando columnas extendidas.
-- En `obtener_descargas_pedido` y modales siempre resolver URLs firmadas para `archivo_specs_url` además de `archivo_url`.
-
-## Próximos pasos
-- Pegar y ejecutar el bloque SQL en Supabase Editor para habilitar `registrar_pedido_checkout`, `archivo_specs_url` e `imagenes` en PostgreSQL.
+- Los atributos inline `onclick="..."` decodifican entidades HTML (`&#39;`) antes de evaluar JavaScript, abriendo riesgo de escape de cadenas. Siempre invocar funciones por ID numérico.
+- En CSS Grid con tablas o inputs, asignar siempre `min-width: 0` al contenedor para evitar que los elementos hijos rompan el ancho de las columnas.

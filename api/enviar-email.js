@@ -25,25 +25,44 @@ try {
   // En entornos locales sin npm install previo, nodemailer se cargará dinámicamente o se simula el envío
 }
 
+function escaparHtmlEmail(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function urlSegura(url) {
+  if (!url || typeof url !== "string") return "";
+  const trim = url.trim();
+  if (trim.startsWith("https://") || trim.startsWith("http://")) {
+    return trim;
+  }
+  return "";
+}
+
 function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, urlTienda }) {
   const nombreCliente = (cliente && cliente.nombre) ? cliente.nombre.trim() : "Cliente";
   const listaItemsHtml = (items || []).map(item => {
     const nombre = item.nombre || "Molde Digital";
-    const linkDescarga = item.linkDescarga || item.linkArchivos || item.archivoUrl || "#";
-    const linkSpecs = item.linkSpecs || item.archivoSpecsUrl || item.archivo_specs_url || "";
-    const linkVideo = item.linkVideo || "";
+    const linkDescarga = urlSegura(item.linkDescarga || item.linkArchivos || item.archivoUrl || "");
+    const linkSpecs = urlSegura(item.linkSpecs || item.archivoSpecsUrl || item.archivo_specs_url || "");
+    const linkVideo = urlSegura(item.linkVideo || "");
 
     return `
       <div style="background-color: #faf7fd; border: 1px solid #ebdcfc; border-radius: 10px; padding: 18px 20px; margin-bottom: 16px;">
         <h3 style="margin: 0 0 10px 0; color: #583387; font-size: 17px; font-weight: 700;">
-          ✂️ ${nombre}
+          ✂️ ${escaparHtmlEmail(nombre)}
         </h3>
         <p style="margin: 0 0 14px 0; color: #555555; font-size: 14px; line-height: 1.5;">
           Molde digital descargable listo para imprimir en hojas A4 y tamaño real.
         </p>
         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-          ${linkDescarga && linkDescarga !== "#" ? `
-            <a href="${linkDescarga}" target="_blank" rel="noopener noreferrer"
+          ${linkDescarga ? `
+            <a href="${escaparHtmlEmail(linkDescarga)}" target="_blank" rel="noopener noreferrer"
                style="display: inline-block; background-color: #845ec2; color: #ffffff; text-decoration: none; padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(132, 94, 194, 0.25);">
               📥 Descargar Molde
             </a>
@@ -53,15 +72,15 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
             </span>
           `}
 
-          ${linkSpecs && linkSpecs !== "#" ? `
-            <a href="${linkSpecs}" target="_blank" rel="noopener noreferrer"
+          ${linkSpecs ? `
+            <a href="${escaparHtmlEmail(linkSpecs)}" target="_blank" rel="noopener noreferrer"
                style="display: inline-block; background-color: #583387; color: #ffffff; text-decoration: none; padding: 11px 20px; border-radius: 7px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(88, 51, 135, 0.25);">
               📋 Especificaciones y Materiales
             </a>
           ` : ''}
 
           ${linkVideo ? `
-            <a href="${linkVideo}" target="_blank" rel="noopener noreferrer"
+            <a href="${escaparHtmlEmail(linkVideo)}" target="_blank" rel="noopener noreferrer"
                style="display: inline-block; background-color: #ffffff; color: #dc2626; border: 1.5px solid #fca5a5; text-decoration: none; padding: 9px 18px; border-radius: 7px; font-weight: 600; font-size: 14px;">
               ▶️ Ver Tutorial en YouTube
             </a>
@@ -107,7 +126,7 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
                   </div>
 
                   <h2 style="margin: 0 0 10px 0; color: #251b33; font-size: 21px; font-weight: 700;">
-                    ¡Hola, ${nombreCliente}!
+                    ¡Hola, ${escaparHtmlEmail(nombreCliente)}!
                   </h2>
                   <p style="margin: 0 0 20px 0; color: #666666; font-size: 15px; line-height: 1.6;">
                     ${metodoPago === "gratuito" 
@@ -118,7 +137,7 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
 
                   <div style="background-color: #fbf9fe; border-left: 4px solid #845ec2; padding: 12px 16px; margin-bottom: 24px; border-radius: 0 8px 8px 0;">
                     <div style="font-size: 13px; color: #777777;">Código de Pedido:</div>
-                    <div style="font-size: 16px; font-weight: 700; color: #583387;">${codigoPedido}</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #583387;">${escaparHtmlEmail(codigoPedido)}</div>
                   </div>
 
                   <!-- LISTADO DE MOLDES Y VIDEOS -->
@@ -201,6 +220,35 @@ module.exports = async (req, res) => {
     }
 
     const destinatario = cliente.email.trim().toLowerCase();
+
+    // Verificación defensiva contra base de datos para prevenir uso indebido como spam relay
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const resPed = await fetch(`${supabaseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}&select=id,estado,cliente_email`, {
+          headers: {
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`
+          }
+        });
+        if (resPed.ok) {
+          const pedidosDb = await resPed.json();
+          if (!pedidosDb || pedidosDb.length === 0) {
+            console.warn(`[Envio Email] Intento de envío para pedido inexistente: ${codigoPedido}`);
+            return res.status(404).json({ error: "El pedido especificado no existe en la base de datos." });
+          }
+          const p = pedidosDb[0];
+          if (p.cliente_email && p.cliente_email.toLowerCase() !== destinatario) {
+            console.warn(`[Envio Email] Discrepancia de correo en pedido ${codigoPedido}: ${p.cliente_email} vs ${destinatario}`);
+            return res.status(403).json({ error: "El correo del destinatario no coincide con el registrado en el pedido." });
+          }
+        }
+      } catch (errSupabase) {
+        console.warn("[Envio Email] No se pudo verificar pedido en Supabase (continuando):", errSupabase.message);
+      }
+    }
+
     const asunto = metodoPago === "gratuito"
       ? `🎁 Tu Molde Gratuito está listo - Cosé con Giu`
       : `✂️ Tus Moldes Digitales están listos para descargar - Pedido ${codigoPedido}`;
