@@ -1,18 +1,17 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 22/11/2026 — Optimización responsive mobile: centrado de elementos, botón carrito con icono y fotos en 1:1.
+Última actualización: 22/11/2026 — Auditoría de seguridad SQL/API: cierre de auto-aprobación MP, RLS en moldes-archivos y verificar-pago.
 
 ## Estado actual
+- Seguridad y Vulnerabilidades:
+  - SQL: `marcar_pedido_completado_mp` revocado a `anon` (solo `service_role`/admin); `registrar_pedido_checkout` fuerza estado 'pendiente' para prevenir auto-aprobación en cliente.
+  - Storage: Política RLS en `moldes-archivos` actualizada para permitir signed URLs a pedidos con `estado = 'completada'` o moldes gratuitos, resolviendo el bloqueo a compradores legítimos.
+  - Mercado Pago: Creado endpoint serverless `api/verificar-pago.js` que valida cobros fácticos con la API oficial antes de aprobar pedidos en frontend.
+  - Administradores: RLS en `public.administradores` limitado a usuario propio o admin aprobado; prevención de sobreescritura de `user_id` en trigger.
 - Responsive Mobile & UI: Botón de carrito actualizado a icono `shopping-cart` + badge numérico (desktop y mobile). Elementos centrados en vista móvil (logo, chips de categorías, ordenamiento, contador y textos de tarjetas). Imágenes del catálogo en `aspect-ratio: 1 / 1` evitando recorte/zoom agresivo.
 - Precios y Promociones: Retirado el descuento automático del 10% por transferencia bancaria. Añadida la opción "10% OFF" al dropdown de promociones (`#producto-promo`), que calcula automáticamente el precio rebajado en tiempo real.
 - Panel Admin 50/50 blindado: "Agregar/Editar Molde" y "Moldes en Catálogo" con `min-width: 0; width: 100%;` en grid simétrica, evitando cualquier desborde al editar o cargar PDFs.
-- Seguridad y Vulnerabilidades:
-  - SQL: RLS reforzado en `pedidos` y `moldes-archivos` para proteger PII y acceso a PDFs; `es_admin_aprobado` y trigger corregidos para evitar auto-aprobación no autorizada.
-  - XSS y Sanitización: Reemplazado paso de strings en `onclick` inline por `verComprobantePorId(id)`; sanitización de URLs seguras (`esUrlSegura`).
-  - Códigos de pedido: Implementado `generarCodigoPedido()` con base36 y entropía aleatoria para evitar colisiones en PostgreSQL.
-  - Serverless: `api/crear-preferencia.js` verifica precios oficiales contra Supabase; `api/enviar-email.js` valida existencia del pedido y sanitiza HTML.
-  - CDN y CSP: Versiones fijadas de Lucide y Supabase JS; sincronización de dominios Mercado Pago en `netlify.toml`.
 - Subida y descarga dual de archivos PDF por molde (Molde + Especificaciones).
 
 ## Decisiones y por qué

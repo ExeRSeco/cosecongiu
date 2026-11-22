@@ -2478,21 +2478,43 @@ async function procesarRetornoMercadoPago() {
   let pedido = pedidos.find(p => p.codigo === codigoOrden);
 
   if (status === "approved") {
-    if (pedido) {
-      pedido.estado = "completada";
-      if (paymentId) pedido.numeroOperacion = paymentId;
-      guardarPedidosEnStorage();
+    let verificado = false;
 
-      if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
-        try {
-          if (typeof supabaseMarcarPedidoCompletadoMP === "function") {
-            await supabaseMarcarPedidoCompletadoMP(pedido.codigo, paymentId);
-          } else {
-            await supabaseActualizarEstadoPedido(pedido.id, "completada");
+    // 1. Verificación segura en backend contra API de Mercado Pago
+    if (paymentId && codigoOrden) {
+      try {
+        const respVerif = await fetch(`/api/verificar-pago?payment_id=${encodeURIComponent(paymentId)}&codigo=${encodeURIComponent(codigoOrden)}`);
+        if (respVerif.ok) {
+          const dataVerif = await respVerif.json();
+          if (dataVerif && dataVerif.verified) {
+            verificado = true;
           }
-        } catch (e) {
-          console.warn("[Supabase] Error actualizando pedido aprobado de MP:", e);
         }
+      } catch (errVerif) {
+        console.warn("[Mercado Pago] No se pudo conectar al endpoint de verificación:", errVerif.message);
+      }
+    }
+
+    // 2. Si no hubo backend (ej. entorno local sin Vercel) o el webhook ya lo procesó, verificar si ya está completado en Supabase
+    if (!verificado && codigoOrden && typeof supabaseObtenerDescargasPedido === "function" && pedido && pedido.cliente && pedido.cliente.email) {
+      try {
+        const checkDb = await supabaseObtenerDescargasPedido(codigoOrden, pedido.cliente.email);
+        if (checkDb && checkDb.estado === "completada") {
+          verificado = true;
+        }
+      } catch (e) {}
+    }
+
+    // Si no hay Supabase configurado (modo local/demo), se acepta si coincide la orden en memoria
+    if (!verificado && (!estaSupabaseConfigurado || !estaSupabaseConfigurado()) && pedido) {
+      verificado = true;
+    }
+
+    if (verificado) {
+      if (pedido) {
+        pedido.estado = "completada";
+        if (paymentId) pedido.numeroOperacion = paymentId;
+        guardarPedidosEnStorage();
       }
 
       // Vaciamos el carrito tras compra exitosa
@@ -2502,10 +2524,10 @@ async function procesarRetornoMercadoPago() {
       renderCarrito();
 
       renderAdmin();
-      mostrarModalConfirmacion(pedido);
-      mostrarToast("¡Pago con Mercado Pago aprobado exitosamente! Acceso listo.");
+      mostrarModalConfirmacion(pedido || { codigo: codigoOrden, estado: "completada", cliente: { nombre: "Cliente" } });
+      mostrarToast("¡Pago con Mercado Pago verificado y aprobado exitosamente! Acceso listo.");
     } else {
-      mostrarToast("✓ Pago aprobado por Mercado Pago.");
+      mostrarToast("⏳ Tu pago está en proceso de verificación por Mercado Pago. Te llegará la confirmación en breve.");
     }
 
     sessionStorage.removeItem("cose_mp_pending_order");

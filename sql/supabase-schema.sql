@@ -117,11 +117,14 @@ STABLE
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.administradores
-    WHERE email = LOWER(auth.jwt() ->> 'email') AND aprobado = true
+    WHERE email = LOWER(auth.jwt() ->> 'email')
+      AND (user_id IS NULL OR user_id = auth.uid())
+      AND aprobado = true
   );
 $$;
 
 -- Función segura para marcar pedidos como completados tras aprobación en pasarelas (Mercado Pago / Webhook)
+-- Protección estricta: Solo permitida para service_role (backend oficial Vercel) o administradores aprobados
 CREATE OR REPLACE FUNCTION public.marcar_pedido_completado_mp(p_codigo TEXT, p_numero_operacion TEXT DEFAULT NULL)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -129,15 +132,20 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  IF auth.role() != 'service_role' AND NOT public.es_admin_aprobado() THEN
+    RAISE EXCEPTION 'Acceso denegado: solo el servidor oficial o un administrador aprobado pueden confirmar pagos de Mercado Pago.';
+  END IF;
+
   UPDATE public.pedidos
   SET estado = 'completada',
       numero_operacion = COALESCE(p_numero_operacion, numero_operacion)
-  WHERE codigo = p_codigo;
+  WHERE LOWER(TRIM(codigo)) = LOWER(TRIM(p_codigo));
   RETURN FOUND;
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.marcar_pedido_completado_mp(TEXT, TEXT) TO anon, authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.marcar_pedido_completado_mp(TEXT, TEXT) FROM anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.marcar_pedido_completado_mp(TEXT, TEXT) TO service_role;
 
 -- 8. POLÍTICAS DE SEGURIDAD A NIVEL DE FILA (ROW LEVEL SECURITY - RLS)
 ALTER TABLE public.productos ENABLE ROW LEVEL SECURITY;
@@ -230,10 +238,16 @@ GRANT INSERT ON public.pedido_items TO anon;
 GRANT ALL ON public.pedido_items TO authenticated, service_role;
 
 -- D) POLÍTICAS PARA ADMINISTRADORES:
--- Consulta de administradores solo para usuarios autenticados
+-- Consulta confidencial: Admins aprobados ven la lista completa; usuarios autenticados solo ven su propio registro
 CREATE POLICY "Lectura de administradores"
   ON public.administradores FOR SELECT
-  USING (auth.role() = 'authenticated');
+  USING (
+    auth.role() = 'authenticated' AND (
+      public.es_admin_aprobado() OR 
+      email = LOWER(auth.jwt() ->> 'email') OR
+      user_id = auth.uid()
+    )
+  );
 
 -- Gestión y creación de administradores restringida exclusivamente a admins aprobados (sin recursión)
 CREATE POLICY "Gestión completa de administradores"
@@ -250,11 +264,15 @@ BEGIN
   IF LOWER(NEW.email) = 'cosecongiu@gmail.com' THEN
     INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
     VALUES (NEW.id, LOWER(NEW.email), 'superadmin', TRUE, 'Administrador principal oficial')
-    ON CONFLICT (email) DO UPDATE SET user_id = EXCLUDED.user_id, aprobado = TRUE, rol = 'superadmin';
+    ON CONFLICT (email) DO UPDATE SET 
+      user_id = COALESCE(administradores.user_id, EXCLUDED.user_id),
+      aprobado = TRUE,
+      rol = 'superadmin';
   ELSE
     INSERT INTO public.administradores (user_id, email, rol, aprobado, notas)
     VALUES (NEW.id, LOWER(NEW.email), 'admin', FALSE, 'Registrado en Supabase Auth - Pendiente de aprobación')
-    ON CONFLICT (email) DO UPDATE SET user_id = EXCLUDED.user_id;
+    ON CONFLICT (email) DO UPDATE SET 
+      user_id = COALESCE(administradores.user_id, EXCLUDED.user_id);
   END IF;
   RETURN NEW;
 END;
@@ -382,6 +400,7 @@ ON CONFLICT (id) DO UPDATE SET public = false;
 DROP POLICY IF EXISTS "Subida y edición de moldes solo por admins aprobados" ON storage.objects;
 DROP POLICY IF EXISTS "Lectura de moldes en storage por admins aprobados" ON storage.objects;
 DROP POLICY IF EXISTS "Permitir lectura y generacion de signed URLs en moldes-archivos" ON storage.objects;
+DROP POLICY IF EXISTS "Descarga de moldes para pedidos completados o gratuitos" ON storage.objects;
 
 -- Subida y modificación de archivos PDF restringida exclusivamente a administradores aprobados
 CREATE POLICY "Subida y edición de moldes solo por admins aprobados"
@@ -397,13 +416,39 @@ CREATE POLICY "Subida y edición de moldes solo por admins aprobados"
     public.es_admin_aprobado()
   );
 
--- Lectura y gestión de moldes en storage restringida estrictamente a administradores aprobados
-CREATE POLICY "Lectura de moldes en storage por admins aprobados"
+-- Descarga y generación de URLs firmadas:
+-- Permitida a administradores aprobados, compras completadas verificadas o productos gratuitos
+CREATE POLICY "Descarga de moldes para pedidos completados o gratuitos"
   ON storage.objects FOR SELECT
   USING (
-    bucket_id = 'moldes-archivos' AND
-    auth.role() = 'authenticated' AND
-    public.es_admin_aprobado()
+    bucket_id = 'moldes-archivos' AND (
+      (auth.role() = 'authenticated' AND public.es_admin_aprobado()) OR
+      EXISTS (
+        SELECT 1 FROM public.productos p
+        WHERE p.es_gratuito = true
+          AND (p.archivo_url = storage.objects.name OR p.archivo_specs_url = storage.objects.name)
+      ) OR
+      EXISTS (
+        SELECT 1 FROM public.pedido_items pi
+        JOIN public.pedidos ped ON ped.id = pi.pedido_id
+        WHERE ped.estado = 'completada'
+          AND (
+            pi.archivo_url = storage.objects.name OR 
+            pi.archivo_specs_url = storage.objects.name OR
+            pi.link_archivos = storage.objects.name
+          )
+      ) OR
+      EXISTS (
+        SELECT 1 FROM public.pedido_items pi2
+        JOIN public.pedidos ped2 ON ped2.id = pi2.pedido_id
+        JOIN public.productos pr2 ON pr2.id = pi2.producto_id
+        WHERE ped2.estado = 'completada'
+          AND (
+            pr2.archivo_url = storage.objects.name OR 
+            pr2.archivo_specs_url = storage.objects.name
+          )
+      )
+    )
   );
 
 -- 13. FUNCIÓN RPC PARA OBTENER DESCARGAS SEGURAS DE UN PEDIDO COMPLETADO
@@ -507,7 +552,22 @@ AS $$
 DECLARE
   v_pedido_id BIGINT;
   v_item JSONB;
+  v_estado TEXT;
+  v_metodo TEXT;
+  v_total NUMERIC;
 BEGIN
+  v_metodo := COALESCE(p_pedido->>'metodo_pago', 'transferencia');
+  v_total := COALESCE((p_pedido->>'total')::numeric, 0);
+
+  -- SEGURIDAD: Previene que un usuario malintencionado auto-apruebe un pedido.
+  -- Solo se permite estado 'completada' inicial si es un molde gratuito legítimo (total = 0 y método = 'gratuito').
+  -- Para Mercado Pago, Transferencia o PayPal, el estado inicial SIEMPRE debe ser 'pendiente'.
+  IF v_metodo = 'gratuito' AND v_total = 0 THEN
+    v_estado := 'completada';
+  ELSE
+    v_estado := 'pendiente';
+  END IF;
+
   INSERT INTO public.pedidos (
     codigo,
     fecha_texto,
@@ -528,12 +588,12 @@ BEGIN
     p_pedido->>'cliente_nombre',
     p_pedido->>'cliente_email',
     COALESCE(p_pedido->>'cliente_telefono', 'No especificado'),
-    COALESCE((p_pedido->>'total')::numeric, 0),
+    v_total,
     COALESCE(p_pedido->>'moneda', 'ARS'),
-    COALESCE(p_pedido->>'metodo_pago', 'transferencia'),
-    COALESCE(p_pedido->>'estado', 'pendiente'),
-    COALESCE((p_pedido->>'archivos_enviados')::boolean, false),
-    p_pedido->>'fecha_envio_archivos',
+    v_metodo,
+    v_estado,
+    FALSE,
+    NULL,
     p_pedido->>'comprobante_url',
     p_pedido->>'numero_operacion'
   )
@@ -568,6 +628,10 @@ BEGIN
 
   RETURN jsonb_build_object(
     'exito', true,
+    'id', v_pedido_id,
+    'codigo', p_pedido->>'codigo',
+    'estado', v_estado
+  );
     'id', v_pedido_id,
     'codigo', p_pedido->>'codigo'
   );
