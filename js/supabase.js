@@ -560,7 +560,12 @@ async function supabaseSubirArchivoMolde(archivo, nombreMolde = "molde") {
       });
 
     if (error) {
-      console.error("[Supabase Storage] Error al subir archivo de moldería:", error);
+      const esTamano = error.message && (error.message.toLowerCase().includes("size") || error.message.toLowerCase().includes("maximum"));
+      if (esTamano) {
+        console.error(`[Supabase Storage] El archivo "${archivo.name}" (${(archivo.size / 1024 / 1024).toFixed(1)} MB) supera el tamaño máximo permitido en el bucket. Reducí el PDF o ajustá el límite en Supabase → Storage → Policies.`);
+      } else {
+        console.error("[Supabase Storage] Error al subir archivo de moldería:", error);
+      }
       return null;
     }
 
@@ -593,7 +598,12 @@ async function supabaseSubirArchivoSpecs(archivo, nombreMolde = "especificacione
       });
 
     if (error) {
-      console.error("[Supabase Storage] Error al subir archivo de especificaciones:", error);
+      const esTamano = error.message && (error.message.toLowerCase().includes("size") || error.message.toLowerCase().includes("maximum"));
+      if (esTamano) {
+        console.error(`[Supabase Storage] El archivo de especificaciones "${archivo.name}" (${(archivo.size / 1024 / 1024).toFixed(1)} MB) supera el tamaño máximo permitido en el bucket.`);
+      } else {
+        console.error("[Supabase Storage] Error al subir archivo de especificaciones:", error);
+      }
       return null;
     }
 

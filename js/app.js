@@ -12,9 +12,8 @@ const PRODUCTOS_POR_DEFECTO = [];
 // Pedidos iniciales en producción (comienza vacío sin datos de prueba)
 const PEDIDOS_POR_DEFECTO = [];
 
-// Enlaces de respaldo generales para la entrega digital
-const ENLACE_DRIVE_GENERAL = "";
-const ENLACE_VIDEO_GENERAL = "https://www.youtube.com/watch?v=tutorial-cose-con-giu";
+// Enlace de video tutorial general (si el molde no tiene uno propio configurado en el admin)
+const ENLACE_VIDEO_GENERAL = "";
 
 // Claves utilizadas para guardar en el almacenamiento del navegador (localStorage y sessionStorage)
 const STORAGE_PRODUCTOS = "tienda_moldes_productos";
@@ -357,7 +356,12 @@ function cargarDatosDesdeLocalStorage() {
 
   const carritoGuardado = localStorage.getItem(STORAGE_CARRITO);
   if (carritoGuardado) {
-    carrito = JSON.parse(carritoGuardado);
+    try {
+      carrito = JSON.parse(carritoGuardado);
+      if (!Array.isArray(carrito)) carrito = [];
+    } catch (e) {
+      carrito = [];
+    }
   } else {
     carrito = [];
   }
@@ -380,7 +384,33 @@ function cargarDatosDesdeLocalStorage() {
 }
 
 function guardarProductosEnStorage() {
-  localStorage.setItem(STORAGE_PRODUCTOS, JSON.stringify(productos));
+  try {
+    // Guardamos una versión limpia: nunca persistir data:URLs de PDFs (pueden ser varios MB)
+    const productosSinBinarios = productos.map(p => ({
+      ...p,
+      // Si archivoUrl o archivoSpecsUrl contienen base64 de PDF, los omitimos del storage local
+      archivoUrl: (p.archivoUrl && p.archivoUrl.startsWith("data:application")) ? null : (p.archivoUrl || null),
+      archivoSpecsUrl: (p.archivoSpecsUrl && p.archivoSpecsUrl.startsWith("data:application")) ? null : (p.archivoSpecsUrl || null),
+    }));
+    localStorage.setItem(STORAGE_PRODUCTOS, JSON.stringify(productosSinBinarios));
+  } catch (e) {
+    console.error("[Storage] Error al guardar productos en localStorage:", e.message);
+    // Intento de emergencia: guardar solo campos esenciales sin URLs de archivos
+    try {
+      const productosMini = productos.map(p => ({
+        id: p.id, nombre: p.nombre, descripcion: p.descripcion,
+        categoria: p.categoria, icono: p.icono, precio: p.precio,
+        enPromo: p.enPromo, precioPromo: p.precioPromo,
+        esGratuito: p.esGratuito, archivoUrl: null, archivoSpecsUrl: null,
+        imagenes: (p.imagenes || []).filter(img => !img.startsWith("data:")),
+        imagen: p.imagen && !p.imagen.startsWith("data:") ? p.imagen : null,
+        linkVideo: p.linkVideo || ""
+      }));
+      localStorage.setItem(STORAGE_PRODUCTOS, JSON.stringify(productosMini));
+    } catch (e2) {
+      console.error("[Storage] Error crítico, localStorage lleno:", e2.message);
+    }
+  }
 }
 
 function guardarCarritoEnStorage() {
@@ -1189,7 +1219,7 @@ function guardarSesionAdmin(datos = {}) {
   const payload = {
     logueado: true,
     metodo: "supabase",
-    email: datos.email || "admin@cosecongiu.com",
+    email: datos.email || "",
     iniciadoEn: new Date().toISOString()
   };
 
@@ -1268,11 +1298,8 @@ async function iniciarSesionAdmin() {
     return;
   }
 
-  // Si usuario es 'admin', mapear al correo oficial de la tienda
+  // Validamos que sea un correo válido; no mapeamos alias a correos hardcodeados
   let emailAuth = usuario;
-  if (emailAuth.toLowerCase() === "admin") {
-    emailAuth = "cosecongiu@gmail.com";
-  }
 
   const supabaseActivo = typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado();
 
@@ -1284,7 +1311,7 @@ async function iniciarSesionAdmin() {
 
   try {
     if (!emailAuth.includes("@")) {
-      mostrarErrorLoginAdmin("Ingresa un correo oficial válido o el alias 'admin'.");
+      mostrarErrorLoginAdmin("Ingresa un correo electrónico válido para iniciar sesión.");
       return;
     }
 
@@ -2986,30 +3013,34 @@ async function guardarProducto(evento) {
   // 2. Subir archivo PDF 1: Molde
   let nuevoArchivoUrl = null;
   if (archivoMoldeFile) {
-    mostrarToast("Procesando archivo del molde...");
     if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseSubirArchivoMolde === "function") {
+      mostrarToast("Subiendo molde PDF a la nube...");
       nuevoArchivoUrl = await supabaseSubirArchivoMolde(archivoMoldeFile, nombre);
-    }
-    if (!nuevoArchivoUrl) {
-      nuevoArchivoUrl = await leerArchivoComoDataURL(archivoMoldeFile);
-    }
-    if (!nuevoArchivoUrl) {
-      nuevoArchivoUrl = archivoMoldeFile.name;
+      if (!nuevoArchivoUrl) {
+        // Si Supabase rechazó el archivo (ej: tamaño excedido), informar sin guardar base64
+        mostrarToast("⚠️ No se pudo subir el molde PDF. Verificá el tamaño máximo permitido en Supabase Storage (bucket moldes-archivos).");
+        // Guardar solo el nombre de archivo como referencia, nunca el contenido binario
+        nuevoArchivoUrl = null;
+      }
+    } else {
+      // Sin Supabase: solo guardamos el nombre del archivo como referencia (no el contenido)
+      mostrarToast("⚠️ Supabase no está conectado. El molde PDF no se pudo almacenar.");
+      nuevoArchivoUrl = null;
     }
   }
 
   // 3. Subir archivo PDF 2: Especificaciones y Materiales
   let nuevoSpecsUrl = null;
   if (archivoSpecsFile) {
-    mostrarToast("Procesando archivo de especificaciones...");
     if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado() && typeof supabaseSubirArchivoSpecs === "function") {
+      mostrarToast("Subiendo especificaciones PDF a la nube...");
       nuevoSpecsUrl = await supabaseSubirArchivoSpecs(archivoSpecsFile, nombre);
-    }
-    if (!nuevoSpecsUrl) {
-      nuevoSpecsUrl = await leerArchivoComoDataURL(archivoSpecsFile);
-    }
-    if (!nuevoSpecsUrl) {
-      nuevoSpecsUrl = archivoSpecsFile.name;
+      if (!nuevoSpecsUrl) {
+        mostrarToast("⚠️ No se pudo subir el PDF de especificaciones. Verificá el tamaño en Supabase Storage.");
+        nuevoSpecsUrl = null;
+      }
+    } else {
+      nuevoSpecsUrl = null;
     }
   }
 
@@ -4591,7 +4622,7 @@ async function consultarDescargasDesdeModal() {
             <button type="button" class="btn btn-primary" onclick="descargarMuestraPDF()">
               <i data-lucide="download" class="ui-icon"></i> Descargar Guía de Costura
             </button>
-            <a href="https://api.whatsapp.com/send?phone=5493813581558&text=Hola%20Giu!%20Consulta%20por%20pedido%20${encodeURIComponent(resultadoDescargas.codigo)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="color: #15803d; border-color: #86efac;">
+            <a href="https://api.whatsapp.com/send?phone=${normalizarNumeroWhatsApp(datosBancarios.whatsapp || DATOS_BANCARIOS_POR_DEFECTO.whatsapp)}&text=Hola%20Giu!%20Consulta%20por%20pedido%20${encodeURIComponent(resultadoDescargas.codigo)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="color: #15803d; border-color: #86efac;">
               <i data-lucide="message-circle" class="ui-icon"></i> Consultar por WhatsApp
             </a>
           </div>
