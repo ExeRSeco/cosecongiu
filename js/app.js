@@ -1701,6 +1701,7 @@ function verDetalleProducto(productoId) {
   const esGratis = Boolean(producto.esGratuito || producto.precio === 0);
   const tieneDescuento = !esGratis && producto.enPromo && producto.precioPromo > 0;
   const precioFinal = esGratis ? 0 : (tieneDescuento ? producto.precioPromo : producto.precio);
+  const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90 * 100) / 100;
 
   const imgsProducto = (Array.isArray(producto.imagenes) && producto.imagenes.length > 0)
     ? producto.imagenes
@@ -1778,6 +1779,14 @@ function verDetalleProducto(productoId) {
             `}
           </div>
 
+          <!-- Precio con 10% OFF por Transferencia Bancaria -->
+          <div>
+            <span class="product-price-transfer-tag">
+              <i data-lucide="tag" class="ui-icon" style="width: 14px; height: 14px;"></i>
+              $${formatearPrecio(precioTransferencia)} ARS abonando por Transferencia (10% OFF)
+            </span>
+          </div>
+
           <!-- Cuadro aclaratorio de medios de pago y plazos de entrega -->
           <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.65rem; background: var(--bg-page); padding: 0.6rem 0.85rem; border-radius: 6px; border: 1px solid var(--border); line-height: 1.45; word-break: break-word;">
             <div style="display: flex; align-items: flex-start; gap: 0.4rem; color: #0284c7; font-weight: 600; margin-bottom: 0.25rem;">
@@ -1786,7 +1795,7 @@ function verDetalleProducto(productoId) {
             </div>
             <div style="display: flex; align-items: flex-start; gap: 0.4rem; color: #b45309; font-weight: 600;">
               <i data-lucide="clock" style="width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px;"></i>
-              <span><strong>Transferencia Bancaria:</strong> Acceso con verificación de hasta 48 horas hábiles.</span>
+              <span><strong>Transferencia (10% OFF):</strong> Acceso con verificación de hasta 48 horas hábiles.</span>
             </div>
           </div>
         `}
@@ -1966,6 +1975,7 @@ function renderCatalogo() {
   catalogoGrid.innerHTML = listaFiltrada.map(producto => {
     const esGratis = Boolean(producto.esGratuito || producto.precio === 0);
     const precioFinal = esGratis ? 0 : (producto.enPromo && producto.precioPromo > 0 ? producto.precioPromo : producto.precio);
+    const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90 * 100) / 100;
     const tieneDescuento = !esGratis && producto.enPromo && producto.precioPromo > 0;
     const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
 
@@ -2029,6 +2039,9 @@ function renderCatalogo() {
               ` : `
                 <span class="price-regular">$${formatearPrecio(precioFinal)}</span>
               `}
+            </div>
+            <div class="price-transfer-pill">
+              <i data-lucide="percent" class="ui-icon-xs"></i> $${formatearPrecio(precioTransferencia)} con Transferencia (10% OFF)
             </div>
           `}
         </div>
@@ -2215,7 +2228,7 @@ function renderCarrito() {
         <div class="cart-trust-badges">
           <div class="cart-trust-item"><i data-lucide="shield-check" class="ui-icon-xs"></i> Pago 100% Seguro</div>
           <div class="cart-trust-item"><i data-lucide="zap" class="ui-icon-xs"></i> Entrega inmediata con Mercado Pago</div>
-          <div class="cart-trust-item"><i data-lucide="landmark" class="ui-icon-xs"></i> Transferencia bancaria disponible</div>
+          <div class="cart-trust-item"><i data-lucide="percent" class="ui-icon-xs"></i> 10% OFF pagando por Transferencia</div>
         </div>
       </div>
     </div>
@@ -2283,17 +2296,29 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
   // Configuración de títulos, desglose y montos según método seleccionado
   if (tituloModal) tituloModal.textContent = "Finalizar Compra";
 
-  if (filaSubtotal) filaSubtotal.style.display = "none";
-  if (filaDescuento) filaDescuento.style.display = "none";
-
-  const totalArs = calcularTotalCarrito("ARS");
-  if (elemTotalMonto) elemTotalMonto.textContent = `$${formatearPrecio(totalArs)}`;
-
   if (esTransferencia) {
-    if (totalEtiqueta) totalEtiqueta.textContent = "Total a transferir:";
+    const subtotalArs = calcularTotalCarrito("ARS");
+    const totalConDescuento = Math.round(subtotalArs * 0.90 * 100) / 100;
+    const descuento = Math.round((subtotalArs - totalConDescuento) * 100) / 100;
+
+    if (filaSubtotal) {
+      filaSubtotal.style.display = "flex";
+      if (subtotalMonto) subtotalMonto.textContent = `$${formatearPrecio(subtotalArs)}`;
+    }
+    if (filaDescuento) {
+      filaDescuento.style.display = "flex";
+      if (descuentoMonto) descuentoMonto.textContent = `-$${formatearPrecio(descuento)}`;
+    }
+    if (elemTotalMonto) elemTotalMonto.textContent = `$${formatearPrecio(totalConDescuento)}`;
+    if (totalEtiqueta) totalEtiqueta.textContent = "Total a transferir (10% OFF):";
     if (btnConfirmarTexto) btnConfirmarTexto.textContent = "Confirmar Transferencia Bancaria";
   } else {
     // Mercado Pago (por defecto)
+    if (filaSubtotal) filaSubtotal.style.display = "none";
+    if (filaDescuento) filaDescuento.style.display = "none";
+
+    const totalArs = calcularTotalCarrito("ARS");
+    if (elemTotalMonto) elemTotalMonto.textContent = `$${formatearPrecio(totalArs)}`;
     if (totalEtiqueta) totalEtiqueta.textContent = "Total a pagar:";
     if (btnConfirmarTexto) btnConfirmarTexto.textContent = "Pagar con Mercado Pago";
   }
@@ -2378,7 +2403,7 @@ async function confirmarPedido() {
   }
 
   let moneda = "ARS";
-  const sumaTotal = calcularTotalCarrito("ARS");
+  const sumaTotal = esTransferencia ? Math.round(calcularTotalCarrito("ARS") * 0.90 * 100) / 100 : calcularTotalCarrito("ARS");
   const fechaActual = obtenerFechaLocalHoraTexto(new Date());
   const codigoPedido = generarCodigoPedido("ORD");
 
@@ -2419,7 +2444,9 @@ async function confirmarPedido() {
     },
     items: carrito.map(item => {
       const prodOriginal = productos.find(p => p.id === item.id) || {};
-      const itemPrecio = item.precio;
+      const itemPrecio = esTransferencia
+        ? Math.round(item.precio * 0.90 * 100) / 100
+        : item.precio;
 
       return {
         id: item.id,
@@ -2649,8 +2676,8 @@ function mostrarModalConfirmacion(pedido) {
     infoPlazoWa = "Quedo a la espera de los enlaces de descarga en el plazo de 1 a 2 horas.";
   } else if (esTransferencia) {
     metodoTexto = "Transferencia Bancaria";
-    totalFormateado = `$${formatearPrecio(pedido.total)} ARS`;
-    metodoBadgeHtml = '<span class="badge-metodo-pago transferencia" style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"><i data-lucide="landmark" class="badge-icon"></i> Transferencia Bancaria</span>';
+    totalFormateado = `$${formatearPrecio(pedido.total)} ARS con 10% OFF`;
+    metodoBadgeHtml = '<span class="badge-metodo-pago transferencia" style="background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"><i data-lucide="landmark" class="badge-icon"></i> Transferencia 10% OFF</span>';
     plazoEntregaFila = "Verificación bancaria (hasta 48 hs hábiles)";
     plazoHeroHtml = `
       <div class="alert-box alert-plazo-transferencia" style="margin: 0.9rem 0; text-align: left;">
@@ -2659,7 +2686,7 @@ function mostrarModalConfirmacion(pedido) {
           <strong style="color: #b45309;">Plazo de verificación bancaria: hasta 48 horas hábiles</strong>
         </div>
         <p class="alert-plazo-texto" style="color: #78350f;">
-          Al haber abonado por transferencia bancaria, se requiere verificación manual de la acreditación bancaria. Te notificaremos a tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong> y habilitaremos tus descargas una vez acreditado.
+          Al haber abonado por transferencia bancaria con el <strong>10% de descuento</strong>, se requiere verificación manual de la acreditación bancaria. Te notificaremos a tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong> y habilitaremos tus descargas una vez acreditado.
         </p>
       </div>`;
     infoPlazoWa = "Quedo a la espera de la verificación bancaria para recibir mis descargas.";
@@ -3688,7 +3715,7 @@ function renderPedidosAdmin() {
     } else if (esMp) {
       metodoBadge = '<span class="badge-metodo-pago mercadopago" title="Pago mediante Mercado Pago"><i data-lucide="credit-card" class="badge-icon"></i> Mercado Pago</span>';
     } else {
-      metodoBadge = '<span class="badge-metodo-pago transferencia" style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;" title="Pago por Transferencia Bancaria"><i data-lucide="landmark" class="badge-icon"></i> Transferencia Bancaria</span>';
+      metodoBadge = '<span class="badge-metodo-pago transferencia" style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;" title="Pago por Transferencia Bancaria (10% OFF)"><i data-lucide="landmark" class="badge-icon"></i> Transferencia (10% OFF)</span>';
     }
 
     return `
