@@ -200,6 +200,12 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("hashchange", restaurarVistaDesdeHash);
   window.addEventListener("popstate", restaurarVistaDesdeHash);
 
+  // Escuchar tecla Escape para cerrar modales activos con el teclado (accesibilidad)
+  window.addEventListener("keydown", manejarTeclaEscapeModales);
+
+  // Procesar parámetros en la URL (?descarga=ORD-XXXX) si el cliente viene de un enlace directo
+  procesarParametrosDescargaUrl();
+
   // Procesar retorno automático de pago con Mercado Pago si la URL contiene parámetros
   procesarRetornoMercadoPago();
 
@@ -492,11 +498,19 @@ function guardarProductosEnStorage() {
 }
 
 function guardarCarritoEnStorage() {
-  localStorage.setItem(STORAGE_CARRITO, JSON.stringify(carrito));
+  try {
+    localStorage.setItem(STORAGE_CARRITO, JSON.stringify(carrito));
+  } catch (e) {
+    console.error("[Storage] Error al guardar carrito en localStorage:", e.message);
+  }
 }
 
 function guardarPedidosEnStorage() {
-  localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidos));
+  try {
+    localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidos));
+  } catch (e) {
+    console.error("[Storage] Error al guardar pedidos en localStorage:", e.message);
+  }
 }
 
 /**
@@ -1836,19 +1850,27 @@ function seleccionarCategoria(cat) {
   renderCatalogo();
 }
 
+let debounceTimerBusquedaCatalogo = null;
 function filtrarCatalogoPorBusqueda(query) {
   filtrosCatalogo.busqueda = (query || "").trim().toLowerCase();
   const btnClear = document.getElementById("btn-clear-catalogo-search");
   if (btnClear) {
     btnClear.style.display = filtrosCatalogo.busqueda ? "flex" : "none";
   }
-  renderCatalogo();
+  clearTimeout(debounceTimerBusquedaCatalogo);
+  debounceTimerBusquedaCatalogo = setTimeout(() => {
+    renderCatalogo();
+  }, 120);
 }
 
 function limpiarBusquedaCatalogo() {
+  clearTimeout(debounceTimerBusquedaCatalogo);
   const input = document.getElementById("catalogo-busqueda");
   if (input) input.value = "";
-  filtrarCatalogoPorBusqueda("");
+  filtrosCatalogo.busqueda = "";
+  const btnClear = document.getElementById("btn-clear-catalogo-search");
+  if (btnClear) btnClear.style.display = "none";
+  renderCatalogo();
   if (input) input.focus();
 }
 
@@ -1984,7 +2006,7 @@ function renderCatalogo() {
         <span class="product-category-badge">${escaparHTML(producto.categoria || 'Moldería')}</span>
 
         <h3 class="product-title">
-          <a href="#" class="product-title-link" onclick="verDetalleProducto(${producto.id}); return false;" title="Ver página y detalles de este molde">
+          <a href="#producto-${producto.id}" class="product-title-link" onclick="verDetalleProducto(${producto.id}); return false;" title="Ver página y detalles de este molde">
             ${escaparHTML(producto.nombre)}
           </a>
         </h3>
@@ -2893,7 +2915,7 @@ function descargarArchivoMolde(url, nombre = "Molde_Digital") {
     }, 200);
   } catch (err) {
     console.error("Error al descargar archivo:", err);
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 }
 window.descargarArchivoMolde = descargarArchivoMolde;
@@ -3465,20 +3487,29 @@ function renderMetricasAdmin() {
 /**
  * Búsqueda y Filtros en Panel Admin
  */
+let debounceTimerBusquedaAdmin = null;
 function filtrarAdminPorBusqueda(query) {
   filtrosAdmin.busqueda = (query || "").trim().toLowerCase();
   const btnClear = document.getElementById("btn-clear-admin-search");
   if (btnClear) {
     btnClear.style.display = filtrosAdmin.busqueda ? "flex" : "none";
   }
-  renderPedidosAdmin();
-  renderCatalogoAdmin();
+  clearTimeout(debounceTimerBusquedaAdmin);
+  debounceTimerBusquedaAdmin = setTimeout(() => {
+    renderPedidosAdmin();
+    renderCatalogoAdmin();
+  }, 150);
 }
 
 function limpiarBusquedaAdmin() {
+  clearTimeout(debounceTimerBusquedaAdmin);
   const input = document.getElementById("admin-busqueda");
   if (input) input.value = "";
-  filtrarAdminPorBusqueda("");
+  filtrosAdmin.busqueda = "";
+  const btnClear = document.getElementById("btn-clear-admin-search");
+  if (btnClear) btnClear.style.display = "none";
+  renderPedidosAdmin();
+  renderCatalogoAdmin();
   if (input) input.focus();
 }
 
@@ -4194,7 +4225,7 @@ function renderCatalogoAdmin() {
 
         <div class="admin-inventory-info">
           <div class="admin-inventory-top">
-            <a href="#" class="admin-inventory-name" onclick="verDetalleProducto(${producto.id}); return false;" title="Ver página del molde en la tienda">
+            <a href="#producto-${producto.id}" class="admin-inventory-name" onclick="verDetalleProducto(${producto.id}); return false;" title="Ver página del molde en la tienda">
               <strong>${escaparHTML(producto.nombre)}</strong> ↗
             </a>
             <span class="category-chip-mini">${escaparHTML(producto.categoria || 'Otros')}</span>
@@ -4909,28 +4940,67 @@ async function aprobarTransferenciaYEnviarArchivos(pedidoId) {
     setTimeout(() => {
       const abrirWa = confirm(`¿Deseas abrir WhatsApp para avisarle también a ${pedido.cliente.nombre}?`);
       if (abrirWa) {
-        window.open(`https://api.whatsapp.com/send?phone=${waLimpio}&text=${msg}`, "_blank");
+        window.open(`https://api.whatsapp.com/send?phone=${waLimpio}&text=${msg}`, "_blank", "noopener,noreferrer");
       }
     }, 350);
   }
 }
 
-// Escuchar parámetros en la URL (?descarga=ORD-XXXX&email=...) al cargar la página
-window.addEventListener("DOMContentLoaded", () => {
-  if (typeof window !== "undefined" && window.location.search) {
-    const params = new URLSearchParams(window.location.search);
-    const codDescarga = params.get("descarga");
-    const emailDescarga = params.get("email");
+/**
+ * Procesa parámetros de la URL (?descarga=ORD-XXXX&email=...) al cargar la página
+ * (Unificado en el ciclo de inicialización principal)
+ */
+function procesarParametrosDescargaUrl() {
+  if (typeof window === "undefined" || !window.location.search) return;
+  const params = new URLSearchParams(window.location.search);
+  const codDescarga = params.get("descarga");
+  const emailDescarga = params.get("email");
 
-    if (codDescarga) {
-      setTimeout(() => {
-        abrirModalMisDescargas();
-        const inCod = document.getElementById("input-descargas-codigo");
-        const inMail = document.getElementById("input-descargas-email");
-        if (inCod) inCod.value = codDescarga;
-        if (inMail && emailDescarga) inMail.value = emailDescarga;
-        consultarDescargasDesdeModal();
-      }, 500);
-    }
+  if (codDescarga) {
+    setTimeout(() => {
+      abrirModalMisDescargas();
+      const inCod = document.getElementById("input-descargas-codigo");
+      const inMail = document.getElementById("input-descargas-email");
+      if (inCod) inCod.value = codDescarga;
+      if (inMail && emailDescarga) inMail.value = emailDescarga;
+      consultarDescargasDesdeModal();
+    }, 450);
   }
-});
+}
+
+/**
+ * Cierra cualquier ventana modal activa cuando el usuario presiona la tecla Escape (WCAG a11y)
+ */
+function manejarTeclaEscapeModales(e) {
+  if (e.key !== "Escape") return;
+  const visor = document.getElementById("modal-visor-comprobante");
+  if (visor && visor.style.display !== "none") {
+    cerrarModalComprobante();
+    return;
+  }
+  const gratis = document.getElementById("modal-molde-gratis");
+  if (gratis && gratis.style.display !== "none") {
+    cerrarModalMoldeGratis();
+    return;
+  }
+  const descargas = document.getElementById("modal-mis-descargas");
+  if (descargas && descargas.style.display !== "none") {
+    cerrarModalMisDescargas();
+    return;
+  }
+  const supa = document.getElementById("modal-config-supabase");
+  if (supa && supa.style.display !== "none") {
+    cerrarModalConfigSupabase();
+    return;
+  }
+  const confirmacion = document.getElementById("modal-confirmacion-pedido");
+  if (confirmacion && confirmacion.style.display !== "none") {
+    cerrarModalConfirmacion();
+    return;
+  }
+  const checkout = document.getElementById("modal-checkout");
+  if (checkout && checkout.style.display !== "none") {
+    cerrarCheckout();
+    return;
+  }
+}

@@ -40,7 +40,7 @@
 
   <link rel="stylesheet" href="css/styles.css">
   <!-- Biblioteca de iconos modernos Lucide (versión fijada) -->
-  <script src="https://unpkg.com/lucide@0.460.0"></script>
+  <script src="https://unpkg.com/lucide@0.460.0" defer></script>
 </head>
 
 <body>
@@ -69,21 +69,21 @@
         </div>
       </div>
       <nav class="nav">
-        <button id="btn-nav-catalogo" class="nav-btn active" onclick="cambiarVista('catalogo')">
+        <button type="button" id="btn-nav-catalogo" class="nav-btn active" onclick="cambiarVista('catalogo')">
           <i data-lucide="scissors" class="ui-icon"></i> Catálogo
         </button>
         <a href="#seccion-faq" class="nav-link-btn" onclick="cambiarVista('catalogo')">
           <i data-lucide="help-circle" class="ui-icon-xs"></i> Preguntas
         </a>
-        <button id="btn-nav-descargas" class="nav-btn nav-btn-descargas" onclick="abrirModalMisDescargas()"
+        <button type="button" id="btn-nav-descargas" class="nav-btn nav-btn-descargas" onclick="abrirModalMisDescargas()"
           title="Descargar moldes adquiridos previamente">
           <i data-lucide="download-cloud" class="ui-icon"></i> <span class="nav-descargas-text">Mis Descargas</span>
         </button>
-        <button id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')"
+        <button type="button" id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')"
           title="Ver Carrito de Compras" aria-label="Carrito de compras">
           <i data-lucide="shopping-cart" class="ui-icon"></i> <span id="cart-badge" class="badge">0</span>
         </button>
-        <button id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')"
+        <button type="button" id="btn-nav-admin" class="nav-btn nav-btn-admin" onclick="cambiarVista('admin')"
           title="Acceso a Administración">
           <i data-lucide="shield-check" class="ui-icon-xs"></i> Admin
         </button>
@@ -120,7 +120,7 @@
           <div class="search-input-wrap">
             <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
             <input type="text" id="catalogo-busqueda" placeholder="Buscar moldes de costura..."
-              oninput="filtrarCatalogoPorBusqueda(this.value)">
+              aria-label="Buscar moldes de costura" oninput="filtrarCatalogoPorBusqueda(this.value)">
             <button type="button" class="btn-clear-search" id="btn-clear-catalogo-search"
               onclick="limpiarBusquedaCatalogo()" title="Limpiar búsqueda" style="display: none;">✕</button>
           </div>
@@ -290,7 +290,7 @@
     <!-- 2. VISTA: DETALLE DE PRODUCTO INDIVIDUAL -->
     <section id="view-producto" class="view-section" style="display: none;">
       <div class="product-detail-header-nav">
-        <button class="btn btn-secondary btn-sm" onclick="cambiarVista('catalogo')">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="cambiarVista('catalogo')">
           <i data-lucide="arrow-left" class="ui-icon"></i> Volver al Catálogo
         </button>
       </div>
@@ -374,6 +374,7 @@
         <div class="search-input-wrap">
           <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
           <input type="text" id="admin-busqueda" placeholder="Buscar comprador o email..."
+            aria-label="Buscar pedidos por comprador o email"
             oninput="filtrarAdminPorBusqueda(this.value)">
           <button type="button" class="btn-clear-search" id="btn-clear-admin-search" onclick="limpiarBusquedaAdmin()"
             title="Limpiar búsqueda" style="display: none;">✕</button>
@@ -422,7 +423,7 @@
           <div class="admin-orders-controls">
             <!-- Filtro rápido de fecha -->
             <select id="filtro-pedidos-fecha-rapida" onchange="filtrarPedidosAdmin()" class="filtro-select"
-              title="Filtrar por período">
+              title="Filtrar por período" aria-label="Filtrar pedidos por período">
               <option value="todas">Todas las fechas</option>
               <option value="hoy">Hoy</option>
               <option value="semana">Últimos 7 días</option>
@@ -432,11 +433,12 @@
             <!-- Selector de fecha calendario puntual -->
             <div class="date-picker-wrap" title="Filtrar por día exacto">
               <input type="date" id="filtro-pedidos-fecha-input" onchange="filtrarPedidosAdmin()"
-                class="filtro-date-input">
+                class="filtro-date-input" aria-label="Filtrar pedidos por fecha exacta">
             </div>
 
             <!-- Filtro por estado -->
-            <select id="filtro-pedidos-estado" onchange="filtrarPedidosAdmin()" class="filtro-select">
+            <select id="filtro-pedidos-estado" onchange="filtrarPedidosAdmin()" class="filtro-select"
+              aria-label="Filtrar pedidos por estado">
               <option value="todos">Todos los estados</option>
               <option value="pendiente">Solo Pendientes</option>
               <option value="completada">Solo Completadas</option>
@@ -521,6 +523,7 @@
                 <label
                   style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; margin: 0; font-weight: 600; color: #15803d;">
                   <input type="checkbox" id="producto-es-gratuito" onchange="alternarCamposMoldeGratuito(this.checked)"
+                    aria-label="Marcar como molde gratuito"
                     style="width: 1.15rem; height: 1.15rem; cursor: pointer;">
                   <span>🎁 Marcar como Molde Gratuito</span>
                 </label>
@@ -628,7 +631,8 @@
               class="admin-add-cat-form">
               <div class="input-with-btn-row">
                 <input type="text" id="nueva-categoria-nombre"
-                  placeholder="Nombre de categoría (ej: Ropa Infantil, Lencería)..." required maxlength="40"
+                  placeholder="Nombre de categoría (ej: Ropa Infantil, Lencería)..."
+                  aria-label="Nombre de la nueva categoría" required maxlength="40"
                   autocomplete="off">
                 <button type="submit" class="btn btn-primary btn-sm" id="btn-agregar-categoria">
                   <i data-lucide="plus" class="ui-icon-xs"></i> Agregar
@@ -763,7 +767,7 @@
           <h3 id="checkout-title" class="checkout-main-title">Finalizar Compra</h3>
           <p class="checkout-subtitle">Acceso directo a tus moldes en PDF y video tutorial</p>
         </div>
-        <button class="modal-close-btn" onclick="cerrarCheckout()" title="Cerrar">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarCheckout()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body checkout-modal-body">
@@ -903,7 +907,8 @@
               <div class="dropzone-compact" id="dropzone-comprobante"
                 onclick="document.getElementById('checkout-comprobante-file').click();">
                 <input type="file" id="checkout-comprobante-file" accept="image/*,application/pdf"
-                  style="display: none;" onchange="manejarSeleccionComprobante(this)">
+                  aria-label="Subir comprobante de transferencia" style="display: none;"
+                  onchange="manejarSeleccionComprobante(this)">
                 <div id="dropzone-vacio" class="dropzone-compact-empty">
                   <i data-lucide="paperclip" class="ui-icon"></i>
                   <span>Adjuntar comprobante</span>
@@ -956,7 +961,7 @@
           <div id="alert-plazo-transferencia"></div>
           <div id="alert-plazo-mercadopago"></div>
           <div id="alert-plazo-paypal"></div>
-          <input type="text" id="checkout-mp-num-operacion">
+          <input type="text" id="checkout-mp-num-operacion" aria-hidden="true" tabindex="-1">
         </div>
       </div>
 
@@ -980,7 +985,7 @@
       <div class="modal-header modal-success-header">
         <h3 id="confirmacion-titulo"><i data-lucide="party-popper" class="ui-icon"></i> ¡Pedido Registrado con Éxito!
         </h3>
-        <button class="modal-close-btn" onclick="cerrarModalConfirmacion()" title="Cerrar">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalConfirmacion()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body" id="confirmacion-modal-body">
@@ -988,7 +993,7 @@
       </div>
 
       <div class="modal-footer" style="justify-content: center;">
-        <button class="btn btn-secondary" onclick="cerrarModalConfirmacion()">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalConfirmacion()">
           <i data-lucide="arrow-left" class="ui-icon"></i> Seguir Explorando el Catálogo
         </button>
       </div>
@@ -1008,7 +1013,7 @@
             Consulta el estado de tu compra y descarga tus moldes en PDF y videos tutoriales.
           </p>
         </div>
-        <button class="modal-close-btn" onclick="cerrarModalMisDescargas()" title="Cerrar">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalMisDescargas()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body">
@@ -1047,7 +1052,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="cerrarModalMisDescargas()">Cerrar</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalMisDescargas()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1066,7 +1071,7 @@
             Completa tus datos para enviarte el molde y el video tutorial a tu correo.
           </p>
         </div>
-        <button class="modal-close-btn" onclick="cerrarModalMoldeGratis()" title="Cerrar">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalMoldeGratis()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body" style="padding: 1.25rem;">
@@ -1114,7 +1119,7 @@
       <div class="modal-header">
         <h3 id="config-supabase-title"><i data-lucide="database" class="ui-icon"></i> Base de Datos en la Nube
           (Supabase)</h3>
-        <button class="modal-close-btn" onclick="cerrarModalConfigSupabase()" title="Cerrar">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalConfigSupabase()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body">
@@ -1179,7 +1184,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="cerrarModalConfigSupabase()">Cerrar</button>
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalConfigSupabase()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1191,7 +1196,7 @@
       <div class="modal-header">
         <h3 id="visor-comprobante-titulo"><i data-lucide="receipt" class="ui-icon"></i> Comprobante de Transferencia
         </h3>
-        <button class="modal-close-btn" onclick="cerrarModalComprobante()" title="Cerrar">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalComprobante()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body" id="visor-comprobante-body">
@@ -1203,7 +1208,7 @@
           style="display: none;">
           <i data-lucide="external-link" class="ui-icon"></i> Abrir en Pestaña Nueva
         </a>
-        <button class="btn btn-primary" onclick="cerrarModalComprobante()">Cerrar Visor</button>
+        <button type="button" class="btn btn-primary" onclick="cerrarModalComprobante()">Cerrar Visor</button>
       </div>
     </div>
   </div>
