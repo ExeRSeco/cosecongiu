@@ -221,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputPrecioPromo = document.getElementById("producto-precio-promo");
         const precio = parseFloat(inputPrecioNormal.value || 0);
         if (inputPrecioPromo) {
-          inputPrecioPromo.value = precio > 0 ? (Math.round(precio * 0.90 * 100) / 100) : "";
+          inputPrecioPromo.value = precio > 0 ? Math.round(precio * 0.90) : "";
         }
       }
     });
@@ -1701,7 +1701,7 @@ function verDetalleProducto(productoId) {
   const esGratis = Boolean(producto.esGratuito || producto.precio === 0);
   const tieneDescuento = !esGratis && producto.enPromo && producto.precioPromo > 0;
   const precioFinal = esGratis ? 0 : (tieneDescuento ? producto.precioPromo : producto.precio);
-  const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90 * 100) / 100;
+  const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90);
 
   const imgsProducto = (Array.isArray(producto.imagenes) && producto.imagenes.length > 0)
     ? producto.imagenes
@@ -1975,7 +1975,7 @@ function renderCatalogo() {
   catalogoGrid.innerHTML = listaFiltrada.map(producto => {
     const esGratis = Boolean(producto.esGratuito || producto.precio === 0);
     const precioFinal = esGratis ? 0 : (producto.enPromo && producto.precioPromo > 0 ? producto.precioPromo : producto.precio);
-    const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90 * 100) / 100;
+    const precioTransferencia = esGratis ? 0 : Math.round(precioFinal * 0.90);
     const tieneDescuento = !esGratis && producto.enPromo && producto.precioPromo > 0;
     const esMasVendido = topProducto && topProducto.id === producto.id && topProducto.unidades > 0;
 
@@ -2298,8 +2298,8 @@ function seleccionarMetodoPagoCheckout(metodo = "mercadopago") {
 
   if (esTransferencia) {
     const subtotalArs = calcularTotalCarrito("ARS");
-    const totalConDescuento = Math.round(subtotalArs * 0.90 * 100) / 100;
-    const descuento = Math.round((subtotalArs - totalConDescuento) * 100) / 100;
+    const totalConDescuento = Math.round(subtotalArs * 0.90);
+    const descuento = Math.round(subtotalArs - totalConDescuento);
 
     if (filaSubtotal) {
       filaSubtotal.style.display = "flex";
@@ -2403,7 +2403,7 @@ async function confirmarPedido() {
   }
 
   let moneda = "ARS";
-  const sumaTotal = esTransferencia ? Math.round(calcularTotalCarrito("ARS") * 0.90 * 100) / 100 : calcularTotalCarrito("ARS");
+  const sumaTotal = esTransferencia ? Math.round(calcularTotalCarrito("ARS") * 0.90) : calcularTotalCarrito("ARS");
   const fechaActual = obtenerFechaLocalHoraTexto(new Date());
   const codigoPedido = generarCodigoPedido("ORD");
 
@@ -2445,7 +2445,7 @@ async function confirmarPedido() {
     items: carrito.map(item => {
       const prodOriginal = productos.find(p => p.id === item.id) || {};
       const itemPrecio = esTransferencia
-        ? Math.round(item.precio * 0.90 * 100) / 100
+        ? Math.round(item.precio * 0.90)
         : item.precio;
 
       return {
@@ -3033,7 +3033,7 @@ function toggleCampoPromo() {
       inputPrecioPromo.required = true;
       const precioNormal = parseFloat(inputPrecioNormal?.value || 0);
       if (precioNormal > 0) {
-        inputPrecioPromo.value = Math.round(precioNormal * 0.90 * 100) / 100;
+        inputPrecioPromo.value = Math.round(precioNormal * 0.90);
       }
     }
   } else if (selectPromo.value === "si") {
@@ -3097,7 +3097,7 @@ async function guardarProducto(evento) {
   let precioPromo = 0;
   if (esPromo) {
     if (promoVal === "10") {
-      precioPromo = Math.round(precio * 0.90 * 100) / 100;
+      precioPromo = Math.round(precio * 0.90);
     } else {
       precioPromo = parseFloat(document.getElementById("producto-precio-promo")?.value || 0);
     }
@@ -3331,7 +3331,7 @@ function editarProducto(id) {
   const selectPromo = document.getElementById("producto-promo");
   if (selectPromo) {
     if (producto.enPromo) {
-      const diezPorciento = Math.round((producto.precio || 0) * 0.90 * 100) / 100;
+      const diezPorciento = Math.round((producto.precio || 0) * 0.90);
       if (producto.precioPromo && Math.abs(producto.precioPromo - diezPorciento) < 0.05) {
         selectPromo.value = "10";
       } else {
@@ -4306,7 +4306,15 @@ function renderCatalogoAdmin() {
  * ====================================================================
  */
 function formatearPrecio(numero) {
-  return Number(numero).toLocaleString("es-AR", {
+  const num = Number(numero) || 0;
+  // Si el número es entero, no mostrar centavos (,00) para evitar valores como $3.500,00 o $3.990,00
+  if (num % 1 === 0) {
+    return num.toLocaleString("es-AR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  }
+  return num.toLocaleString("es-AR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
