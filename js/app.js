@@ -3092,7 +3092,7 @@ async function guardarProducto(evento) {
   const esGratuito = checkGratuito ? checkGratuito.checked : false;
 
   const precioRaw = parseFloat(document.getElementById("producto-precio").value);
-  const precio = esGratuito ? 0 : (isNaN(precioRaw) ? 0 : precioRaw);
+  const precio = esGratuito ? 0 : (isNaN(precioRaw) ? 0 : Math.round(precioRaw));
   const precioUsd = esGratuito ? 0 : parseFloat(document.getElementById("producto-precio-usd")?.value || 0);
   const promoVal = document.getElementById("producto-promo")?.value;
   const esPromo = !esGratuito && (promoVal === "si" || promoVal === "10");
@@ -3101,7 +3101,7 @@ async function guardarProducto(evento) {
     if (promoVal === "10") {
       precioPromo = Math.round(precio * 0.90);
     } else {
-      precioPromo = parseFloat(document.getElementById("producto-precio-promo")?.value || 0);
+      precioPromo = Math.round(parseFloat(document.getElementById("producto-precio-promo")?.value || 0));
     }
   }
   const precioPromoUsd = esPromo ? parseFloat(document.getElementById("producto-precio-promo-usd")?.value || 0) : 0;
@@ -4308,7 +4308,7 @@ function renderCatalogoAdmin() {
  * ====================================================================
  */
 function formatearPrecio(numero) {
-  const num = Math.round(Number(numero) || 0);
+  const num = Math.round(Number(numero) || 0) || 0;
   return num.toLocaleString("es-AR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0

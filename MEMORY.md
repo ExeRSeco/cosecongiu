@@ -1,12 +1,13 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 23/11/2026 — Sanitización universal de precios en ARS a números enteros y cache busting en Vercel.
+Última actualización: 23/11/2026 — Sanitización integral de precios ARS en frontend, backend MP y Supabase.
 
 ## Estado actual
-- Precios en ARS sin centavos: `formatearPrecio()` redondea incondicionalmente a enteros (`Math.round`) con 0 decimales, eliminando centavos en moldes nuevos y existentes.
-- Carga de Productos Sanitizada: En `cargarDatosDesdeLocalStorage()` y `supabaseCargarProductos()`, `precio` y `precioPromo` se convierten a enteros antes de renderizar.
-- Cache Busting & Despliegue en Vercel: Parámetros de versión `?v=2.2` en `index.html` y regla `Cache-Control: public, max-age=0, must-revalidate` en `vercel.json` para evitar assets cacheados.
+- Precios en ARS sin centavos: `formatearPrecio()` redondea incondicionalmente a enteros con protección contra `-0`.
+- Sanitización en Admin e Ingesta: `guardarProducto()` y los inputs HTML (`step="1"`) fuerzan números enteros en ARS.
+- Normalización en Backend MP & Supabase: `api/crear-preferencia.js` y `supabaseGuardarProducto()` redondean unit_price y precios oficiales a enteros.
+- Cache Busting & Despliegue en Vercel: Parámetros de versión `?v=2.2` en `index.html` y regla `Cache-Control: public, max-age=0, must-revalidate` en `vercel.json` para assets y HTML.
 - SQL Migración Supabase: Agregado script `UPDATE public.productos SET precio = ROUND(precio), precio_promo = ROUND(...)` en `sql/supabase-schema.sql`.
 - Accesibilidad (WCAG) & Semántica: Se añadieron `type="button"` explícitos a todos los botones modales/navegación, `aria-label` descriptivos a inputs de búsqueda y filtros, y soporte para cerrar cualquier modal con la tecla `Escape`.
 - Rendimiento & Optimización de Búsqueda: Se implementó `debounce` (120-150ms) en la búsqueda del catálogo y panel admin, evitando re-renderizados continuos del DOM en cada pulsación.

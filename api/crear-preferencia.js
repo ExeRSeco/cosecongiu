@@ -82,7 +82,7 @@ module.exports = async (req, res) => {
         title: String(item.nombre || "Molde Digital en PDF").replace(/[\r\n]/g, " ").trim().slice(0, 250),
         description: "Molde de costura descargable en PDF con guía y video",
         quantity: cantidad,
-        unit_price: Math.round(precioUnitario * 100) / 100,
+        unit_price: Math.round(precioUnitario),
         currency_id: "ARS"
       });
     }
@@ -114,9 +114,11 @@ module.exports = async (req, res) => {
             for (const item of preferenceItems) {
               const prodDb = dbMap.get(String(item.id));
               if (prodDb) {
-                const precioOficial = (prodDb.en_promo && Number(prodDb.precio_promo) > 0)
-                  ? Number(prodDb.precio_promo)
-                  : Number(prodDb.precio);
+                const precioOficial = Math.round(
+                  (prodDb.en_promo && Number(prodDb.precio_promo) > 0)
+                    ? Number(prodDb.precio_promo)
+                    : Number(prodDb.precio)
+                );
 
                 // Forzar siempre el precio oficial registrado en la base de datos
                 if (item.unit_price !== precioOficial) {
