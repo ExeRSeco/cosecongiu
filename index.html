@@ -38,7 +38,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
 
-  <link rel="stylesheet" href="css/styles.css?v=2.3">
+  <link rel="stylesheet" href="css/styles.css?v=2.4">
   <!-- Biblioteca de iconos modernos Lucide (versión fijada) -->
   <script src="https://unpkg.com/lucide@0.460.0" defer></script>
 </head>
@@ -75,8 +75,8 @@
         <a href="#seccion-faq" class="nav-link-btn" onclick="cambiarVista('catalogo')">
           <i data-lucide="help-circle" class="ui-icon-xs"></i> Preguntas
         </a>
-        <button type="button" id="btn-nav-descargas" class="nav-btn nav-btn-descargas" onclick="abrirModalMisDescargas()"
-          title="Descargar moldes adquiridos previamente">
+        <button type="button" id="btn-nav-descargas" class="nav-btn nav-btn-descargas"
+          onclick="abrirModalMisDescargas()" title="Descargar moldes adquiridos previamente">
           <i data-lucide="download-cloud" class="ui-icon"></i> <span class="nav-descargas-text">Mis Descargas</span>
         </button>
         <button type="button" id="btn-nav-carrito" class="nav-btn nav-btn-cart" onclick="cambiarVista('carrito')"
@@ -207,7 +207,8 @@
                 <strong>plazo de 24 a 48 horas hábiles.</strong>
                 <br>
                 Asegurate de ingresar correctamente tu correo electrónico al momento de la compra y de revisar tu
-                bandeja de spam.
+                bandeja de spam (no enviamos archivos por Whatsapp ni por mensaje privado de redes sociales<strong>SIN
+                  Excepción</strong>).
               </p>
             </div>
           </details>
@@ -374,8 +375,7 @@
         <div class="search-input-wrap">
           <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
           <input type="text" id="admin-busqueda" placeholder="Buscar comprador o email..."
-            aria-label="Buscar pedidos por comprador o email"
-            oninput="filtrarAdminPorBusqueda(this.value)">
+            aria-label="Buscar pedidos por comprador o email" oninput="filtrarAdminPorBusqueda(this.value)">
           <button type="button" class="btn-clear-search" id="btn-clear-admin-search" onclick="limpiarBusquedaAdmin()"
             title="Limpiar búsqueda" style="display: none;">✕</button>
         </div>
@@ -498,7 +498,8 @@
 
               <div class="form-group">
                 <label for="producto-descripcion">Descripción detallada del molde:</label>
-                <textarea id="producto-descripcion" rows="5" required spellcheck="true" lang="es" autocorrect="on" autocapitalize="sentences"
+                <textarea id="producto-descripcion" rows="5" required spellcheck="true" lang="es" autocorrect="on"
+                  autocapitalize="sentences"
                   placeholder="Ej: Molde en PDF con guía paso a paso y lista de materiales&#10;• Formato A4 listo para imprimir a tamaño real&#10;• Incluye especificaciones y recomendaciones de costura"></textarea>
               </div>
 
@@ -523,8 +524,7 @@
                 <label
                   style="display: flex; align-items: center; gap: 0.55rem; cursor: pointer; margin: 0; font-weight: 600; color: #15803d;">
                   <input type="checkbox" id="producto-es-gratuito" onchange="alternarCamposMoldeGratuito(this.checked)"
-                    aria-label="Marcar como molde gratuito"
-                    style="width: 1.15rem; height: 1.15rem; cursor: pointer;">
+                    aria-label="Marcar como molde gratuito" style="width: 1.15rem; height: 1.15rem; cursor: pointer;">
                   <span>🎁 Marcar como Molde Gratuito</span>
                 </label>
               </div>
@@ -563,7 +563,8 @@
               </div>
 
               <!-- Archivos del Molde: Subida Dual de PDFs (Molde + Especificaciones) + Video YouTube -->
-              <div class="admin-pdf-upload-stack" style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1rem;">
+              <div class="admin-pdf-upload-stack"
+                style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1rem;">
                 <div class="form-group"
                   style="background: var(--bg-page); padding: 0.95rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 0;">
                   <label for="producto-archivo-file"
@@ -632,8 +633,7 @@
               <div class="input-with-btn-row">
                 <input type="text" id="nueva-categoria-nombre"
                   placeholder="Nombre de categoría (ej: Ropa Infantil, Lencería)..."
-                  aria-label="Nombre de la nueva categoría" required maxlength="40"
-                  autocomplete="off">
+                  aria-label="Nombre de la nueva categoría" required maxlength="40" autocomplete="off">
                 <button type="submit" class="btn btn-primary btn-sm" id="btn-agregar-categoria">
                   <i data-lucide="plus" class="ui-icon-xs"></i> Agregar
                 </button>
@@ -654,7 +654,8 @@
         <div class="card admin-list-card">
           <div class="admin-list-header">
             <div>
-              <h3 style="margin: 0; font-size: 1.15rem;">Moldes en Catálogo (<span id="total-productos-count">0</span>)</h3>
+              <h3 style="margin: 0; font-size: 1.15rem;">Moldes en Catálogo (<span id="total-productos-count">0</span>)
+              </h3>
               <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0.2rem 0 0 0;">
                 Inventario de moldería digital disponible en la tienda
               </p>
@@ -767,7 +768,8 @@
           <h3 id="checkout-title" class="checkout-main-title">Finalizar Compra</h3>
           <p class="checkout-subtitle">Acceso directo a tus moldes en PDF y video tutorial</p>
         </div>
-        <button type="button" class="modal-close-btn" onclick="cerrarCheckout()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarCheckout()" title="Cerrar modal"
+          aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body checkout-modal-body">
@@ -800,9 +802,14 @@
                 <input type="tel" id="cliente-telefono" placeholder="+54 9 11 1234-5678" autocomplete="tel">
               </div>
             </div>
-            <div class="field-subhint">
-              <i data-lucide="info" class="ui-icon-xs"></i>
-              <span>Te enviaremos el comprobante y los enlaces de descarga a este correo.</span>
+            <div class="checkout-email-warning-box">
+              <div class="checkout-email-warning-header">
+                <i data-lucide="alert-triangle" class="checkout-email-warning-icon"></i>
+                <strong>⚠️ Revisá que tu correo esté bien escrito:</strong>
+              </div>
+              <p class="checkout-email-warning-text">
+                Los enlaces de descarga se envían <strong>exclusivamente por email</strong> (no realizamos envíos por WhatsApp ni redes sociales).
+              </p>
             </div>
           </form>
         </div>
@@ -985,7 +992,8 @@
       <div class="modal-header modal-success-header">
         <h3 id="confirmacion-titulo"><i data-lucide="party-popper" class="ui-icon"></i> ¡Pedido Registrado con Éxito!
         </h3>
-        <button type="button" class="modal-close-btn" onclick="cerrarModalConfirmacion()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalConfirmacion()" title="Cerrar modal"
+          aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body" id="confirmacion-modal-body">
@@ -1013,7 +1021,8 @@
             Consulta el estado de tu compra y descarga tus moldes en PDF y videos tutoriales.
           </p>
         </div>
-        <button type="button" class="modal-close-btn" onclick="cerrarModalMisDescargas()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalMisDescargas()" title="Cerrar modal"
+          aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body">
@@ -1071,7 +1080,8 @@
             Completa tus datos para enviarte el molde y el video tutorial a tu correo.
           </p>
         </div>
-        <button type="button" class="modal-close-btn" onclick="cerrarModalMoldeGratis()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalMoldeGratis()" title="Cerrar modal"
+          aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body" style="padding: 1.25rem;">
@@ -1119,7 +1129,8 @@
       <div class="modal-header">
         <h3 id="config-supabase-title"><i data-lucide="database" class="ui-icon"></i> Base de Datos en la Nube
           (Supabase)</h3>
-        <button type="button" class="modal-close-btn" onclick="cerrarModalConfigSupabase()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalConfigSupabase()" title="Cerrar modal"
+          aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body">
@@ -1196,7 +1207,8 @@
       <div class="modal-header">
         <h3 id="visor-comprobante-titulo"><i data-lucide="receipt" class="ui-icon"></i> Comprobante de Transferencia
         </h3>
-        <button type="button" class="modal-close-btn" onclick="cerrarModalComprobante()" title="Cerrar modal" aria-label="Cerrar modal">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalComprobante()" title="Cerrar modal"
+          aria-label="Cerrar modal">&times;</button>
       </div>
 
       <div class="modal-body" id="visor-comprobante-body">
@@ -1316,9 +1328,9 @@
   <!-- Cliente oficial de Supabase v2 desde CDN (versión fijada) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
   <!-- Conector y servicios de Supabase para producción -->
-  <script src="js/supabase.js?v=2.3"></script>
+  <script src="js/supabase.js?v=2.4"></script>
   <!-- Lógica principal de la aplicación -->
-  <script src="js/app.js?v=2.3"></script>
+  <script src="js/app.js?v=2.4"></script>
 </body>
 
 </html>

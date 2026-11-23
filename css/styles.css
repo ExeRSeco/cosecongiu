@@ -4144,6 +4144,81 @@ textarea:focus {
 }
 
 /* ==========================================================
+   AVISO DE CORREO EN CHECKOUT
+   ========================================================== */
+.checkout-email-warning-box {
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  margin-top: 0.65rem;
+  margin-bottom: 0.25rem;
+  text-align: left;
+}
+
+.checkout-email-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #92400e;
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.checkout-email-warning-icon {
+  width: 16px;
+  height: 16px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.checkout-email-warning-text {
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #78350f;
+  margin: 0;
+}
+
+/* ==========================================================
+   ALERTA DE ENTREGA 100% POR CORREO ELECTRÓNICO (CONFIRMACIÓN)
+   ========================================================== */
+.alert-box.alert-entrega-email {
+  background: #fefce8;
+  border: 1.5px solid #fef08a;
+  border-left: 5px solid #eab308;
+  border-radius: var(--radius);
+  padding: 0.95rem 1.15rem;
+  margin: 0.95rem 0;
+  text-align: left;
+}
+
+.alert-entrega-email-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #854d0e;
+  margin-bottom: 0.35rem;
+}
+
+.alert-entrega-email-icon {
+  width: 18px;
+  height: 18px;
+  color: #ca8a04;
+  flex-shrink: 0;
+}
+
+.alert-entrega-email-text {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #713f12;
+  margin: 0;
+}
+
+/* ==========================================================
    DATOS BANCARIOS CON BOTONES DE COPIADO RÁPIDO
    ========================================================== */
 .dato-copiable-row {

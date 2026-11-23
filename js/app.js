@@ -2748,6 +2748,17 @@ function mostrarModalConfirmacion(pedido) {
 
     ${plazoHeroHtml}
 
+    <!-- AVISO DE ENTREGA 100% POR CORREO ELECTRÓNICO -->
+    <div class="alert-box alert-entrega-email">
+      <div class="alert-entrega-email-header">
+        <i data-lucide="mail-check" class="alert-entrega-email-icon"></i>
+        <strong>📩 Entrega 100% por correo electrónico:</strong>
+      </div>
+      <p class="alert-entrega-email-text">
+        Si abonaste con Mercado Pago, el enlace de descarga ya fue enviado a tu email (revisá también la carpeta de Spam o Promociones). Si abonaste por transferencia, lo recibirás en ese mismo correo una vez verificado el pago (dentro de las 24 a 48 hs hábiles). <strong>No se realizan envíos por WhatsApp ni Instagram.</strong>
+      </p>
+    </div>
+
     <div class="order-success-details">
       <div class="order-success-row">
         <span>Total abonado:</span>
