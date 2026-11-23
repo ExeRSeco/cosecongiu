@@ -632,9 +632,6 @@ BEGIN
     'codigo', p_pedido->>'codigo',
     'estado', v_estado
   );
-    'id', v_pedido_id,
-    'codigo', p_pedido->>'codigo'
-  );
 EXCEPTION WHEN OTHERS THEN
   RETURN jsonb_build_object(
     'exito', false,
@@ -644,3 +641,13 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.registrar_pedido_checkout(JSONB, JSONB) TO anon, authenticated, service_role;
+
+-- -----------------------------------------------------------------------------
+-- ACTUALIZACIÓN DE PRECIOS EXISTENTES: Redondear a enteros sin centavos
+-- -----------------------------------------------------------------------------
+UPDATE public.productos
+SET 
+  precio = ROUND(precio),
+  precio_promo = ROUND(COALESCE(precio_promo, 0))
+WHERE precio IS NOT NULL;
+

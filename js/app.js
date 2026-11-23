@@ -419,6 +419,8 @@ function cargarDatosDesdeLocalStorage() {
 
         return {
           ...p,
+          precio: Math.round(Number(p.precio) || 0),
+          precioPromo: Math.round(Number(p.precioPromo || 0)),
           archivoUrl: p.archivoUrl || null,
           archivoSpecsUrl: p.archivoSpecsUrl || null,
           imagenes: imagenesArray,
@@ -4306,17 +4308,10 @@ function renderCatalogoAdmin() {
  * ====================================================================
  */
 function formatearPrecio(numero) {
-  const num = Number(numero) || 0;
-  // Si el número es entero, no mostrar centavos (,00) para evitar valores como $3.500,00 o $3.990,00
-  if (num % 1 === 0) {
-    return num.toLocaleString("es-AR", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
-  }
+  const num = Math.round(Number(numero) || 0);
   return num.toLocaleString("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   });
 }
 

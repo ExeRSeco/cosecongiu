@@ -34,6 +34,15 @@
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://*.mercadopago.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://*.mercadopago.com https://*.mercadopago.com.ar; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.mercadopago.com https://*.mercadopago.com.ar; frame-src 'self' https://*.mercadopago.com https://*.mercadopago.com.ar; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://*.mercadopago.com.ar https://*.mercadopago.com;"
         }
       ]
+    },
+    {
+      "source": "/(js|css)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [

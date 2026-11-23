@@ -1,11 +1,13 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 23/11/2026 — Redondeo entero sin centavos para descuento con Transferencia y formateo ARS.
+Última actualización: 23/11/2026 — Sanitización universal de precios en ARS a números enteros y cache busting en Vercel.
 
 ## Estado actual
-- Descuento 10% OFF con Transferencia: Calculado con redondeo a números enteros (`Math.round(... * 0.90)`) y presentado sin centavos (`$3.500` o `$3.990` en vez de `$3.500,10` o `$3.500,00`) en catálogo, vista detalle, checkout y pedido registrado.
-- Formateo de Precios ARS: `formatearPrecio()` adaptado para no emitir `,00` en números enteros, preservando decimales solo si existen fracciones reales.
+- Precios en ARS sin centavos: `formatearPrecio()` redondea incondicionalmente a enteros (`Math.round`) con 0 decimales, eliminando centavos en moldes nuevos y existentes.
+- Carga de Productos Sanitizada: En `cargarDatosDesdeLocalStorage()` y `supabaseCargarProductos()`, `precio` y `precioPromo` se convierten a enteros antes de renderizar.
+- Cache Busting & Despliegue en Vercel: Parámetros de versión `?v=2.2` en `index.html` y regla `Cache-Control: public, max-age=0, must-revalidate` en `vercel.json` para evitar assets cacheados.
+- SQL Migración Supabase: Agregado script `UPDATE public.productos SET precio = ROUND(precio), precio_promo = ROUND(...)` en `sql/supabase-schema.sql`.
 - Accesibilidad (WCAG) & Semántica: Se añadieron `type="button"` explícitos a todos los botones modales/navegación, `aria-label` descriptivos a inputs de búsqueda y filtros, y soporte para cerrar cualquier modal con la tecla `Escape`.
 - Rendimiento & Optimización de Búsqueda: Se implementó `debounce` (120-150ms) en la búsqueda del catálogo y panel admin, evitando re-renderizados continuos del DOM en cada pulsación.
 - Seguridad en Navegación Externa: `window.open` protegido con `noopener,noreferrer` en descargas y enlaces de WhatsApp/Gmail para prevenir tabnabbing.
