@@ -38,7 +38,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
 
-  <link rel="stylesheet" href="css/styles.css?v=2.2">
+  <link rel="stylesheet" href="css/styles.css?v=2.3">
   <!-- Biblioteca de iconos modernos Lucide (versión fijada) -->
   <script src="https://unpkg.com/lucide@0.460.0" defer></script>
 </head>
@@ -498,8 +498,8 @@
 
               <div class="form-group">
                 <label for="producto-descripcion">Descripción detallada del molde:</label>
-                <input type="text" id="producto-descripcion" required
-                  placeholder="Ej: Molde en PDF con guía paso a paso y lista de materiales">
+                <textarea id="producto-descripcion" rows="5" required spellcheck="true" lang="es" autocorrect="on" autocapitalize="sentences"
+                  placeholder="Ej: Molde en PDF con guía paso a paso y lista de materiales&#10;• Formato A4 listo para imprimir a tamaño real&#10;• Incluye especificaciones y recomendaciones de costura"></textarea>
               </div>
 
               <div class="form-group">
@@ -1316,9 +1316,9 @@
   <!-- Cliente oficial de Supabase v2 desde CDN (versión fijada) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
   <!-- Conector y servicios de Supabase para producción -->
-  <script src="js/supabase.js?v=2.2"></script>
+  <script src="js/supabase.js?v=2.3"></script>
   <!-- Lógica principal de la aplicación -->
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/app.js?v=2.3"></script>
 </body>
 
 </html>

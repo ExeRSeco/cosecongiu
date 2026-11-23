@@ -1,13 +1,15 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 23/11/2026 — Sanitización integral de precios ARS en frontend, backend MP y Supabase.
+Última actualización: 23/11/2026 — Textarea multilínea con formato gramatical y saltos de línea para descripción de moldes.
 
 ## Estado actual
+- Textarea en Descripción de Moldes: Reemplazado el input plano por `<textarea id="producto-descripcion" rows="5">` con `spellcheck="true"`, `lang="es"`, `autocorrect="on"` y `autocapitalize="sentences"`.
+- Formato y Saltos de Línea en Vista Detalle: `.product-detail-desc` configurado con `white-space: pre-line;`, preservando puntos, comas, párrafos, listas y emojis tal como los redacta el administrador.
 - Precios en ARS sin centavos: `formatearPrecio()` redondea incondicionalmente a enteros con protección contra `-0`.
 - Sanitización en Admin e Ingesta: `guardarProducto()` y los inputs HTML (`step="1"`) fuerzan números enteros en ARS.
 - Normalización en Backend MP & Supabase: `api/crear-preferencia.js` y `supabaseGuardarProducto()` redondean unit_price y precios oficiales a enteros.
-- Cache Busting & Despliegue en Vercel: Parámetros de versión `?v=2.2` en `index.html` y regla `Cache-Control: public, max-age=0, must-revalidate` en `vercel.json` para assets y HTML.
+- Cache Busting & Despliegue en Vercel: Parámetros de versión `?v=2.3` en `index.html` y regla `Cache-Control: public, max-age=0, must-revalidate` en `vercel.json` para assets y HTML.
 - SQL Migración Supabase: Agregado script `UPDATE public.productos SET precio = ROUND(precio), precio_promo = ROUND(...)` en `sql/supabase-schema.sql`.
 - Accesibilidad (WCAG) & Semántica: Se añadieron `type="button"` explícitos a todos los botones modales/navegación, `aria-label` descriptivos a inputs de búsqueda y filtros, y soporte para cerrar cualquier modal con la tecla `Escape`.
 - Rendimiento & Optimización de Búsqueda: Se implementó `debounce` (120-150ms) en la búsqueda del catálogo y panel admin, evitando re-renderizados continuos del DOM en cada pulsación.
