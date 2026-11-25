@@ -1,6 +1,8 @@
 // Vercel Serverless Function: Verificación segura de pagos de Mercado Pago tras retorno del checkout
 // Previene auto-aprobación fraudulenta verificando directamente contra la API oficial de Mercado Pago
 
+const { procesarAprobacionMercadoPagoServer } = require("./enviar-email");
+
 const IP_RATE_LIMIT = new Map();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 30;
@@ -47,7 +49,7 @@ module.exports = async (req, res) => {
   }
 
   const mpAccessToken = process.env.MP_ACCESS_TOKEN;
-  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseUrl = process.env.SUPABASE_URL || "https://obvboktbdbahgbvemlid.supabase.co";
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!mpAccessToken) {
@@ -89,31 +91,21 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 2. Si está aprobado y coincide la referencia, actualizar pedido en Supabase a 'completada'
-    let actualizado = false;
-    if (supabaseUrl && supabaseKey) {
-      try {
-        const patchRes = await fetch(`${supabaseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigo)}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": supabaseKey,
-            "Authorization": `Bearer ${supabaseKey}`,
-            "Prefer": "return=minimal"
-          },
-          body: JSON.stringify({
-            estado: "completada",
-            numero_operacion: String(paymentId)
-          })
-        });
+    // 2. Si está aprobado y coincide la referencia, actualizar pedido en Supabase a 'completada' y enviar correo
+    const host = req.headers["x-forwarded-host"] || req.headers.host || "cosecongiu.vercel.app";
+    const proto = req.headers["x-forwarded-proto"] || "https";
+    const urlTienda = `${proto}://${host}`;
 
-        if (patchRes.ok) {
-          actualizado = true;
-          console.log(`[Verificar Pago MP] ✓ Pedido ${codigo} marcado como completada en Supabase.`);
-        }
-      } catch (e) {
-        console.warn("[Verificar Pago MP] Error actualizando en Supabase:", e.message);
-      }
+    const { actualizado, emailEnviado, yaEnviado } = await procesarAprobacionMercadoPagoServer({
+      supabaseUrl,
+      supabaseKey,
+      codigoPedido: codigo,
+      numeroOperacion: String(paymentId),
+      urlTienda
+    });
+
+    if (actualizado) {
+      console.log(`[Verificar Pago MP] ✓ Pedido ${codigo} verificado y sincronizado (emailEnviado=${emailEnviado}).`);
     }
 
     return res.status(200).json({
@@ -121,7 +113,9 @@ module.exports = async (req, res) => {
       estado: "completada",
       payment_id: paymentId,
       codigo: codigo,
-      actualizadoEnDb: actualizado
+      actualizadoEnDb: actualizado,
+      emailEnviado: Boolean(emailEnviado),
+      yaEnviado: Boolean(yaEnviado)
     });
 
   } catch (error) {

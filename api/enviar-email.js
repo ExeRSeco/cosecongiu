@@ -44,8 +44,253 @@ function urlSegura(url) {
   return "";
 }
 
+/**
+ * Genera una URL firmada temporal en Supabase Storage para archivos del bucket privado 'moldes-archivos'.
+ * Requiere SUPABASE_SERVICE_ROLE_KEY para firmar en el servidor de forma segura.
+ */
+async function firmarRutaStorage(supabaseUrl, supabaseKey, rutaOUrl, segundosValidez = 604800) {
+  if (!rutaOUrl || typeof rutaOUrl !== "string") return "";
+  const limpia = rutaOUrl.trim();
+  if (!limpia || limpia.startsWith("data:") || limpia.startsWith("blob:")) return "";
+
+  // Si ya es una URL firmada válida o un enlace externo ajeno a nuestro bucket, devolver tal cual
+  if (limpia.startsWith("http://") || limpia.startsWith("https://")) {
+    if (!limpia.includes("/moldes-archivos/") || limpia.includes("token=")) {
+      return limpia;
+    }
+  }
+
+  if (!supabaseUrl || !supabaseKey) return urlSegura(limpia);
+
+  try {
+    let ruta = limpia.split("?")[0].trim();
+    if (ruta.includes("/moldes-archivos/")) {
+      ruta = ruta.split("/moldes-archivos/").pop();
+    }
+    ruta = ruta.replace(/^moldes-archivos\//, "").replace(/^\/+/, "");
+    if (!ruta) return "";
+
+    const baseUrl = supabaseUrl.replace(/\/+$/, "");
+    const rutaCodificada = ruta.split("/").map(seg => encodeURIComponent(seg)).join("/");
+
+    const signRes = await fetch(`${baseUrl}/storage/v1/object/sign/moldes-archivos/${rutaCodificada}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ expiresIn: segundosValidez })
+    });
+
+    if (!signRes.ok) {
+      console.warn(`[Envio Email] No se pudo firmar ruta '${ruta}' en Storage (HTTP ${signRes.status})`);
+      return urlSegura(limpia);
+    }
+
+    const signData = await signRes.json();
+    let urlFinal = signData.signedURL || signData.signedUrl || "";
+    if (!urlFinal) return urlSegura(limpia);
+
+    if (urlFinal.startsWith("/")) {
+      urlFinal = urlFinal.startsWith("/storage/v1")
+        ? `${baseUrl}${urlFinal}`
+        : `${baseUrl}/storage/v1${urlFinal}`;
+    }
+
+    if (!urlFinal.includes("download=")) {
+      urlFinal += (urlFinal.includes("?") ? "&" : "?") + "download=";
+    }
+
+    return urlFinal;
+  } catch (err) {
+    console.warn("[Envio Email] Excepción firmando ruta Storage:", err.message);
+    return urlSegura(limpia);
+  }
+}
+
+/**
+ * Desempaqueta link_archivos cuando viene serializado como JSON { molde, specs }
+ */
+function extraerRutasDeLinkArchivos(linkArchivos) {
+  if (!linkArchivos || typeof linkArchivos !== "string") return { molde: "", specs: "" };
+  const trim = linkArchivos.trim();
+  if (trim.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trim);
+      return {
+        molde: parsed.molde || parsed.archivoUrl || "",
+        specs: parsed.specs || parsed.archivoSpecsUrl || ""
+      };
+    } catch (e) {}
+  }
+  return { molde: trim, specs: "" };
+}
+
+/**
+ * Completa los ítems del pedido consultando Supabase (pedido_items y productos)
+ * y firma en el servidor cualquier ruta privada del bucket 'moldes-archivos'.
+ */
+async function enriquecerItemsDesdeSupabase(supabaseUrl, supabaseKey, codigoPedido, itemsEntrada = []) {
+  let itemsBase = Array.isArray(itemsEntrada) ? [...itemsEntrada] : [];
+
+  if (supabaseUrl && supabaseKey) {
+    const baseUrl = supabaseUrl.replace(/\/+$/, "");
+
+    // 1. Si no recibimos ítems o les faltan IDs, consultar pedido_items en Supabase
+    if (itemsBase.length === 0 && codigoPedido && !String(codigoPedido).startsWith("ENV-MANUAL-")) {
+      try {
+        const resPed = await fetch(
+          `${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}&select=id,pedido_items(producto_id,nombre,precio,cantidad,archivo_url,archivo_specs_url,link_archivos,link_video)`,
+          {
+            headers: {
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`
+            }
+          }
+        );
+        if (resPed.ok) {
+          const rows = await resPed.json();
+          if (rows && rows[0] && Array.isArray(rows[0].pedido_items)) {
+            itemsBase = rows[0].pedido_items;
+          }
+        }
+      } catch (e) {
+        console.warn("[Envio Email] No se pudieron leer pedido_items desde Supabase:", e.message);
+      }
+    }
+
+    // 2. Consultar tabla productos oficial para asegurar rutas privadas reales y actualizadas
+    const idsProductos = [...new Set(
+      itemsBase
+        .map(it => Number(it.producto_id || it.id))
+        .filter(id => !isNaN(id) && id > 0)
+    )];
+
+    const mapaProductos = new Map();
+    if (idsProductos.length > 0) {
+      try {
+        const resProds = await fetch(
+          `${baseUrl}/rest/v1/productos?id=in.(${idsProductos.join(",")})&select=id,nombre,archivo_url,archivo_specs_url,link_archivos,link_video`,
+          {
+            headers: {
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`
+            }
+          }
+        );
+        if (resProds.ok) {
+          const prods = await resProds.json();
+          (prods || []).forEach(p => mapaProductos.set(Number(p.id), p));
+        }
+      } catch (e) {
+        console.warn("[Envio Email] No se pudieron consultar productos oficiales:", e.message);
+      }
+    }
+
+    // 3. Resolver y firmar enlaces de cada ítem
+    const itemsResueltos = [];
+    for (const item of itemsBase) {
+      const prodId = Number(item.producto_id || item.id);
+      const prodDb = mapaProductos.get(prodId) || {};
+
+      const extraItem = extraerRutasDeLinkArchivos(item.link_archivos || item.linkArchivos || "");
+      const extraProd = extraerRutasDeLinkArchivos(prodDb.link_archivos || "");
+
+      const linkYaFirmado = urlSegura(item.linkDescarga) && item.linkDescarga.includes("token=")
+        ? item.linkDescarga
+        : "";
+      const specsYaFirmado = urlSegura(item.linkSpecs) && item.linkSpecs.includes("token=")
+        ? item.linkSpecs
+        : "";
+
+      const rutaMolde =
+        linkYaFirmado ||
+        prodDb.archivo_url ||
+        extraProd.molde ||
+        item.archivo_url ||
+        item.archivoUrl ||
+        extraItem.molde ||
+        item.linkDescarga ||
+        "";
+
+      const rutaSpecs =
+        specsYaFirmado ||
+        prodDb.archivo_specs_url ||
+        extraProd.specs ||
+        item.archivo_specs_url ||
+        item.archivoSpecsUrl ||
+        extraItem.specs ||
+        item.linkSpecs ||
+        "";
+
+      const linkVideo =
+        prodDb.link_video ||
+        item.link_video ||
+        item.linkVideo ||
+        "";
+
+      const linkDescargaFinal = await firmarRutaStorage(baseUrl, supabaseKey, rutaMolde, 86400 * 7);
+      const linkSpecsFinal = await firmarRutaStorage(baseUrl, supabaseKey, rutaSpecs, 86400 * 7);
+
+      itemsResueltos.push({
+        id: prodId || item.id,
+        nombre: item.nombre || prodDb.nombre || "Molde Digital",
+        linkDescarga: linkDescargaFinal || urlSegura(rutaMolde),
+        linkSpecs: linkSpecsFinal || urlSegura(rutaSpecs),
+        linkVideo: urlSegura(linkVideo),
+        precio: Number(item.precio || 0),
+        cantidad: Number(item.cantidad || 1)
+      });
+    }
+
+    return itemsResueltos;
+  }
+
+  return itemsBase;
+}
+
+/**
+ * Verifica mediante Supabase Auth + tabla administradores que un token pertenezca a un admin aprobado
+ */
+async function verificarAdminJwt(supabaseUrl, supabaseKey, authHeader) {
+  if (!supabaseUrl || !supabaseKey || !authHeader || typeof authHeader !== "string") return false;
+  if (!authHeader.startsWith("Bearer ")) return false;
+
+  const baseUrl = supabaseUrl.replace(/\/+$/, "");
+  try {
+    const userRes = await fetch(`${baseUrl}/auth/v1/user`, {
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": authHeader
+      }
+    });
+    if (!userRes.ok) return false;
+    const user = await userRes.json();
+    if (!user || !user.email) return false;
+
+    const adminRes = await fetch(
+      `${baseUrl}/rest/v1/administradores?aprobado=eq.true&email=eq.${encodeURIComponent(user.email.toLowerCase())}&select=id,email`,
+      {
+        headers: {
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`
+        }
+      }
+    );
+    if (!adminRes.ok) return false;
+    const admins = await adminRes.json();
+    return Array.isArray(admins) && admins.length > 0;
+  } catch (e) {
+    console.warn("[Envio Email] Error verificando sesión admin:", e.message);
+    return false;
+  }
+}
+
 function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, urlTienda }) {
   const nombreCliente = (cliente && cliente.nombre) ? cliente.nombre.trim() : "Cliente";
+  const esEnvioManual = metodoPago === "manual" || String(codigoPedido || "").startsWith("ENV-MANUAL-");
+
   const listaItemsHtml = (items || []).map(item => {
     const nombre = item.nombre || "Molde Digital";
     const linkDescarga = urlSegura(item.linkDescarga || item.linkArchivos || item.archivoUrl || "");
@@ -90,7 +335,15 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
     `;
   }).join("");
 
-  const urlRastreo = `${urlTienda || "https://cosecongiu.com"}?descarga=${encodeURIComponent(codigoPedido)}&email=${encodeURIComponent((cliente && cliente.email) || "")}`;
+  const baseTienda = (urlTienda || "https://cosecongiu.vercel.app").replace(/\/+$/, "");
+  const urlRastreo = `${baseTienda}?descarga=${encodeURIComponent(codigoPedido)}&email=${encodeURIComponent((cliente && cliente.email) || "")}`;
+
+  let textoIntro = "¡Muchas gracias por tu compra! Tu pago ha sido confirmado y tus archivos digitales ya están disponibles para su descarga inmediata:";
+  if (metodoPago === "gratuito") {
+    textoIntro = "¡Muchas gracias por sumarte a la comunidad! Aquí tenés tu molde gratuito para descargar y empezar a coser cuando quieras:";
+  } else if (esEnvioManual) {
+    textoIntro = "Desde el equipo de Cosé con Giu te enviamos los enlaces de descarga directa de tu moldería digital y sus tutoriales:";
+  }
 
   return `
     <!DOCTYPE html>
@@ -129,20 +382,20 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
                     ¡Hola, ${escaparHtmlEmail(nombreCliente)}!
                   </h2>
                   <p style="margin: 0 0 20px 0; color: #666666; font-size: 15px; line-height: 1.6;">
-                    ${metodoPago === "gratuito" 
-                      ? "¡Muchas gracias por sumarte a la comunidad! Aquí tenés tu molde gratuito para descargar y empezar a coser cuando quieras:"
-                      : "¡Muchas gracias por tu compra! Tu pago ha sido confirmado y tus archivos digitales ya están disponibles para su descarga inmediata:"
-                    }
+                    ${textoIntro}
                   </p>
 
+                  ${!esEnvioManual && codigoPedido ? `
                   <div style="background-color: #fbf9fe; border-left: 4px solid #845ec2; padding: 12px 16px; margin-bottom: 24px; border-radius: 0 8px 8px 0;">
                     <div style="font-size: 13px; color: #777777;">Código de Pedido:</div>
                     <div style="font-size: 16px; font-weight: 700; color: #583387;">${escaparHtmlEmail(codigoPedido)}</div>
                   </div>
+                  ` : ''}
 
                   <!-- LISTADO DE MOLDES Y VIDEOS -->
                   ${listaItemsHtml}
 
+                  ${!esEnvioManual && codigoPedido ? `
                   <!-- CONSULTA EN LA WEB DE POR VIDA -->
                   <div style="margin-top: 25px; padding: 18px; background-color: #fef9e8; border: 1px solid #f6e3a4; border-radius: 8px; text-align: center;">
                     <strong style="color: #b45309; font-size: 14px; display: block; margin-bottom: 6px;">
@@ -156,6 +409,7 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
                       Acceder a Mis Descargas en la Web
                     </a>
                   </div>
+                  ` : ''}
                 </td>
               </tr>
 
@@ -186,14 +440,89 @@ function generarHtmlCorreo({ cliente, codigoPedido, items, metodoPago, total, ur
   `;
 }
 
-module.exports = async (req, res) => {
+/**
+ * Función reutilizable en backend para enriquecer los enlaces desde Supabase y enviar el correo SMTP.
+ * Utilizada tanto por la ruta HTTP /api/enviar-email como por /api/verificar-pago y /api/webhook-mercadopago.
+ */
+async function enviarCorreoPedidoServer({
+  supabaseUrl,
+  supabaseKey,
+  codigoPedido,
+  cliente,
+  items = [],
+  metodoPago = "mercadopago",
+  total = 0,
+  urlTienda = "https://cosecongiu.vercel.app"
+}) {
+  const destinatario = (cliente && cliente.email) ? cliente.email.trim().toLowerCase() : "";
+  if (!destinatario) {
+    throw new Error("Falta el correo electrónico del destinatario.");
+  }
+
+  const itemsEnriquecidos = await enriquecerItemsDesdeSupabase(supabaseUrl, supabaseKey, codigoPedido, items);
+
+  let asunto = `✂️ Tus Moldes Digitales están listos para descargar - Pedido ${codigoPedido}`;
+  if (metodoPago === "gratuito") {
+    asunto = `🎁 Tu Molde Gratuito está listo - Cosé con Giu`;
+  } else if (metodoPago === "manual" || String(codigoPedido || "").startsWith("ENV-MANUAL-")) {
+    asunto = `✂️ Tus Moldes Digitales de Cosé con Giu`;
+  }
+
+  const htmlContent = generarHtmlCorreo({
+    cliente,
+    codigoPedido,
+    items: itemsEnriquecidos,
+    metodoPago,
+    total,
+    urlTienda
+  });
+
+  const gmailUser = process.env.GMAIL_USER || process.env.EMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.GMAIL_PASS;
+
+  if (!gmailUser || !gmailPass || !nodemailer) {
+    console.warn("[Envio Email] GMAIL_USER o GMAIL_APP_PASSWORD no configurados en variables de entorno.");
+    return {
+      success: true,
+      simulado: true,
+      mensaje: "Correo registrado (Modo simulación: faltan variables GMAIL_USER o GMAIL_APP_PASSWORD en Vercel)."
+    };
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: gmailUser,
+      pass: gmailPass
+    }
+  });
+
+  const remitente = `Cosé con Giu <${gmailUser}>`;
+  const info = await transporter.sendMail({
+    from: remitente,
+    to: destinatario,
+    subject: asunto,
+    html: htmlContent
+  });
+
+  console.log(`[Envio Email Exitoso] Pedido: ${codigoPedido} -> ${destinatario} (ID: ${info.messageId})`);
+
+  return {
+    success: true,
+    simulado: false,
+    mensajeId: info.messageId,
+    destinatario
+  };
+}
+
+const handler = async (req, res) => {
   // Cabeceras CORS
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,POST");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+    "Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
   );
 
   if (req.method === "OPTIONS") {
@@ -213,20 +542,33 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { codigoPedido, cliente, items, metodoPago, total, urlTienda } = req.body || {};
+    const { codigoPedido, cliente, items, metodoPago, total, urlTienda, modoManualAdmin } = req.body || {};
 
-    if (!codigoPedido || !cliente || !cliente.email) {
+    if (!cliente || !cliente.email || (!codigoPedido && !modoManualAdmin)) {
       return res.status(400).json({ error: "Datos incompletos: se requiere codigoPedido y cliente.email." });
     }
 
     const destinatario = cliente.email.trim().toLowerCase();
-
-    // Verificación defensiva contra base de datos para prevenir uso indebido como spam relay
-    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseUrl = process.env.SUPABASE_URL || "https://obvboktbdbahgbvemlid.supabase.co";
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-    if (supabaseUrl && supabaseKey) {
+
+    let esAdminVerificado = false;
+    if (req.headers.authorization && supabaseUrl && supabaseKey) {
+      esAdminVerificado = await verificarAdminJwt(supabaseUrl, supabaseKey, req.headers.authorization);
+    }
+
+    if (modoManualAdmin) {
+      if (!esAdminVerificado) {
+        return res.status(403).json({ error: "Acceso denegado: solo administradores aprobados pueden enviar moldes manualmente." });
+      }
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "Debes seleccionar al menos un molde para enviar." });
+      }
+    } else if (supabaseUrl && supabaseKey) {
+      // Verificación defensiva contra base de datos para prevenir uso indebido como spam relay
       try {
-        const resPed = await fetch(`${supabaseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}&select=id,estado,cliente_email`, {
+        const baseUrl = supabaseUrl.replace(/\/+$/, "");
+        const resPed = await fetch(`${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}&select=id,estado,cliente_email,metodo_pago`, {
           headers: {
             "apikey": supabaseKey,
             "Authorization": `Bearer ${supabaseKey}`
@@ -239,9 +581,13 @@ module.exports = async (req, res) => {
             return res.status(404).json({ error: "El pedido especificado no existe en la base de datos." });
           }
           const p = pedidosDb[0];
-          if (p.cliente_email && p.cliente_email.toLowerCase() !== destinatario) {
+          if (!esAdminVerificado && p.cliente_email && p.cliente_email.toLowerCase() !== destinatario) {
             console.warn(`[Envio Email] Discrepancia de correo en pedido ${codigoPedido}: ${p.cliente_email} vs ${destinatario}`);
             return res.status(403).json({ error: "El correo del destinatario no coincide con el registrado en el pedido." });
+          }
+          if (!esAdminVerificado && p.estado !== "completada" && p.metodo_pago !== "gratuito") {
+            console.warn(`[Envio Email] Intento de envío para pedido no completado: ${codigoPedido} (${p.estado})`);
+            return res.status(403).json({ error: "El pedido aún no está aprobado para envío de archivos." });
           }
         }
       } catch (errSupabase) {
@@ -249,57 +595,19 @@ module.exports = async (req, res) => {
       }
     }
 
-    const asunto = metodoPago === "gratuito"
-      ? `🎁 Tu Molde Gratuito está listo - Cosé con Giu`
-      : `✂️ Tus Moldes Digitales están listos para descargar - Pedido ${codigoPedido}`;
-
-    const htmlContent = generarHtmlCorreo({
+    const codigoFinal = codigoPedido || `ENV-MANUAL-${Date.now().toString(36).toUpperCase()}`;
+    const resultado = await enviarCorreoPedidoServer({
+      supabaseUrl,
+      supabaseKey,
+      codigoPedido: codigoFinal,
       cliente,
-      codigoPedido,
       items: items || [],
-      metodoPago: metodoPago || "mercadopago",
+      metodoPago: modoManualAdmin ? (codigoPedido && String(codigoPedido).startsWith("ORD-") ? (metodoPago || "mercadopago") : "manual") : (metodoPago || "mercadopago"),
       total: total || 0,
-      urlTienda: urlTienda || (req.headers && req.headers.origin) || "https://cosecongiu.com"
+      urlTienda: urlTienda || (req.headers && req.headers.origin) || "https://cosecongiu.vercel.app"
     });
 
-    // Verificación de credenciales de Gmail SMTP
-    const gmailUser = process.env.GMAIL_USER || process.env.EMAIL_USER;
-    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || process.env.GMAIL_PASS;
-
-    if (!gmailUser || !gmailPass || !nodemailer) {
-      console.warn("[Envio Email] GMAIL_USER o GMAIL_APP_PASSWORD no configurados en variables de entorno.");
-      return res.status(200).json({
-        success: true,
-        simulado: true,
-        mensaje: "Correo registrado (Modo simulación: faltan variables GMAIL_USER o GMAIL_APP_PASSWORD en Vercel)."
-      });
-    }
-
-    // Configuración del transporte Nodemailer con Gmail SMTP
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: gmailUser,
-        pass: gmailPass
-      }
-    });
-
-    const remitente = `Cosé con Giu <${gmailUser}>`;
-
-    const info = await transporter.sendMail({
-      from: remitente,
-      to: destinatario,
-      subject: asunto,
-      html: htmlContent
-    });
-
-    console.log(`[Envio Email Exitoso] Pedido: ${codigoPedido} -> ${destinatario} (ID: ${info.messageId})`);
-
-    return res.status(200).json({
-      success: true,
-      mensajeId: info.messageId,
-      destinatario: destinatario
-    });
+    return res.status(200).json(resultado);
 
   } catch (error) {
     console.error("[Envio Email Error]:", error);
@@ -309,3 +617,178 @@ module.exports = async (req, res) => {
     });
   }
 };
+
+/**
+ * Marca el pedido aprobado por Mercado Pago como 'completada' en Supabase y envía el email
+ * usando un bloqueo atómico (archivos_enviados=false -> true) para evitar duplicados entre Webhook y Retorno.
+ */
+async function procesarAprobacionMercadoPagoServer({
+  supabaseUrl,
+  supabaseKey,
+  codigoPedido,
+  numeroOperacion = null,
+  urlTienda = "https://cosecongiu.vercel.app"
+}) {
+  if (!supabaseUrl || !supabaseKey || !codigoPedido) {
+    return { actualizado: false, emailEnviado: false };
+  }
+
+  const baseUrl = supabaseUrl.replace(/\/+$/, "");
+  let actualizado = false;
+
+  // 1. Marcar como completada vía RPC segura o PATCH directo
+  try {
+    const rpcRes = await fetch(`${baseUrl}/rest/v1/rpc/marcar_pedido_completado_mp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        p_codigo: String(codigoPedido),
+        p_numero_operacion: numeroOperacion ? String(numeroOperacion) : null
+      })
+    });
+    if (rpcRes.ok) {
+      actualizado = true;
+    }
+  } catch (e) {
+    console.warn("[MP Sync] Error invocando RPC marcar_pedido_completado_mp:", e.message);
+  }
+
+  if (!actualizado) {
+    try {
+      const patchRes = await fetch(`${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+          estado: "completada",
+          numero_operacion: numeroOperacion ? String(numeroOperacion) : undefined
+        })
+      });
+      if (patchRes.ok) actualizado = true;
+    } catch (e) {
+      console.warn("[MP Sync] Error en PATCH directo de pedido:", e.message);
+    }
+  }
+
+  // 2. Lock atómico para enviar el email de descarga una sola vez
+  let emailEnviado = false;
+  let yaEnviado = false;
+  try {
+    const fechaEnvio = new Date().toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
+    const lockRes = await fetch(
+      `${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}&archivos_enviados=eq.false`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          archivos_enviados: true,
+          fecha_envio_archivos: fechaEnvio
+        })
+      }
+    );
+
+    if (lockRes.ok) {
+      const lockedRows = await lockRes.json();
+      if (Array.isArray(lockedRows) && lockedRows.length > 0) {
+        const pedRes = await fetch(
+          `${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}&select=id,codigo,cliente_nombre,cliente_email,total,metodo_pago,pedido_items(producto_id,nombre,precio,cantidad,archivo_url,archivo_specs_url,link_archivos,link_video)`,
+          {
+            headers: {
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`
+            }
+          }
+        );
+
+        if (pedRes.ok) {
+          const pedRows = await pedRes.json();
+          const pedidoDb = pedRows && pedRows[0];
+          if (pedidoDb && pedidoDb.cliente_email) {
+            try {
+              const resEmail = await enviarCorreoPedidoServer({
+                supabaseUrl: baseUrl,
+                supabaseKey,
+                codigoPedido: pedidoDb.codigo,
+                cliente: {
+                  nombre: pedidoDb.cliente_nombre || "Cliente",
+                  email: pedidoDb.cliente_email
+                },
+                items: pedidoDb.pedido_items || [],
+                metodoPago: pedidoDb.metodo_pago || "mercadopago",
+                total: Number(pedidoDb.total || 0),
+                urlTienda
+              });
+
+              if (resEmail && resEmail.success && !resEmail.simulado) {
+                emailEnviado = true;
+              } else {
+                // Revertir lock si fue simulado o no salió
+                await fetch(`${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}`, {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "apikey": supabaseKey,
+                    "Authorization": `Bearer ${supabaseKey}`
+                  },
+                  body: JSON.stringify({ archivos_enviados: false, fecha_envio_archivos: null })
+                }).catch(() => {});
+              }
+            } catch (emailErr) {
+              console.warn(`[MP Email] Error enviando correo para ${codigoPedido}:`, emailErr.message);
+              await fetch(`${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}`, {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                  "apikey": supabaseKey,
+                  "Authorization": `Bearer ${supabaseKey}`
+                },
+                body: JSON.stringify({ archivos_enviados: false, fecha_envio_archivos: null })
+              }).catch(() => {});
+            }
+          }
+        }
+      } else {
+        // Verificar si ya estaba marcado como enviado previamente
+        const checkRes = await fetch(
+          `${baseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}&select=archivos_enviados`,
+          {
+            headers: {
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`
+            }
+          }
+        );
+        if (checkRes.ok) {
+          const checkRows = await checkRes.json();
+          if (checkRows && checkRows[0] && checkRows[0].archivos_enviados) {
+            yaEnviado = true;
+            emailEnviado = true;
+          }
+        }
+      }
+    }
+  } catch (lockErr) {
+    console.warn("[MP Email] No se pudo adquirir lock de envío automático:", lockErr.message);
+  }
+
+  return { actualizado, emailEnviado, yaEnviado };
+}
+
+module.exports = handler;
+module.exports.enviarCorreoPedidoServer = enviarCorreoPedidoServer;
+module.exports.procesarAprobacionMercadoPagoServer = procesarAprobacionMercadoPagoServer;
+module.exports.enriquecerItemsDesdeSupabase = enriquecerItemsDesdeSupabase;
+module.exports.firmarRutaStorage = firmarRutaStorage;

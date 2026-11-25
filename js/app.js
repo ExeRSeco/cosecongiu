@@ -2576,8 +2576,9 @@ async function procesarRetornoMercadoPago() {
 
   let verificado = false;
   let estadoPago = status;
+  let emailEnviadoPorBackend = false;
 
-  // 1. Verificación segura en backend contra API de Mercado Pago
+  // 1. Verificación segura en backend contra API de Mercado Pago (también marca completada y dispara email en servidor)
   if (paymentId && codigoOrden) {
     try {
       const respVerif = await fetch(`/api/verificar-pago?payment_id=${encodeURIComponent(paymentId)}&codigo=${encodeURIComponent(codigoOrden)}`);
@@ -2586,6 +2587,7 @@ async function procesarRetornoMercadoPago() {
         if (dataVerif && dataVerif.verified) {
           verificado = true;
           estadoPago = "approved";
+          emailEnviadoPorBackend = Boolean(dataVerif.emailEnviado);
         } else if (dataVerif && dataVerif.status) {
           estadoPago = dataVerif.status;
         }
@@ -2615,7 +2617,21 @@ async function procesarRetornoMercadoPago() {
     if (pedido) {
       pedido.estado = "completada";
       if (paymentId) pedido.numeroOperacion = paymentId;
+      if (emailEnviadoPorBackend) {
+        pedido.archivosEnviados = true;
+        pedido.fechaEnvioArchivos = obtenerFechaLocalHoraTexto(new Date());
+      }
       guardarPedidosEnStorage();
+    }
+
+    // Respaldo: si el servidor no envió el correo automáticamente (ej. sin SERVICE_ROLE_KEY), dispararlo desde aquí
+    if (!emailEnviadoPorBackend && pedido && pedido.cliente && pedido.cliente.email) {
+      const enviadoOk = await enviarCorreoConfirmacion(pedido);
+      if (enviadoOk) {
+        pedido.archivosEnviados = true;
+        pedido.fechaEnvioArchivos = obtenerFechaLocalHoraTexto(new Date());
+        guardarPedidosEnStorage();
+      }
     }
 
     // Vaciamos el carrito tras compra exitosa
@@ -2827,28 +2843,42 @@ function mostrarModalConfirmacion(pedido) {
       </div>
     </div>
 
-    <div class="whatsapp-action-box">
-      <h4 style="color: #166534; margin-bottom: 0.35rem; font-size: 1rem;"><i data-lucide="message-circle" class="ui-icon"></i> Envíanos un aviso por WhatsApp</h4>
-      <p style="font-size: 0.85rem; color: #14532d; margin-bottom: 0.85rem;">
-        ${tieneComprobante ? 'Ya adjuntaste el comprobante, pero puedes notificarnos por WhatsApp para agilizar la entrega:' : 'Haz clic para avisarnos y adjuntar la captura de tu pago:'}
-      </p>
-      <a href="https://api.whatsapp.com/send?phone=${telefonoWa}&text=${mensajeWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Avisar por WhatsApp">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" style="vertical-align: -0.2em; margin-right: 0.35rem; display: inline-block;">
-          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-        </svg>
-        Notificar Pago por WhatsApp
-      </a>
-    </div>
+    ${pedido.estado === 'completada' ? `
+      <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius); padding: 1rem 1.15rem; text-align: center; margin-bottom: 0.9rem;">
+        <h4 style="color: #15803d; margin-bottom: 0.35rem; font-size: 1rem;">
+          <i data-lucide="download-cloud" class="ui-icon"></i> Tus archivos ya están habilitados
+        </h4>
+        <p style="font-size: 0.85rem; color: #166534; margin-bottom: 0.75rem;">
+          Podés descargar tus moldes en PDF y especificaciones directamente desde la tienda ahora mismo:
+        </p>
+        <button type="button" class="btn btn-primary btn-block" onclick="abrirModalMisDescargasConPedido('${escaparHTML(pedido.codigo || '')}', '${escaparHTML((pedido.cliente && pedido.cliente.email) || '')}')">
+          <i data-lucide="download" class="ui-icon"></i> Descargar mis moldes ahora
+        </button>
+      </div>
+    ` : `
+      <div class="whatsapp-action-box">
+        <h4 style="color: #166534; margin-bottom: 0.35rem; font-size: 1rem;"><i data-lucide="message-circle" class="ui-icon"></i> Envíanos un aviso por WhatsApp</h4>
+        <p style="font-size: 0.85rem; color: #14532d; margin-bottom: 0.85rem;">
+          ${tieneComprobante ? 'Ya adjuntaste el comprobante, pero puedes notificarnos por WhatsApp para agilizar la entrega:' : 'Haz clic para avisarnos y adjuntar la captura de tu pago:'}
+        </p>
+        <a href="https://api.whatsapp.com/send?phone=${telefonoWa}&text=${mensajeWhatsApp}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Avisar por WhatsApp">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true" style="vertical-align: -0.2em; margin-right: 0.35rem; display: inline-block;">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          </svg>
+          Notificar Pago por WhatsApp
+        </a>
+      </div>
 
-    <div style="background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1rem; text-align: left;">
-      <h5 style="color: var(--primary-dark); font-size: 0.88rem; margin-bottom: 0.2rem;"><i data-lucide="file-text" class="ui-icon"></i> Muestra de Costura preliminar:</h5>
-      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-        Puedes descargar una guía de prueba de impresión en PDF mientras verificamos tu pago.
-      </p>
-      <button type="button" class="btn-sample-download" onclick="descargarMuestraPDF()">
-        <i data-lucide="download" class="ui-icon"></i> Descargar Guía de Costura de Muestra
-      </button>
-    </div>
+      <div style="background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1rem; text-align: left;">
+        <h5 style="color: var(--primary-dark); font-size: 0.88rem; margin-bottom: 0.2rem;"><i data-lucide="file-text" class="ui-icon"></i> Muestra de Costura preliminar:</h5>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          Puedes descargar una guía de prueba de impresión en PDF mientras verificamos tu pago.
+        </p>
+        <button type="button" class="btn-sample-download" onclick="descargarMuestraPDF()">
+          <i data-lucide="download" class="ui-icon"></i> Descargar Guía de Costura de Muestra
+        </button>
+      </div>
+    `}
   `;
 
   modal.style.display = "flex";
@@ -4021,53 +4051,79 @@ Giu - Cosé con Giu`;
 }
 
 /**
- * Abre el correo pre-armado para enviar archivos y video al cliente, y marca el pedido como enviado
+ * Helper compartido para despachar/reenviar los archivos y video de un pedido desde el Admin.
+ * Prioriza el envío automático por correo (con URLs firmadas de 7 días); si el servidor SMTP no está activo, abre Gmail Compose.
  */
-function enviarArchivosPedido(pedidoId) {
-  const pedido = pedidos.find(p => p.id === pedidoId);
+async function despacharEntregaPedidoAdmin(pedidoId, esReenvio = false) {
+  const pedido = pedidos.find(p => p.id === pedidoId || p.codigo === pedidoId);
   if (!pedido) return;
 
-  const { urlGmail, urlMailto } = generarEnlaceCorreoEntrega(pedido);
+  if (!pedido.cliente || !pedido.cliente.email) {
+    mostrarToast("Este pedido no tiene un correo electrónico registrado.");
+    return;
+  }
 
-  // Intentamos abrir Gmail Web Compose en pestaña nueva (todos los compradores usan @gmail.com)
-  const ventana = window.open(urlGmail, "_blank");
+  mostrarToast(esReenvio ? `Reenviando moldes a ${pedido.cliente.email}...` : `Enviando moldes a ${pedido.cliente.email}...`);
+
+  // Hidratar rutas faltantes desde el catálogo oficial antes de enviar
+  if (Array.isArray(pedido.items)) {
+    pedido.items = pedido.items.map(it => {
+      const prodRef = productos.find(p => p.id === it.id || p.nombre === it.nombre) || {};
+      return {
+        ...it,
+        archivoUrl: it.archivoUrl || it.archivo_url || prodRef.archivoUrl || null,
+        archivoSpecsUrl: it.archivoSpecsUrl || it.archivo_specs_url || prodRef.archivoSpecsUrl || null,
+        linkArchivos: it.linkArchivos || prodRef.linkArchivos || prodRef.archivoUrl || "",
+        linkVideo: it.linkVideo || prodRef.linkVideo || ""
+      };
+    });
+  }
+
+  const enviadoAuto = await enviarCorreoConfirmacion(pedido);
+
+  if (enviadoAuto) {
+    pedido.archivosEnviados = true;
+    pedido.fechaEnvioArchivos = obtenerFechaLocalHoraTexto(new Date());
+    guardarPedidosEnStorage();
+
+    if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
+      try {
+        await supabaseActualizarEstadoPedido(pedido.id, pedido.estado, true, pedido.fechaEnvioArchivos);
+      } catch (e) {
+        console.warn("[Supabase] Error al actualizar estado de envío:", e);
+      }
+    }
+
+    renderPedidosAdmin();
+    mostrarToast(`✓ ¡Moldes enviados por correo a ${pedido.cliente.email}!`);
+    return;
+  }
+
+  // Fallback a Gmail Web Compose si el endpoint SMTP está en simulación o falló
+  const { urlGmail, urlMailto } = generarEnlaceCorreoEntrega(pedido);
+  const ventana = window.open(urlGmail, "_blank", "noopener,noreferrer");
   if (!ventana || ventana.closed || typeof ventana.closed === "undefined") {
-    // Si el navegador bloquea la pestaña emergente, usamos mailto como respaldo
     window.location.href = urlMailto;
   }
 
-  // Actualizamos el estado del pedido
   pedido.archivosEnviados = true;
   pedido.fechaEnvioArchivos = obtenerFechaLocalHoraTexto(new Date());
   guardarPedidosEnStorage();
-
-  // Sincronización en la nube si Supabase está activo
   if (typeof estaSupabaseConfigurado === "function" && estaSupabaseConfigurado()) {
     try {
-      supabaseActualizarEstadoPedido(pedidoId, pedido.estado, true, pedido.fechaEnvioArchivos);
-    } catch (e) {
-      console.warn("[Supabase] Error al actualizar estado de envío:", e);
-    }
+      await supabaseActualizarEstadoPedido(pedido.id, pedido.estado, true, pedido.fechaEnvioArchivos);
+    } catch (e) {}
   }
-
   renderPedidosAdmin();
-  mostrarToast(`Correo preparado para ${pedido.cliente.nombre}. Marcado como enviado.`);
+  mostrarToast(`Correo preparado en tu cliente para ${pedido.cliente.nombre}.`);
 }
 
-/**
- * Permite reabrir el correo de entrega si el cliente solicita un reenvío
- */
+function enviarArchivosPedido(pedidoId) {
+  return despacharEntregaPedidoAdmin(pedidoId, false);
+}
+
 function reenviarArchivosPedido(pedidoId) {
-  const pedido = pedidos.find(p => p.id === pedidoId);
-  if (!pedido) return;
-
-  const { urlGmail, urlMailto } = generarEnlaceCorreoEntrega(pedido);
-  const ventana = window.open(urlGmail, "_blank");
-  if (!ventana || ventana.closed || typeof ventana.closed === "undefined") {
-    window.location.href = urlMailto;
-  }
-
-  mostrarToast(`Reabriendo correo de entrega para ${pedido.cliente.nombre}.`);
+  return despacharEntregaPedidoAdmin(pedidoId, true);
 }
 
 /**
@@ -4335,6 +4391,9 @@ function renderCatalogoAdmin() {
         </div>
 
         <div class="admin-inventory-actions">
+          <button type="button" class="btn btn-secondary btn-sm btn-admin-send-mold" onclick="abrirModalAdminEnviarMolde(${producto.id})" title="Enviar archivos de este molde a un comprador por correo">
+            <i data-lucide="send" class="ui-icon"></i> <span class="action-btn-text">Enviar</span>
+          </button>
           <button type="button" class="btn btn-secondary btn-sm" onclick="editarProducto(${producto.id})" title="Editar este molde">
             <i data-lucide="edit-3" class="ui-icon"></i> <span class="action-btn-text">Editar</span>
           </button>
@@ -4646,13 +4705,13 @@ async function enviarCorreoConfirmacion(pedido) {
     }
 
     let linkDescarga = archMolde;
-    if (archMolde && typeof supabaseObtenerUrlDescargaMolde === "function" && (archMolde.startsWith("patron_") || archMolde.includes("moldes-archivos"))) {
+    if (archMolde && typeof supabaseObtenerUrlDescargaMolde === "function") {
       const firmada = await supabaseObtenerUrlDescargaMolde(archMolde, 86400 * 7);
       if (firmada) linkDescarga = firmada;
     }
 
     let linkSpecs = archSpecs;
-    if (archSpecs && typeof supabaseObtenerUrlDescargaMolde === "function" && (archSpecs.startsWith("specs_") || archSpecs.includes("moldes-archivos"))) {
+    if (archSpecs && typeof supabaseObtenerUrlDescargaMolde === "function") {
       const firmadaSpecs = await supabaseObtenerUrlDescargaMolde(archSpecs, 86400 * 7);
       if (firmadaSpecs) linkSpecs = firmadaSpecs;
     }
@@ -4669,9 +4728,13 @@ async function enviarCorreoConfirmacion(pedido) {
   }
 
   try {
+    const tokenAdmin = typeof supabaseObtenerAccessTokenAdmin === "function" ? await supabaseObtenerAccessTokenAdmin() : null;
+    const headers = { "Content-Type": "application/json" };
+    if (tokenAdmin) headers["Authorization"] = `Bearer ${tokenAdmin}`;
+
     const res = await fetch("/api/enviar-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         codigoPedido: pedido.codigo,
         cliente: pedido.cliente,
@@ -4685,12 +4748,30 @@ async function enviarCorreoConfirmacion(pedido) {
     if (res.ok) {
       const data = await res.json();
       console.log(`[Email] Correo enviado exitosamente para pedido ${pedido.codigo} a ${pedido.cliente.email}`, data);
+      return Boolean(data && data.success && !data.simulado);
     } else {
       const errorData = await res.json().catch(() => ({}));
       console.warn("[Email] Advertencia al despachar correo:", errorData);
+      return false;
     }
   } catch (err) {
     console.warn("[Email] No se pudo conectar con el endpoint serverless de email:", err);
+    return false;
+  }
+}
+
+/**
+ * Abre "Mis Descargas" precargado con un código y correo de un pedido recién aprobado
+ */
+function abrirModalMisDescargasConPedido(codigo, email) {
+  cerrarModalConfirmacion();
+  abrirModalMisDescargas();
+  const inCod = document.getElementById("input-descargas-codigo");
+  const inMail = document.getElementById("input-descargas-email");
+  if (inCod && codigo) inCod.value = codigo;
+  if (inMail && email) inMail.value = email;
+  if (codigo && email) {
+    consultarDescargasDesdeModal();
   }
 }
 
@@ -4863,19 +4944,25 @@ async function consultarDescargasDesdeModal() {
       }
 
       let link = item.linkDescarga || item.archivo_url || item.link_archivos || "";
-      if (item.archivo_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!link || link === "#" || link.startsWith("patron_") || link.startsWith("moldes-archivos/"))) {
+      const esRutaStorageMolde = link && !link.startsWith("http://") && !link.startsWith("https://") && !link.startsWith("data:") && !link.startsWith("blob:");
+      if (item.archivo_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!link || link === "#" || esRutaStorageMolde || link.includes("/moldes-archivos/"))) {
         const firmada = await supabaseObtenerUrlDescargaMolde(item.archivo_url, 86400);
         if (firmada) link = firmada;
       }
-      if (!link || link === "#") {
-        link = generarPdfMuestraBase64(item.nombre);
+      // Si la ruta sigue siendo un nombre de archivo interno sin firmar (falló la firma), no exponer ruta relativa 404
+      if (!link || link === "#" || (!link.startsWith("http://") && !link.startsWith("https://") && !link.startsWith("data:") && !link.startsWith("blob:"))) {
+        link = "";
       }
       item.linkDescarga = link;
 
       let linkSpecs = item.linkSpecs || item.archivo_specs_url || "";
-      if (item.archivo_specs_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!linkSpecs || linkSpecs.startsWith("specs_") || linkSpecs.startsWith("moldes-archivos/"))) {
+      const esRutaStorageSpecs = linkSpecs && !linkSpecs.startsWith("http://") && !linkSpecs.startsWith("https://") && !linkSpecs.startsWith("data:") && !linkSpecs.startsWith("blob:");
+      if (item.archivo_specs_url && typeof supabaseObtenerUrlDescargaMolde === "function" && (!linkSpecs || esRutaStorageSpecs || linkSpecs.includes("/moldes-archivos/"))) {
         const firmadaSpecs = await supabaseObtenerUrlDescargaMolde(item.archivo_specs_url, 86400);
         if (firmadaSpecs) linkSpecs = firmadaSpecs;
+      }
+      if (linkSpecs && !linkSpecs.startsWith("http://") && !linkSpecs.startsWith("https://") && !linkSpecs.startsWith("data:") && !linkSpecs.startsWith("blob:")) {
+        linkSpecs = "";
       }
       item.linkSpecs = linkSpecs;
     }
@@ -5055,6 +5142,11 @@ function manejarTeclaEscapeModales(e) {
     cerrarModalComprobante();
     return;
   }
+  const envioAdmin = document.getElementById("modal-admin-enviar-molde");
+  if (envioAdmin && envioAdmin.style.display !== "none") {
+    cerrarModalAdminEnviarMolde();
+    return;
+  }
   const gratis = document.getElementById("modal-molde-gratis");
   if (gratis && gratis.style.display !== "none") {
     cerrarModalMoldeGratis();
@@ -5079,5 +5171,214 @@ function manejarTeclaEscapeModales(e) {
   if (checkout && checkout.style.display !== "none") {
     cerrarCheckout();
     return;
+  }
+}
+
+/**
+ * ====================================================================
+ * 6. HERRAMIENTA ADMIN: ENVÍO MANUAL DE MOLDES POR EMAIL ANTE ERRORES
+ * ====================================================================
+ */
+let moldesSeleccionadosEnvioAdmin = new Set();
+
+function abrirModalAdminEnviarMolde(productoIdOpcional = null) {
+  if (!estaAdminLogueado()) {
+    mostrarToast("Debes iniciar sesión como administrador.");
+    return;
+  }
+
+  const modal = document.getElementById("modal-admin-enviar-molde");
+  if (!modal) return;
+
+  moldesSeleccionadosEnvioAdmin = new Set();
+  if (productoIdOpcional) {
+    moldesSeleccionadosEnvioAdmin.add(Number(productoIdOpcional));
+  }
+
+  const form = document.getElementById("form-admin-enviar-molde");
+  if (form) form.reset();
+
+  const inBusqueda = document.getElementById("admin-envio-busqueda");
+  if (inBusqueda) inBusqueda.value = "";
+
+  renderListaMoldesEnvioAdmin("");
+
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+  actualizarIconosLucide();
+
+  const inEmail = document.getElementById("admin-envio-email");
+  if (inEmail) inEmail.focus();
+}
+
+function cerrarModalAdminEnviarMolde() {
+  const modal = document.getElementById("modal-admin-enviar-molde");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
+}
+
+function toggleMoldeEnvioAdmin(productoId, checkbox) {
+  const idNum = Number(productoId);
+  if (checkbox && checkbox.checked) {
+    moldesSeleccionadosEnvioAdmin.add(idNum);
+  } else {
+    moldesSeleccionadosEnvioAdmin.delete(idNum);
+  }
+  const wrap = checkbox ? checkbox.closest(".admin-envio-molde-option") : null;
+  if (wrap) {
+    wrap.classList.toggle("selected", Boolean(checkbox.checked));
+  }
+}
+
+function renderListaMoldesEnvioAdmin(filtro = "") {
+  const contenedor = document.getElementById("admin-envio-lista-moldes");
+  if (!contenedor) return;
+
+  const q = (filtro || "").trim().toLowerCase();
+  const filtrados = productos.filter(p => !q || (p.nombre || "").toLowerCase().includes(q) || (p.categoria || "").toLowerCase().includes(q));
+
+  if (filtrados.length === 0) {
+    contenedor.innerHTML = `<p style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No hay moldes cargados que coincidan.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = filtrados.map(prod => {
+    const marcado = moldesSeleccionadosEnvioAdmin.has(Number(prod.id));
+    const tienePdf = Boolean(prod.archivoUrl || prod.linkArchivos);
+    const tieneSpecs = Boolean(prod.archivoSpecsUrl);
+    const tieneVideo = Boolean(prod.linkVideo);
+
+    return `
+      <label class="admin-envio-molde-option ${marcado ? "selected" : ""}">
+        <input type="checkbox" value="${prod.id}" ${marcado ? "checked" : ""} onchange="toggleMoldeEnvioAdmin(${prod.id}, this)">
+        <div class="admin-envio-molde-info">
+          <div class="admin-envio-molde-title">${escaparHTML(prod.nombre)}</div>
+          <div class="admin-envio-molde-meta">
+            <span>${escaparHTML(prod.categoria || "Otros")}</span>
+            ${tienePdf ? `<span class="indicator-tag ready">PDF</span>` : `<span class="indicator-tag missing">Sin PDF</span>`}
+            ${tieneSpecs ? `<span class="indicator-tag ready">Specs</span>` : ""}
+            ${tieneVideo ? `<span class="indicator-tag video">Video</span>` : ""}
+          </div>
+        </div>
+      </label>
+    `;
+  }).join("");
+}
+
+async function enviarMoldesManualDesdeAdmin() {
+  if (!estaAdminLogueado()) {
+    mostrarToast("Sesión de administrador requerida.");
+    return;
+  }
+
+  const inEmail = document.getElementById("admin-envio-email");
+  const inNombre = document.getElementById("admin-envio-nombre");
+  const inCodigo = document.getElementById("admin-envio-codigo");
+  const btn = document.getElementById("btn-confirmar-envio-manual");
+
+  const email = inEmail ? inEmail.value.trim().toLowerCase() : "";
+  const nombre = (inNombre && inNombre.value.trim()) ? inNombre.value.trim() : "Cliente";
+  const codigoRef = (inCodigo && inCodigo.value.trim()) ? inCodigo.value.trim().toUpperCase() : "";
+
+  if (!esCorreoValido(email)) {
+    mostrarToast("Por favor ingresa un correo electrónico válido.");
+    if (inEmail) inEmail.focus();
+    return;
+  }
+
+  if (moldesSeleccionadosEnvioAdmin.size === 0) {
+    mostrarToast("Seleccioná al menos un molde del catálogo para enviar.");
+    return;
+  }
+
+  const moldesElegidos = productos.filter(p => moldesSeleccionadosEnvioAdmin.has(Number(p.id)));
+  if (moldesElegidos.length === 0) {
+    mostrarToast("No se encontraron los moldes seleccionados.");
+    return;
+  }
+
+  const tokenAdmin = typeof supabaseObtenerAccessTokenAdmin === "function" ? await supabaseObtenerAccessTokenAdmin() : null;
+  if (!tokenAdmin) {
+    mostrarToast("Tu sesión de Supabase Auth expiró. Volvé a iniciar sesión en Administración.");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader" class="ui-icon is-spinning"></i> Preparando y enviando...`;
+    actualizarIconosLucide();
+  }
+
+  try {
+    const itemsListos = [];
+    for (const prod of moldesElegidos) {
+      const archMolde = prod.archivoUrl || prod.linkArchivos || "";
+      const archSpecs = prod.archivoSpecsUrl || "";
+
+      let linkDescarga = archMolde;
+      if (archMolde && typeof supabaseObtenerUrlDescargaMolde === "function") {
+        const firmada = await supabaseObtenerUrlDescargaMolde(archMolde, 86400 * 7);
+        if (firmada) linkDescarga = firmada;
+      }
+
+      let linkSpecs = archSpecs;
+      if (archSpecs && typeof supabaseObtenerUrlDescargaMolde === "function") {
+        const firmadaSpecs = await supabaseObtenerUrlDescargaMolde(archSpecs, 86400 * 7);
+        if (firmadaSpecs) linkSpecs = firmadaSpecs;
+      }
+
+      itemsListos.push({
+        id: prod.id,
+        producto_id: prod.id,
+        nombre: prod.nombre,
+        archivoUrl: archMolde,
+        archivoSpecsUrl: archSpecs,
+        linkDescarga: linkDescarga,
+        linkSpecs: linkSpecs,
+        linkVideo: prod.linkVideo || "",
+        precio: prod.precio || 0,
+        cantidad: 1
+      });
+    }
+
+    const res = await fetch("/api/enviar-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenAdmin}`
+      },
+      body: JSON.stringify({
+        modoManualAdmin: true,
+        codigoPedido: codigoRef || `ENV-MANUAL-${Date.now().toString(36).toUpperCase()}`,
+        cliente: { nombre, email },
+        items: itemsListos,
+        metodoPago: codigoRef.startsWith("ORD-") ? "mercadopago" : "manual",
+        total: 0,
+        urlTienda: window.location.origin
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || "No se pudo completar el envío.");
+    }
+
+    if (data.simulado) {
+      mostrarToast("Modo simulación: faltan variables GMAIL_USER / GMAIL_APP_PASSWORD en Vercel.");
+    } else {
+      mostrarToast(`✓ ¡Moldes enviados con éxito por email a ${email}!`);
+      cerrarModalAdminEnviarMolde();
+    }
+  } catch (err) {
+    console.error("[Admin Envío Manual] Error:", err);
+    mostrarToast(`Error al enviar: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="send" class="ui-icon"></i> Enviar Archivos por Email`;
+      actualizarIconosLucide();
+    }
   }
 }

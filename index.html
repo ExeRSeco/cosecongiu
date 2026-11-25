@@ -38,7 +38,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
 
-  <link rel="stylesheet" href="css/styles.css?v=2.5">
+  <link rel="stylesheet" href="css/styles.css?v=2.6">
   <!-- Biblioteca de iconos modernos Lucide (versión fijada) -->
   <script src="https://unpkg.com/lucide@0.460.0" defer></script>
 </head>
@@ -358,6 +358,10 @@
             <i data-lucide="shield-check" class="ui-icon-sm"></i>
             <span id="admin-user-badge-text">admin</span>
           </div>
+          <button type="button" id="btn-admin-enviar-molde" class="btn btn-primary btn-sm"
+            onclick="abrirModalAdminEnviarMolde()" title="Enviar archivos de cualquier molde del catálogo por correo ante un error">
+            <i data-lucide="send" class="ui-icon"></i> Enviar Moldes por Email
+          </button>
           <button type="button" id="btn-status-supabase" class="btn-supabase-status"
             onclick="abrirModalConfigSupabase()" title="Ver o configurar conexión a la base de datos Supabase">
             <span class="status-dot-supabase" id="status-dot-supabase"></span>
@@ -1225,6 +1229,59 @@
     </div>
   </div>
 
+  <!-- 6.2. MODAL ADMIN: ENVIAR MOLDES MANUALMENTE POR CORREO -->
+  <div id="modal-admin-enviar-molde" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true"
+    style="display: none;" onclick="if(event.target === this) cerrarModalAdminEnviarMolde();">
+    <div class="modal-box" role="document" style="max-width: 580px;">
+      <div class="modal-header">
+        <div>
+          <h3><i data-lucide="send" class="ui-icon"></i> Enviar Moldes por Email</h3>
+          <p class="modal-subtitle" style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+            Envía directamente los enlaces de descarga PDF y video de cualquier molde ante reclamos o errores.
+          </p>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalAdminEnviarMolde()" title="Cerrar modal"
+          aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem;">
+        <form id="form-admin-enviar-molde" onsubmit="event.preventDefault(); enviarMoldesManualDesdeAdmin();">
+          <div class="form-row" style="margin-bottom: 0.75rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="admin-envio-email">Correo del destinatario *</label>
+              <input type="email" id="admin-envio-email" required placeholder="cliente@gmail.com">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="admin-envio-nombre">Nombre (opcional)</label>
+              <input type="text" id="admin-envio-nombre" placeholder="Ej: María Rossi">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.9rem;">
+            <label for="admin-envio-codigo">Código de pedido asociado (opcional)</label>
+            <input type="text" id="admin-envio-codigo" placeholder="Ej: ORD-XXXX-1234 (dejar vacío para envío directo)">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.5rem;">
+            <label for="admin-envio-busqueda">Seleccioná uno o más moldes a enviar *:</label>
+            <input type="text" id="admin-envio-busqueda" placeholder="Filtrar molde por nombre..."
+              oninput="renderListaMoldesEnvioAdmin(this.value)" style="margin-bottom: 0.5rem;">
+            <div id="admin-envio-lista-moldes" class="admin-envio-moldes-list">
+              <!-- Checkboxes de moldes generados dinámicamente -->
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 0 0 0; margin-top: 0.75rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.65rem;">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModalAdminEnviarMolde()">Cancelar</button>
+            <button type="submit" id="btn-confirmar-envio-manual" class="btn btn-primary">
+              <i data-lucide="send" class="ui-icon"></i> Enviar Archivos por Email
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Botón Flotante de WhatsApp para Atención al Cliente -->
   <a id="btn-whatsapp-flotante" href="#" class="btn-whatsapp-flotante" onclick="abrirWhatsappConsulta(event)"
     title="¿Dudas con algún molde? Escríbeme por WhatsApp" aria-label="Contactar por WhatsApp">
@@ -1335,9 +1392,9 @@
   <!-- Cliente oficial de Supabase v2 desde CDN (versión fijada) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
   <!-- Conector y servicios de Supabase para producción -->
-  <script src="js/supabase.js?v=2.5"></script>
+  <script src="js/supabase.js?v=2.6"></script>
   <!-- Lógica principal de la aplicación -->
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/app.js?v=2.6"></script>
 </body>
 
 </html>

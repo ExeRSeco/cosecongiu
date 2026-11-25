@@ -1319,20 +1319,20 @@ async function supabaseObtenerDescargasPedido(codigo, email) {
 
         // 1. URL de descarga para el molde principal
         const rutaMolde = item.archivo_url || item.link_archivos;
-        if (rutaMolde && typeof supabaseObtenerUrlDescargaMolde === "function" && (rutaMolde.includes("/") || rutaMolde.endsWith(".pdf") || rutaMolde.endsWith(".zip") || rutaMolde.startsWith("patron_"))) {
+        if (rutaMolde && typeof supabaseObtenerUrlDescargaMolde === "function") {
           const urlFirmada = await supabaseObtenerUrlDescargaMolde(rutaMolde, 86400);
-          item.linkDescarga = urlFirmada || rutaMolde || "";
+          item.linkDescarga = urlFirmada || (rutaMolde.startsWith("http") ? rutaMolde : "");
         } else {
-          item.linkDescarga = item.link_archivos || item.archivo_url || "";
+          item.linkDescarga = (rutaMolde && rutaMolde.startsWith("http")) ? rutaMolde : "";
         }
 
         // 2. URL de descarga para el archivo de especificaciones y materiales
         const rutaSpecs = item.archivo_specs_url;
-        if (rutaSpecs && typeof supabaseObtenerUrlDescargaMolde === "function" && (rutaSpecs.includes("/") || rutaSpecs.endsWith(".pdf") || rutaSpecs.endsWith(".zip") || rutaSpecs.startsWith("specs_"))) {
+        if (rutaSpecs && typeof supabaseObtenerUrlDescargaMolde === "function") {
           const urlFirmadaSpecs = await supabaseObtenerUrlDescargaMolde(rutaSpecs, 86400);
-          item.linkSpecs = urlFirmadaSpecs || rutaSpecs || "";
+          item.linkSpecs = urlFirmadaSpecs || (rutaSpecs.startsWith("http") ? rutaSpecs : "");
         } else {
-          item.linkSpecs = item.archivo_specs_url || "";
+          item.linkSpecs = (rutaSpecs && rutaSpecs.startsWith("http")) ? rutaSpecs : "";
         }
       }
     }
@@ -1374,6 +1374,20 @@ async function supabaseAprobarPedidoTransferencia(codigo) {
  * 6. CONFIGURACIÓN GLOBAL DE LA TIENDA (TABLA tienda_config)
  * ====================================================================
  */
+
+/**
+ * Devuelve el access_token actual de Supabase Auth del administrador logueado (para endpoints serverless seguros)
+ */
+async function supabaseObtenerAccessTokenAdmin() {
+  const client = obtenerClienteSupabase();
+  if (!client) return null;
+  try {
+    const { data } = await client.auth.getSession();
+    return (data && data.session && data.session.access_token) ? data.session.access_token : null;
+  } catch (e) {
+    return null;
+  }
+}
 
 /**
  * Obtiene el valor JSON de una clave de configuración global de la tienda

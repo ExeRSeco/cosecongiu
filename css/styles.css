@@ -4219,6 +4219,72 @@ textarea:focus {
 }
 
 /* ==========================================================
+   MODAL ADMIN: ENVÍO MANUAL DE MOLDES POR EMAIL
+   ========================================================== */
+.admin-envio-moldes-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-page);
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-envio-molde-option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.admin-envio-molde-option:hover {
+  border-color: var(--primary);
+}
+
+.admin-envio-molde-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.admin-envio-molde-option input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.admin-envio-molde-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-envio-molde-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.2rem;
+  word-break: break-word;
+}
+
+.admin-envio-molde-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================
    DATOS BANCARIOS CON BOTONES DE COPIADO RÁPIDO
    ========================================================== */
 .dato-copiable-row {

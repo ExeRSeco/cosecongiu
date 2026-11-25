@@ -2,6 +2,7 @@
 // Protección: Verificación de firma criptográfica HMAC-SHA256 (x-signature) y consulta directa a API oficial
 
 const crypto = require("crypto");
+const { procesarAprobacionMercadoPagoServer } = require("./enviar-email");
 
 /**
  * Valida la firma criptográfica x-signature enviada por Mercado Pago.
@@ -106,56 +107,22 @@ module.exports = async (req, res) => {
           monto: pago.transaction_amount
         });
 
-        // 2. Si el pago fue acreditado y aprobado, actualizamos el pedido en Supabase
+        // 2. Si el pago fue acreditado y aprobado, actualizamos el pedido en Supabase y disparamos el email
         if (pago.status === "approved" && pago.external_reference) {
           const codigoPedido = pago.external_reference;
+          const host = req.headers["x-forwarded-host"] || req.headers.host || "cosecongiu.vercel.app";
+          const proto = req.headers["x-forwarded-proto"] || "https";
+          const urlTienda = `${proto}://${host}`;
 
-          // Intentar primero mediante RPC con SECURITY DEFINER (bypass seguro de RLS)
-          let actualizado = false;
-          try {
-            const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/marcar_pedido_completado_mp`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "apikey": supabaseKey,
-                "Authorization": `Bearer ${supabaseKey}`
-              },
-              body: JSON.stringify({
-                p_codigo: codigoPedido,
-                p_numero_operacion: String(pago.id)
-              })
-            });
+          const resultadoMp = await procesarAprobacionMercadoPagoServer({
+            supabaseUrl,
+            supabaseKey,
+            codigoPedido,
+            numeroOperacion: String(pago.id),
+            urlTienda
+          });
 
-            if (rpcRes.ok) {
-              actualizado = true;
-              console.log(`[Webhook MP] ✓ Pedido ${codigoPedido} marcado como 'completada' en Supabase via RPC.`);
-            }
-          } catch (rpcErr) {
-            console.warn("[Webhook MP] Error al invocar RPC:", rpcErr);
-          }
-
-          // Fallback por PATCH directo (por ejemplo si se usa Service Role Key)
-          if (!actualizado) {
-            const patchRes = await fetch(`${supabaseUrl}/rest/v1/pedidos?codigo=eq.${encodeURIComponent(codigoPedido)}`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                "apikey": supabaseKey,
-                "Authorization": `Bearer ${supabaseKey}`,
-                "Prefer": "return=minimal"
-              },
-              body: JSON.stringify({
-                estado: "completada",
-                numero_operacion: String(pago.id)
-              })
-            });
-
-            if (patchRes.ok) {
-              console.log(`[Webhook MP] ✓ Pedido ${codigoPedido} marcado como 'completada' en Supabase via PATCH.`);
-            } else {
-              console.warn(`[Webhook MP] No se pudo actualizar en Supabase:`, await patchRes.text());
-            }
-          }
+          console.log(`[Webhook MP] Resultado para ${codigoPedido}:`, resultadoMp);
         }
       } else {
         console.warn("[Webhook MP] No se pudo consultar pago en MP:", pagoRes.status);

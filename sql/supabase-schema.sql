@@ -416,39 +416,72 @@ CREATE POLICY "Subida y edición de moldes solo por admins aprobados"
     public.es_admin_aprobado()
   );
 
+-- Función SECURITY DEFINER para autorizar la lectura/firma de archivos privados en Storage
+-- sin requerir permisos SELECT directos del rol anon sobre pedidos, pedido_items o columnas privadas.
+CREATE OR REPLACE FUNCTION public.puede_descargar_archivo_molde(p_object_name TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_nombre_limpio TEXT;
+BEGIN
+  IF p_object_name IS NULL OR TRIM(p_object_name) = '' THEN
+    RETURN FALSE;
+  END IF;
+
+  v_nombre_limpio := REGEXP_REPLACE(SPLIT_PART(TRIM(p_object_name), '?', 1), '^/+', '');
+
+  -- 1. Administradores aprobados siempre pueden firmar o descargar
+  IF auth.role() = 'authenticated' AND public.es_admin_aprobado() THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 2. Archivos pertenecientes a moldes gratuitos
+  IF EXISTS (
+    SELECT 1 FROM public.productos p
+    WHERE p.es_gratuito = true
+      AND (
+        p.archivo_url = v_nombre_limpio OR
+        p.archivo_specs_url = v_nombre_limpio OR
+        p.link_archivos = v_nombre_limpio
+      )
+  ) THEN
+    RETURN TRUE;
+  END IF;
+
+  -- 3. Archivos vinculados a cualquier pedido completado (por snapshot en pedido_items o join con productos)
+  IF EXISTS (
+    SELECT 1 FROM public.pedido_items pi
+    JOIN public.pedidos ped ON ped.id = pi.pedido_id
+    LEFT JOIN public.productos pr ON pr.id = pi.producto_id
+    WHERE ped.estado = 'completada'
+      AND (
+        pi.archivo_url = v_nombre_limpio OR
+        pi.archivo_specs_url = v_nombre_limpio OR
+        pi.link_archivos = v_nombre_limpio OR
+        pr.archivo_url = v_nombre_limpio OR
+        pr.archivo_specs_url = v_nombre_limpio OR
+        pr.link_archivos = v_nombre_limpio
+      )
+  ) THEN
+    RETURN TRUE;
+  END IF;
+
+  RETURN FALSE;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.puede_descargar_archivo_molde(TEXT) TO anon, authenticated, service_role;
+
 -- Descarga y generación de URLs firmadas:
 -- Permitida a administradores aprobados, compras completadas verificadas o productos gratuitos
 CREATE POLICY "Descarga de moldes para pedidos completados o gratuitos"
   ON storage.objects FOR SELECT
   USING (
-    bucket_id = 'moldes-archivos' AND (
-      (auth.role() = 'authenticated' AND public.es_admin_aprobado()) OR
-      EXISTS (
-        SELECT 1 FROM public.productos p
-        WHERE p.es_gratuito = true
-          AND (p.archivo_url = storage.objects.name OR p.archivo_specs_url = storage.objects.name)
-      ) OR
-      EXISTS (
-        SELECT 1 FROM public.pedido_items pi
-        JOIN public.pedidos ped ON ped.id = pi.pedido_id
-        WHERE ped.estado = 'completada'
-          AND (
-            pi.archivo_url = storage.objects.name OR 
-            pi.archivo_specs_url = storage.objects.name OR
-            pi.link_archivos = storage.objects.name
-          )
-      ) OR
-      EXISTS (
-        SELECT 1 FROM public.pedido_items pi2
-        JOIN public.pedidos ped2 ON ped2.id = pi2.pedido_id
-        JOIN public.productos pr2 ON pr2.id = pi2.producto_id
-        WHERE ped2.estado = 'completada'
-          AND (
-            pr2.archivo_url = storage.objects.name OR 
-            pr2.archivo_specs_url = storage.objects.name
-          )
-      )
-    )
+    bucket_id = 'moldes-archivos' AND
+    public.puede_descargar_archivo_molde(storage.objects.name)
   );
 
 -- 13. FUNCIÓN RPC PARA OBTENER DESCARGAS SEGURAS DE UN PEDIDO COMPLETADO
@@ -495,10 +528,10 @@ BEGIN
     jsonb_build_object(
       'id', pi.producto_id,
       'nombre', pi.nombre,
-      'archivo_url', COALESCE(pr.archivo_url, pi.archivo_url, pi.link_archivos),
-      'archivo_specs_url', COALESCE(pr.archivo_specs_url, pi.archivo_specs_url),
-      'link_archivos', COALESCE(pr.link_archivos, pi.link_archivos),
-      'link_video', COALESCE(pr.link_video, pi.link_video),
+      'archivo_url', COALESCE(NULLIF(pr.archivo_url, ''), NULLIF(pi.archivo_url, ''), NULLIF(pi.link_archivos, '')),
+      'archivo_specs_url', COALESCE(NULLIF(pr.archivo_specs_url, ''), NULLIF(pi.archivo_specs_url, '')),
+      'link_archivos', COALESCE(NULLIF(pr.link_archivos, ''), NULLIF(pr.archivo_url, ''), NULLIF(pi.link_archivos, '')),
+      'link_video', COALESCE(NULLIF(pr.link_video, ''), NULLIF(pi.link_video, '')),
       'es_gratuito', COALESCE(pr.es_gratuito, false)
     )
   ) INTO v_items
@@ -555,6 +588,12 @@ DECLARE
   v_estado TEXT;
   v_metodo TEXT;
   v_total NUMERIC;
+  v_producto_id BIGINT;
+  v_prod RECORD;
+  v_archivo_url TEXT;
+  v_archivo_specs_url TEXT;
+  v_link_archivos TEXT;
+  v_link_video TEXT;
 BEGIN
   v_metodo := COALESCE(p_pedido->>'metodo_pago', 'transferencia');
   v_total := COALESCE((p_pedido->>'total')::numeric, 0);
@@ -602,6 +641,33 @@ BEGIN
   IF p_items IS NOT NULL AND jsonb_array_length(p_items) > 0 THEN
     FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
     LOOP
+      v_producto_id := CASE
+        WHEN (v_item->>'producto_id') IS NOT NULL AND (v_item->>'producto_id') ~ '^[0-9]+$'
+          THEN (v_item->>'producto_id')::bigint
+        ELSE NULL
+      END;
+
+      -- Consultar siempre las rutas oficiales en el servidor para que compras de visitantes anónimos
+      -- (que no reciben columnas privadas en el catálogo público) conserven sus archivos reales.
+      v_archivo_url := NULLIF(v_item->>'archivo_url', '');
+      v_archivo_specs_url := NULLIF(v_item->>'archivo_specs_url', '');
+      v_link_archivos := NULLIF(v_item->>'link_archivos', '');
+      v_link_video := NULLIF(v_item->>'link_video', '');
+
+      IF v_producto_id IS NOT NULL THEN
+        SELECT archivo_url, archivo_specs_url, link_archivos, link_video
+        INTO v_prod
+        FROM public.productos
+        WHERE id = v_producto_id;
+
+        IF FOUND THEN
+          v_archivo_url := COALESCE(NULLIF(v_prod.archivo_url, ''), v_archivo_url);
+          v_archivo_specs_url := COALESCE(NULLIF(v_prod.archivo_specs_url, ''), v_archivo_specs_url);
+          v_link_archivos := COALESCE(NULLIF(v_prod.link_archivos, ''), v_archivo_url, v_link_archivos, '');
+          v_link_video := COALESCE(NULLIF(v_prod.link_video, ''), v_link_video, '');
+        END IF;
+      END IF;
+
       INSERT INTO public.pedido_items (
         pedido_id,
         producto_id,
@@ -614,14 +680,14 @@ BEGIN
         link_video
       ) VALUES (
         v_pedido_id,
-        CASE WHEN (v_item->>'producto_id') IS NOT NULL AND (v_item->>'producto_id') ~ '^[0-9]+$' THEN (v_item->>'producto_id')::bigint ELSE NULL END,
+        v_producto_id,
         v_item->>'nombre',
         COALESCE((v_item->>'precio')::numeric, 0),
         COALESCE((v_item->>'cantidad')::integer, 1),
-        v_item->>'archivo_url',
-        v_item->>'archivo_specs_url',
-        COALESCE(v_item->>'link_archivos', v_item->>'archivo_url', ''),
-        COALESCE(v_item->>'link_video', '')
+        v_archivo_url,
+        v_archivo_specs_url,
+        COALESCE(v_link_archivos, v_archivo_url, ''),
+        COALESCE(v_link_video, '')
       );
     END LOOP;
   END IF;
@@ -650,4 +716,22 @@ SET
   precio = ROUND(precio),
   precio_promo = ROUND(COALESCE(precio_promo, 0))
 WHERE precio IS NOT NULL;
+
+-- -----------------------------------------------------------------------------
+-- REPARACIÓN HISTÓRICA DE ÍTEMS DE PEDIDOS CON ENLACES VACÍOS
+-- Completa archivo_url, archivo_specs_url, link_archivos y link_video desde public.productos
+-- -----------------------------------------------------------------------------
+UPDATE public.pedido_items pi
+SET
+  archivo_url = COALESCE(NULLIF(pi.archivo_url, ''), NULLIF(pr.archivo_url, '')),
+  archivo_specs_url = COALESCE(NULLIF(pi.archivo_specs_url, ''), NULLIF(pr.archivo_specs_url, '')),
+  link_archivos = COALESCE(NULLIF(pi.link_archivos, ''), NULLIF(pr.link_archivos, ''), NULLIF(pr.archivo_url, ''), ''),
+  link_video = COALESCE(NULLIF(pi.link_video, ''), NULLIF(pr.link_video, ''), '')
+FROM public.productos pr
+WHERE pi.producto_id = pr.id
+  AND (
+    pi.archivo_url IS NULL OR pi.archivo_url = '' OR
+    pi.link_archivos IS NULL OR pi.link_archivos = '' OR
+    (pr.archivo_specs_url IS NOT NULL AND pr.archivo_specs_url <> '' AND (pi.archivo_specs_url IS NULL OR pi.archivo_specs_url = ''))
+  );
 
