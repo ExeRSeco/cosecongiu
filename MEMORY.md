@@ -1,12 +1,14 @@
 # MEMORY.md — Cosé con Giu - Tienda de Moldes Digitales
 Memoria del proyecto entre sesiones. Máximo ~50 líneas.
 
-Última actualización: 23/11/2026 — Avisos claros de entrega exclusiva por email en checkout y confirmación.
+Última actualización: 25/11/2026 — Corrección de 404 en env.js, CSP de unpkg y soporte integral para retorno in_process de MP.
 
 ## Estado actual
+- Retorno Robusto de Mercado Pago: `procesarRetornoMercadoPago()` y `api/verificar-pago.js` soportan estados `approved`, `pending` e `in_process`, mostrando el modal de pedido con código de orden y mensaje descriptivo de acreditación.
+- Corrección 404 `env.js`: Inyección dinámica condicional de `js/env.js` solo en localhost, eliminando errores de tipo MIME y 404 en Vercel.
+- CSP Sourcemaps Unpkg: Se agregó `https://unpkg.com` a la directiva `connect-src` en `vercel.json`.
 - Avisos de Entrega Exclusiva por Email: Integrado cuadro de advertencia en checkout (`.checkout-email-warning-box`) abajo de inputs de cliente, y bloque destacado en confirmación de pedido (`.alert-entrega-email`) aclarando plazos y ausencia de envíos por WhatsApp/Instagram.
-- Textarea en Descripción de Moldes: Reemplazado el input plano por `<textarea id="producto-descripcion" rows="5">` con `spellcheck="true"`, `lang="es"`, `autocorrect="on"` y `autocapitalize="sentences"`.
-- Formato y Saltos de Línea en Vista Detalle: `.product-detail-desc` configurado con `white-space: pre-line;`, preservando puntos, comas, párrafos, listas y emojis tal como los redacta el administrador.
+- Textarea en Descripción de Moldes: Reemplazado el input plano por `<textarea id="producto-descripcion" rows="5">` con soporte gramatical y `white-space: pre-line;`.
 - Precios en ARS sin centavos: `formatearPrecio()` redondea incondicionalmente a enteros con protección contra `-0`.
 - Sanitización en Admin e Ingesta: `guardarProducto()` y los inputs HTML (`step="1"`) fuerzan números enteros en ARS.
 - Normalización en Backend MP & Supabase: `api/crear-preferencia.js` y `supabaseGuardarProducto()` redondean unit_price y precios oficiales a enteros.

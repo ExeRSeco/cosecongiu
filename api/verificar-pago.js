@@ -69,12 +69,23 @@ module.exports = async (req, res) => {
     const esAprobado = pago.status === "approved";
     const refCoincide = String(pago.external_reference || "").trim().toLowerCase() === codigo.toLowerCase();
 
-    if (!esAprobado || !refCoincide) {
-      console.warn(`[Verificar Pago MP] Intento rechazado: status=${pago.status}, ref=${pago.external_reference} vs esperado=${codigo}`);
-      return res.status(400).json({
+    if (!refCoincide) {
+      console.warn(`[Verificar Pago MP] Referencia no coincide: ref=${pago.external_reference} vs esperado=${codigo}`);
+      return res.status(403).json({
         verified: false,
         status: pago.status,
-        error: !esAprobado ? "El pago aún no está aprobado en Mercado Pago." : "La referencia del pago no coincide con el pedido."
+        error: "La referencia del pago no coincide con el pedido."
+      });
+    }
+
+    if (!esAprobado) {
+      console.info(`[Verificar Pago MP] Pago en proceso: status=${pago.status}, ref=${codigo}`);
+      return res.status(200).json({
+        verified: false,
+        status: pago.status,
+        error: (pago.status === "in_process" || pago.status === "pending")
+          ? "El pago está en proceso de acreditación en Mercado Pago."
+          : `El pago tiene estado: ${pago.status}`
       });
     }
 

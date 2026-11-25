@@ -2563,70 +2563,89 @@ async function procesarRetornoMercadoPago() {
   const codigoOrden = urlParams.get("orden") || urlParams.get("external_reference") || sessionStorage.getItem("cose_mp_pending_order");
   const paymentId = urlParams.get("payment_id") || urlParams.get("collection_id") || "";
 
-  if (!status) return;
+  if (!status && !paymentId && !codigoOrden) return;
 
   console.log("[Mercado Pago Retorno]", { status, codigoOrden, paymentId });
 
   // Buscar el pedido registrado en memoria local
   let pedido = pedidos.find(p => p.codigo === codigoOrden);
 
-  if (status === "approved") {
-    let verificado = false;
+  const esStatusAprobado = status === "approved";
+  const esStatusPendiente = status === "pending" || status === "in_process";
+  const esStatusFallido = status === "failure" || status === "rejected";
 
-    // 1. Verificación segura en backend contra API de Mercado Pago
-    if (paymentId && codigoOrden) {
-      try {
-        const respVerif = await fetch(`/api/verificar-pago?payment_id=${encodeURIComponent(paymentId)}&codigo=${encodeURIComponent(codigoOrden)}`);
-        if (respVerif.ok) {
-          const dataVerif = await respVerif.json();
-          if (dataVerif && dataVerif.verified) {
-            verificado = true;
-          }
-        }
-      } catch (errVerif) {
-        console.warn("[Mercado Pago] No se pudo conectar al endpoint de verificación:", errVerif.message);
-      }
-    }
+  let verificado = false;
+  let estadoPago = status;
 
-    // 2. Si no hubo backend (ej. entorno local sin Vercel) o el webhook ya lo procesó, verificar si ya está completado en Supabase
-    if (!verificado && codigoOrden && typeof supabaseObtenerDescargasPedido === "function" && pedido && pedido.cliente && pedido.cliente.email) {
-      try {
-        const checkDb = await supabaseObtenerDescargasPedido(codigoOrden, pedido.cliente.email);
-        if (checkDb && checkDb.estado === "completada") {
+  // 1. Verificación segura en backend contra API de Mercado Pago
+  if (paymentId && codigoOrden) {
+    try {
+      const respVerif = await fetch(`/api/verificar-pago?payment_id=${encodeURIComponent(paymentId)}&codigo=${encodeURIComponent(codigoOrden)}`);
+      if (respVerif.ok) {
+        const dataVerif = await respVerif.json();
+        if (dataVerif && dataVerif.verified) {
           verificado = true;
+          estadoPago = "approved";
+        } else if (dataVerif && dataVerif.status) {
+          estadoPago = dataVerif.status;
         }
-      } catch (e) {}
-    }
-
-    // Si no hay Supabase configurado (modo local/demo), se acepta si coincide la orden en memoria
-    if (!verificado && (!estaSupabaseConfigurado || !estaSupabaseConfigurado()) && pedido) {
-      verificado = true;
-    }
-
-    if (verificado) {
-      if (pedido) {
-        pedido.estado = "completada";
-        if (paymentId) pedido.numeroOperacion = paymentId;
-        guardarPedidosEnStorage();
       }
+    } catch (errVerif) {
+      console.warn("[Mercado Pago] No se pudo conectar al endpoint de verificación:", errVerif.message);
+    }
+  }
 
-      // Vaciamos el carrito tras compra exitosa
-      carrito = [];
-      guardarCarritoEnStorage();
-      actualizarContadorCarrito();
-      renderCarrito();
+  // 2. Si no hubo backend o el webhook ya lo procesó, verificar si ya está completado en Supabase
+  if (!verificado && codigoOrden && typeof supabaseObtenerDescargasPedido === "function" && pedido && pedido.cliente && pedido.cliente.email) {
+    try {
+      const checkDb = await supabaseObtenerDescargasPedido(codigoOrden, pedido.cliente.email);
+      if (checkDb && checkDb.estado === "completada") {
+        verificado = true;
+        estadoPago = "approved";
+      }
+    } catch (e) {}
+  }
 
-      renderAdmin();
-      mostrarModalConfirmacion(pedido || { codigo: codigoOrden, estado: "completada", cliente: { nombre: "Cliente" } });
-      mostrarToast("¡Pago con Mercado Pago verificado y aprobado exitosamente! Acceso listo.");
-    } else {
-      mostrarToast("⏳ Tu pago está en proceso de verificación por Mercado Pago. Te llegará la confirmación en breve.");
+  // Si no hay Supabase configurado (modo local/demo), se acepta si coincide la orden en memoria
+  if (!verificado && (!estaSupabaseConfigurado || !estaSupabaseConfigurado()) && esStatusAprobado && pedido) {
+    verificado = true;
+  }
+
+  if (verificado) {
+    if (pedido) {
+      pedido.estado = "completada";
+      if (paymentId) pedido.numeroOperacion = paymentId;
+      guardarPedidosEnStorage();
     }
 
+    // Vaciamos el carrito tras compra exitosa
+    carrito = [];
+    guardarCarritoEnStorage();
+    actualizarContadorCarrito();
+    renderCarrito();
+    renderAdmin();
+
+    mostrarModalConfirmacion(pedido || { codigo: codigoOrden, estado: "completada", metodoPago: "mercadopago", cliente: { nombre: "Cliente" } });
+    mostrarToast("¡Pago con Mercado Pago verificado y aprobado exitosamente! Acceso listo.");
     sessionStorage.removeItem("cose_mp_pending_order");
-  } else if (status === "pending") {
-    mostrarToast("Tu pago está en proceso de acreditación en Mercado Pago.");
-  } else if (status === "failure") {
+  } else if (esStatusPendiente || estadoPago === "in_process" || estadoPago === "pending") {
+    // El pago está en proceso de acreditación por Mercado Pago (ej. tarjeta prepaga / débito)
+    if (pedido) {
+      if (paymentId) pedido.numeroOperacion = paymentId;
+      guardarPedidosEnStorage();
+    }
+
+    // Vaciamos el carrito para no duplicar el pago
+    carrito = [];
+    guardarCarritoEnStorage();
+    actualizarContadorCarrito();
+    renderCarrito();
+    renderAdmin();
+
+    mostrarModalConfirmacion(pedido || { codigo: codigoOrden, estado: "pendiente", metodoPago: "mercadopago", cliente: { nombre: "Cliente" } });
+    mostrarToast("⏳ Tu pago está en proceso de acreditación por Mercado Pago. Te llegará la confirmación en breve.", 6000);
+    sessionStorage.removeItem("cose_mp_pending_order");
+  } else if (esStatusFallido) {
     mostrarToast("El pago no fue completado en Mercado Pago. Podés intentar nuevamente.");
   }
 
@@ -2697,18 +2716,35 @@ function mostrarModalConfirmacion(pedido) {
     metodoTexto = "Mercado Pago";
     totalFormateado = `$${formatearPrecio(pedido.total)} ARS`;
     metodoBadgeHtml = '<span class="badge-metodo-pago mercadopago"><i data-lucide="credit-card" class="badge-icon"></i> Mercado Pago</span>';
-    plazoEntregaFila = "Descarga directa digital";
-    plazoHeroHtml = `
-      <div class="alert-box alert-plazo-inmediato" style="margin: 0.9rem 0; text-align: left;">
-        <div class="alert-plazo-header">
-          <i data-lucide="zap" class="ui-icon alert-plazo-icon" style="color: #16a34a;"></i>
-          <strong style="color: #15803d;">Acreditación y entrega inmediata:</strong>
-        </div>
-        <p class="alert-plazo-texto" style="color: #166534;">
-          Tu pago por Mercado Pago cuenta con <strong>acreditación inmediata</strong>. Podés descargar tus moldes directamente y también recibirás una copia en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
-        </p>
-      </div>`;
-    infoPlazoWa = "Quedo a la espera de la confirmación de mi pedido.";
+
+    if (pedido.estado === "completada") {
+      plazoEntregaFila = "Descarga directa digital";
+      plazoHeroHtml = `
+        <div class="alert-box alert-plazo-inmediato" style="margin: 0.9rem 0; text-align: left;">
+          <div class="alert-plazo-header">
+            <i data-lucide="zap" class="ui-icon alert-plazo-icon" style="color: #16a34a;"></i>
+            <strong style="color: #15803d;">Acreditación y entrega inmediata:</strong>
+          </div>
+          <p class="alert-plazo-texto" style="color: #166534;">
+            Tu pago por Mercado Pago cuenta con <strong>acreditación inmediata</strong>. Podés descargar tus moldes directamente y también recibirás una copia en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
+          </p>
+        </div>`;
+      infoPlazoWa = "Quedo a la espera de la confirmación de mi pedido.";
+    } else {
+      // Mercado Pago en proceso de acreditación (pending / in_process)
+      plazoEntregaFila = "En proceso de acreditación (Mercado Pago)";
+      plazoHeroHtml = `
+        <div class="alert-box alert-plazo-inmediato" style="margin: 0.9rem 0; text-align: left; background: #fffbeb; border: 1.5px solid #fde68a;">
+          <div class="alert-plazo-header">
+            <i data-lucide="clock" class="ui-icon alert-plazo-icon" style="color: #d97706;"></i>
+            <strong style="color: #b45309;">Pago en proceso de acreditación en Mercado Pago:</strong>
+          </div>
+          <p class="alert-plazo-texto" style="color: #78350f;">
+            Mercado Pago está procesando tu pago. En cuanto se confirme la acreditación, tus moldes quedarán habilitados automáticamente y recibirás los enlaces de descarga en tu correo <strong>${escaparHTML(pedido.cliente.email)}</strong>.
+          </p>
+        </div>`;
+      infoPlazoWa = "Aboné con Mercado Pago y el pago se encuentra en proceso de acreditación.";
+    }
   }
 
   const itemsLista = pedido.items.map(i => `${i.nombre} x${i.cantidad}`).join(", ");
@@ -2739,7 +2775,7 @@ function mostrarModalConfirmacion(pedido) {
       <div class="order-success-icon"><i data-lucide="check-check" style="width: 3.2rem; height: 3.2rem; color: #16a34a;"></i></div>
       <h3 style="color: var(--primary-dark); margin-bottom: 0.35rem;">¡Muchas gracias, ${escaparHTML(pedido.cliente.nombre)}!</h3>
       <p style="color: var(--text-muted); font-size: 0.92rem;">
-        Tu pedido ha sido registrado con éxito bajo estado <strong>Pendiente de revisión</strong>.
+        ${pedido.estado === 'completada' ? 'Tu pago ha sido confirmado y tus moldes ya están disponibles.' : 'Tu pedido ha sido registrado con éxito bajo estado <strong>Pendiente de revisión o acreditación</strong>.'}
       </p>
       <div class="order-success-code-pill">
         Código de Pedido: <strong>${escaparHTML(pedido.codigo)}</strong>
@@ -2783,7 +2819,7 @@ function mostrarModalConfirmacion(pedido) {
       </div>
       <div class="order-success-row">
         <span>Estado del pedido:</span>
-        <span class="badge-estado pendiente"><i data-lucide="clock" class="badge-icon"></i> Pendiente</span>
+        <span class="badge-estado ${pedido.estado === 'completada' ? 'completada' : 'pendiente'}"><i data-lucide="${pedido.estado === 'completada' ? 'check' : 'clock'}" class="badge-icon"></i> ${pedido.estado === 'completada' ? 'Completada' : 'Pendiente'}</span>
       </div>
       <div class="order-success-row">
         <span>Entrega:</span>
